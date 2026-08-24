@@ -26,7 +26,8 @@ accelerator names — a closed set of patterns over an open set of implementatio
 says what each accelerator kind carries and what a version bump means; §15 makes the kinds a
 directed chain and raises a naming decision that is the operator's, not the next writer's; §16
 records the operator's enumeration of the dimensions and what it resolves, and §17 settles the
-taxonomy at three kinds and gives the industry kind its shape.
+taxonomy at three kinds and gives the industry kind its shape. **§18 states the thesis the
+others are details of, and corrects §17.6.**
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -568,10 +569,14 @@ over every population rather than only over `via:kit`.
 - Whether a language-neutral pattern obligation is restated per stack or cited as shared prose
   from inside each technology accelerator (§17.1). A file-layout question now, not a taxonomy
   one.
-- **Whether an industry accelerator is really industry × jurisdiction** (§17.6). NEFT, the DPDP
-  Act and PCI-DSS are not all territorial in the same way, the shipped seed already says
-  obligations vary by jurisdiction, and nothing in the naming or the selection chain carries
-  one. Cheap to name now, expensive to retrofit into published versioned files.
+- ~~Whether an industry accelerator is really industry × jurisdiction~~ (§17.6) — **corrected
+  and narrowed by §18.1–§18.2**: applicability including regions is already a required
+  stewardship field, and one pain point has several national solutions, so no cross-product is
+  wanted. What remains: applicability sits on the file rather than the entry, and the
+  selection chain has nothing to match it against.
+- **Where a project's posture is declared** (§18.5) — POC, internal, launched,
+  multi-geography. It is the fact that decides between two correct stacks, the profile has no
+  key for it, and a reviewer cannot judge a stack against a posture nobody wrote down.
 - Whether an industry accelerator carries reviewer obligations, industry knowledge, or both
   (§17.6). The shipped seed is entirely the first; the operator described the second.
 - **How a pattern accelerator reaches a project** (§14.5). The overlay selects technology and
@@ -1581,3 +1586,138 @@ importable files. **Not filed.**
 Nothing filed as work, nothing marked done. §16.5 closes at §17.1 and the accelerator taxonomy is
 now settled at three kinds. §17.6 raises two observations, one of which — jurisdiction — is a new
 open question rather than a gap in existing work.
+
+---
+
+## 18. Amendment, 2026-08-24 — NFR scope selects the stack, and the thesis in one line
+
+Operator statement, extending the NEFT example and then naming the intent behind all of this:
+
+> Take real-time transactions as another example. **UPI is India's answer**; the US built something
+> around **FedNow**; many countries are using UPI. **Regulation standards can happen as prose. But
+> the industry accelerator helps document how that can be guided into an implementation.**
+>
+> **Technology choices simply differ based on scope of NFR.** If it is a **POC**, the technology
+> stack will be simple. If it is to be **launched for an audience and geographic exposure**, then
+> the stack to implement **100% the same business outcome** will be entirely different — leave alone
+> different stack options, different software solutions, implementable in applications developed in
+> different programming languages.
+>
+> I am trying to see how this coding kit can be **made better with real experience**, and how it can
+> aid development of **personalized solutions, with standardized tech options, for well-defined
+> business problems** and business-enabling solutions.
+
+### 18.1 Correction to §17.6: the regions axis already exists, as a field
+
+§17.6 said the taxonomy has no axis for jurisdiction. That was too strong, and the record
+contradicts it: `DESIGN-NOTES`' accelerator-stewardship section requires
+
+> **Applicability, stated in both directions.** Domains and **regions** it suits, and the ones it
+> does **not**
+
+So a published accelerator is already obliged to declare the regions it applies to. The real gap is
+narrower than §17.6 claimed: **applicability is a required field on a published accelerator, and it
+is absent from the selection chain** — the overlay *names the chosen stack and industry*, with
+nothing about where the project operates, so nothing matches a project against an accelerator's
+declared regions.
+
+### 18.2 One pain point, several national instantiations — and no cross-product needed
+
+The UPI and FedNow example changes the shape of §17.6's question rather than confirming it. Real-time
+retail payment is **one pain point**; UPI and FedNow are **two business solutions to it**, and UPI is
+adopted beyond the jurisdiction that created it. So the relation is not one jurisdiction to one
+solution, and an `industry × jurisdiction` cross-product of files would be wrong as well as
+expensive.
+
+**The structure that fits is the one §17.2 already has, with applicability on the solution:**
+
+> pain point → **{business solutions, each declaring where it applies}** → NFR requirements
+
+That needs no new taxonomy and no directory dimension — it needs the stewardship field of §18.1 to
+be carried at the level of the *entry* rather than only the file, and the selection chain to have
+something to match it against. `[judgement]` This is the cheap answer to §17.6, and it is cheaper
+than what §17.6 implied.
+
+### 18.3 What the industry kind does with a regulation
+
+> Regulation standards can happen as prose. But the industry accelerator helps document **how that
+> can be guided into an implementation**.
+
+This refines §17.3's boundary into three layers rather than two:
+
+1. **The regulation itself** — prose, authored outside the kit, not restated in it.
+2. **The industry accelerator** — how that obligation shapes **what must be built**: that
+   settlement must reconcile continuously, that a decision must be reconstructible, that residency
+   constrains where data may sit.
+3. **The technology accelerator** — which library, in this stack, at this posture.
+
+So the industry kind is allowed to be **directive toward implementation without naming one**. That
+is a more useful reading of §17.3's prohibition than "business scope only" — the constraint is on
+the *noun*, not on the level of specificity.
+
+### 18.4 NFR scope selects the stack, and the business outcome is invariant
+
+This is the sharpest statement in the exchange and it changes what a technology accelerator entry
+has to say about itself.
+
+**The business outcome is 100% the same.** A POC and a launched, geographically exposed product
+implement the identical business behaviour, and the stacks are *entirely different* — different
+options, different software solutions, potentially different languages. So the variable is neither
+the business problem nor the pattern: it is the **NFR scope**, the posture the system is being built
+for.
+
+Three things follow:
+
+- **A technology entry must declare the posture envelope it holds for**, not merely a throughput
+  figure. §15.3 said an entry naming a library without saying *at what scale* the claim holds is
+  incomplete; this widens *scale* to **posture** — POC, internal, launched, multi-geography — because
+  the discriminator is not only load. It is operability, failure behaviour, residency, cost.
+- **Reuse cannot live at the level of the business outcome.** The outcome is invariant across
+  postures and the implementation is not, so an asset keyed to the outcome would recommend the wrong
+  thing half the time. Reuse lives at **pattern × posture**, which is what the technology kind
+  actually indexes.
+- **This is already half in the record.** The two non-architectural stack parameters are *business
+  growth projections* — what the system must absorb — and *what the team can maintain*. **POC versus
+  launch is the growth projection**, stated as a posture rather than a number, and it belongs in the
+  overlay for the reason already given there: it outlives the engagement.
+
+### 18.5 The observation that follows, and it is one declared value — checked, not filed
+
+**Nothing records the posture.** `templates/project-profile.md` carries 19 keys — paths, git,
+commands, tier defaults, cluster, co-change, export salt — and none of them says whether the project
+is a proof of concept or a launched product. The overlay carries the stack *decision*; the posture is
+the *justification* that makes the decision reviewable, and **a reviewer cannot ask whether a stack
+suits the posture when no posture is written down**. Under §18.4 it is the single fact that
+discriminates between two correct answers, and it is one declared value.
+
+Same file, one more consequence of §17.1: line 91 offers a commented binding
+`accelerator.pattern: .claude/accelerators/cache-port.md -> approach-reviewer,researcher`. With
+pattern folded into technology there should be **two** accelerator binding keys, not three. Neither
+observation is filed.
+
+### 18.6 The thesis, in the operator's words
+
+> **Personalized solutions, with standardized tech options, for well-defined business problems** —
+> and the kit **made better with real experience**.
+
+That is the shortest correct statement of the model, and every amendment from §10 to §17 is a detail
+of it:
+
+| The phrase | The artefact | Recorded in |
+|---|---|---|
+| **personalized solutions** | the solution overlay — prose, given, project-scoped | §16.1 |
+| **standardized tech options** | the technology accelerator — pattern × posture → libraries | §18.4, §17.1 |
+| **well-defined business problems** | the industry accelerator — pain point, solution, NFRs | §17.2 |
+| **made better with real experience** | the completion session — lessons extracted, accelerator versioned | §12.4 |
+
+`[judgement]` It is worth having this in one place, because the three artefacts have mostly been
+discussed one at a time and each of them reads as optional in isolation. Stated together they are a
+single mechanism: **standardize what recurs, personalize what does not, and let delivery update
+the standard.**
+
+### 18.7 Status
+
+Nothing filed as work, nothing marked done. §18.1 corrects §17.6 rather than extending it; §17.6's
+jurisdiction question resolves into an existing field plus a missing match in the selection chain.
+The unbuilt middle of §15.7 — inputs becoming tasks — is untouched by any of this and remains where
+the thesis above is thinnest.

@@ -20,7 +20,8 @@ definitions are fixed before a run. It is marked as a correction in place rather
 **§10 and §11 were added on 2026-08-24.** §10 records the operator's correction of §8.4's central
 inference; §8.4 carries a banner and is otherwise left as written, so the claim and its correction
 are both readable. Read §10 before acting on §7, §8.4 or §8.6. §11 records what accelerators are
-for, and raises the one collision that follows from it — recency is not recurrence.
+for, and raises the one collision that follows from it — recency is not recurrence. §12 closes most of
+that collision: versions carry currency, so no third provenance state is needed.
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -533,11 +534,16 @@ over every population rather than only over `via:kit`.
   outcomes, and their environment rides in the input.
 - What *carries* an input-and-outcome pair in practice — a trailer, an ingest adapter, or a file a
   tester writes — which is now a shape question rather than a sufficiency one.
-- **Whether the two-state provenance rule survives content whose subject expires** (§11.3).
-  Recurrence cannot confirm a technology-currency claim, and past recurrence can make a stale
-  one look confirmed. Three candidate shapes are listed; settling it needs the same stack used
-  twice, months apart.
-- Whether the accelerator update produced at project completion (§11.2) lives in the retro
+- ~~Whether the two-state provenance rule survives content whose subject expires~~ (§11.3) —
+  **largely closed by §12.2**: the version carries currency and the state carries observation,
+  so the two are orthogonal and no third state is needed. What remains is narrower and is the
+  next entry.
+- **There is no rule for retiring an `[earned]` entry the industry moved past** (§12.3). The
+  eviction order already names `stale`, but it was argued from context cost, and the deletion
+  rule that exists covers only seeded content that never recurred.
+- Whether phase-out applies to a design pattern or only to the open-source solution named under
+  it (§12.5) — the pattern outlives the library that implements it.
+- Whether the accelerator update produced at project completion (§11.2, §12.4) lives in the retro
   artefact or somewhere of its own.
 - Whether divergence detection is one mechanism across all definition classes or one per class.
 - Which authority may accept a deviation against which layer (§3.1), and whether that is expressed
@@ -772,3 +778,126 @@ the check that catches an ungrounded promotion is not the check that keeps a ver
 Nothing here is filed as work, and nothing is marked done — same as the rest of this document. §11.3
 is recorded as an open question with what would settle it, which is the only honest state for it
 while the kit has run one stack once.
+
+---
+
+## 12. Amendment, 2026-08-24 — versions carry currency, and the update happens at project completion
+
+Operator statement, given after §11 and answering most of §11.3:
+
+> Accelerators **do have versions**. Be it best practices or other, **some get phased out when
+> industry evolves**, with new design patterns addressing the evolving problem space. After every
+> project completion, **lessons learnt will be extracted from the coding kit**, then **with use of
+> GenAI the accelerators are updated**, by providing the extracted lessons from that specific
+> project and **inputs from the solution architect, the lead developer and all involved roles**.
+> Re-usable assets development is **out of scope** — required ones will be created, while
+> **existing open-source solutions are represented in the accelerators with respect to the specific
+> design patterns in use**.
+
+### 12.1 Versioning already exists, and now carries a second job
+
+`docs/DESIGN-NOTES.md` §3 already specifies it: frontmatter carrying `id`, `version` and `source`
+**alongside** the per-line `[seeded]`/`[earned]` marking; `kit-accel.sh import <id>@<version>`
+pinning into a project; an imported copy keeping its version header so that a year later *the file
+itself answers which version this project was reviewed against*. Accelerators version independently
+of the plugin, because content that improves after every project would otherwise churn the engine's
+version.
+
+All of that was justified as **drift protection** — a project pins and stays put. The operator's
+statement gives the same field a second job: **the version is what carries currency**. Phase-out is
+a change between versions, not a new kind of claim.
+
+### 12.2 §11.3 resolves, and without a third provenance state
+
+The collision in §11.3 was that recurrence cannot confirm a technology-currency claim, and past
+recurrence can make a stale one look confirmed. With versions carrying currency the two concerns
+separate cleanly, and it is the same shape as *"sources are many; states are two"*:
+
+| Question | Answered by |
+|---|---|
+| **Has this system observed it?** | the provenance state — `[seeded]` / `[earned]` |
+| **Is it still true of the technology?** | the accelerator **version**, and what that version still contains |
+
+They are **orthogonal**, so `DESIGN-NOTES`' resistance to a third tier holds and none of §11.3's
+three shapes is needed as stated. What was actually missing was never a state. It was a
+**retirement step** — and that step turns out to exist already.
+
+### 12.3 The retirement step exists, filed under the wrong motivation
+
+`HANDOFF.md` §8, quoted in `DESIGN-NOTES` under *"Line budget is a prerequisite, not a follow-up"*,
+already names the eviction order:
+
+> refuted → **stale** → lowest occurrence
+
+with an open task, `T-20260731-accelerator-line-budget-and-eviction` (T2). But the argument made
+for it is **context cost**: a library that only ever adds eventually costs more per invocation than
+the defects it prevents, multiplied across every project that pins it.
+
+The operator's framing supplies a second and stronger reason. **An entry phased out by industry
+evolution is wrong, not merely expensive.** Two consequences follow `[judgement]`:
+
+- Eviction cannot be tuned purely by budget pressure. `stale` has to be able to fire **when the
+  budget is comfortable**, because its trigger is the technology moving, not the file growing.
+- The order stops being a priority list of things to drop and becomes two mechanisms sharing a
+  verb: `refuted` and `stale` are **correctness** removals; `lowest occurrence` is a **cost**
+  removal.
+
+**The residual gap is narrow and worth stating precisely.** `accelerators/README.md` already has a
+deletion rule for *seeded* content — *"a seeded entry that never appears in findings across several
+projects is scar tissue for a wound nobody has — delete it"*. There is **no rule for retiring an
+`[earned]` entry that the industry moved past**, which is exactly the case where the accumulated
+evidence makes the entry look most trustworthy. That is the whole of what §11.3 leaves open.
+
+### 12.4 The update pipeline, as stated
+
+At the completion of every project:
+
+1. **Lessons are extracted from the coding kit** — findings and their dispositions, events, spend,
+   and whatever the retro artefact carries.
+2. **GenAI performs the update**, taking those extracted lessons as input.
+3. **The involved roles supply the rest** — solution architect, lead developer, **and all other
+   roles that worked the project**. Wider than the overlay's authorship (§10.5), deliberately: the
+   overlay is a target shape decided by architects, while lessons come from everyone who met the
+   problem.
+4. **The output is a new accelerator version** (§12.1), which is where a phase-out lands.
+
+**What this settles about the promotion ladder:** the ladder **counts**, this session **decides**.
+Occurrence thresholds become an *input* to a facilitated update at a defined moment rather than an
+automatic trigger — consistent with `T-20260811-an-accelerator-authoring-template-and-se`, whose
+criteria already require that an authoring agent *produce a draft, never a promoted entry*.
+
+**One dependency worth naming and not filing.** Step 1 assumes the kit *has* something to extract.
+Today this project's own record shows `0 / 0 via:kit` escape rate in every tier and five subagent
+runs that recorded nothing — an absent denominator. A completion session run against an empty
+extraction has only human memory as input, which is the ordinary way lessons are lost and precisely
+what the kit exists to prevent. **The value of the update pipeline is bounded by what the kit
+recorded during the project**, so instrumentation is upstream of accelerator improvement rather
+than parallel to it.
+
+### 12.5 Reusable assets: out of scope, referenced rather than contained, keyed by design pattern
+
+This confirms the boundary already drawn. `docs/CATALOGUE.md` opens with it — the catalogue is *an
+N-languages × M-solutions engineering programme with its own release cadence*, and **the kit's role
+is selection and enforcement; it must not host the code**. `DESIGN-NOTES` says the same: the code
+belongs outside this kit even when the knowledge belongs inside it.
+
+What the operator adds is **how the knowledge is expressed**: an accelerator **represents existing
+open-source solutions against the specific design patterns in use**, and where no suitable one
+exists the required asset is created — still outside the kit. So an accelerator entry for a pattern
+**points at an implementation choice rather than carrying one**.
+
+Two consequences `[judgement]`:
+
+- It stays compatible with the vendoring and no-network posture. A reference to an open-source
+  solution is reference material; nothing fetches it, and `SECURITY.md`'s no-network claim is
+  untouched.
+- **The open-source reference is the most perishable content in an accelerator**, which is §12.3
+  again at finer grain: **the design pattern outlives the library that implements it.** That
+  suggests phase-out granularity is the *implementation reference*, not the pattern — a pattern
+  entry survives while the solution named under it is replaced. Not decided here.
+
+### 12.6 Status
+
+Nothing filed as work, nothing marked done. §12.2 and §12.3 close most of §11.3; what remains open
+is the single missing rule named at the end of §12.3, and the granularity question at the end of
+§12.5.

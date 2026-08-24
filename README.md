@@ -1,4 +1,4 @@
-# ai-assisted-claude-coding-kit
+# coding-kit
 
 A risk-tiered review pipeline and derived project state for AI-assisted coding with
 Claude Code. Stack-agnostic baseline.
@@ -157,24 +157,26 @@ catalogue is meant to grow without bound.
 ## Install
 
 ```sh
-/plugin marketplace add raghuveer/ai-assisted-claude-coding-kit
-/plugin install coding-kit@ai-assisted-claude-coding-kit
+/plugin marketplace add raghuveer/coding-kit
+/plugin install coding-kit@coding-kit
 ```
 
-`coding-kit` is the plugin; `ai-assisted-claude-coding-kit` is the marketplace that
-carries it. They are not interchangeable in that second command.
+The repeated name is not a typo. `coding-kit` on the left of the `@` is the **plugin**;
+`coding-kit` on the right is the **marketplace** that carries it. The marketplace holds one
+plugin today and they share a name, but they are different things and the second command
+needs both.
 
 Pin a version when handing it to others — `@ref` with no version resolves to the default
 branch, which moves:
 
 ```sh
-/plugin marketplace add raghuveer/ai-assisted-claude-coding-kit@v0.2.0
+/plugin marketplace add raghuveer/coding-kit@v0.2.0
 ```
 
 Then, in each repo that should use it:
 
 ```sh
-bash ~/.claude/plugins/cache/ai-assisted-claude-coding-kit/tooling/kit-init.sh
+bash ~/.claude/plugins/cache/coding-kit/tooling/kit-init.sh
 ```
 
 The kit is **inert** in any repo without `.claude/project-profile.md` — every script

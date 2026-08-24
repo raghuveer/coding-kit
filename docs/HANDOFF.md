@@ -1,10 +1,10 @@
-# Handoff brief — ai-assisted-claude-coding-kit v0.2.0
+# Handoff brief — coding-kit v0.2.0
 
 Paste this into a Claude Code session as context. It is self-contained: requirements,
 decisions with rationale, what is built and tested, what is not, and the constraints
 that must not be broken.
 
-Repository: https://github.com/raghuveer/ai-assisted-claude-coding-kit (v0.1 released)
+Repository: https://github.com/raghuveer/coding-kit (v0.1 released)
 Target: commit this work as v0.2.0 under the same repo name.
 
 Status: committed on branch `v0.2.0` off v0.1, pushed, **not released**. The tarball this
@@ -280,7 +280,7 @@ cloning, and re-run it if the plugin moves.
 **Structure (validated, 6 ok / 0 warnings / 0 errors via bundled `validate.py`):**
 
 ```
-ai-assisted-claude-coding-kit/
+coding-kit/
 ├── .claude-plugin/     plugin.json (name: coding-kit, v0.2.0), marketplace.json
 ├── agents/             8 agents, FLAT (see §7 bug 1)
 ├── skills/             5, each a directory with SKILL.md
@@ -389,7 +389,7 @@ anything.
 1. Run `ccmetrics.py` for the control period. **Cannot be done later.**
 2. `python3 validate.py`, plus BOTH official checks — `claude plugin validate . --strict`
    (marketplace) and `claude plugin validate .claude-plugin/plugin.json --strict` (plugin).
-3. Test locally: `claude --plugin-dir ./ai-assisted-claude-coding-kit`, iterate with
+3. Test locally: `claude --plugin-dir ./coding-kit`, iterate with
    `/reload-plugins`.
 4. Adopt in one project. Delete the old `STATUS.md` and CSV — delete, not deprecate.
 5. Turn on instrumentation (findings + vindication). Ships nothing visible, which is why

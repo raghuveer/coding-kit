@@ -19,19 +19,19 @@ one exception to "no runtime" — it is an authoring check, never run by the kit
 
 ### Trying it out — no marketplace, no install
 
-    claude --plugin-dir /path/to/ai-assisted-claude-coding-kit
+    claude --plugin-dir /path/to/coding-kit
 
 Loads agents, skills and hooks for that session. Edit a file, run `/reload-plugins`,
 changes apply without restarting. Best loop for developing the kit itself.
 
 ### Installing properly
 
-    /plugin marketplace add raghuveer/ai-assisted-claude-coding-kit
-    /plugin install coding-kit@ai-assisted-claude-coding-kit
+    /plugin marketplace add raghuveer/coding-kit
+    /plugin install coding-kit@coding-kit
 
 Pin a version when handing it to others:
 
-    /plugin marketplace add raghuveer/ai-assisted-claude-coding-kit@v0.2.0
+    /plugin marketplace add raghuveer/coding-kit@v0.2.0
 
 Pinning is not fussiness. Without it you cannot tell which version someone's feedback
 is about, and the comparison you are running becomes uninterpretable. Unpinned resolves

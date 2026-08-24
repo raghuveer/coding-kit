@@ -79,7 +79,15 @@ Format: **`vMAJOR.MINOR.PATCH`** — `v0.2.0`. One annotated tag per release, on
 
 That string is not decoration; it is what a stranger types:
 
-    /plugin marketplace add raghuveer/ai-assisted-claude-coding-kit@v0.2.0
+    /plugin marketplace add raghuveer/coding-kit@v0.2.0
+
+> **Renamed 2026-08-24.** The repository was `ai-assisted-claude-coding-kit` and is now
+> [`raghuveer/coding-kit`](https://github.com/raghuveer/coding-kit); the marketplace `name` in
+> `.claude-plugin/marketplace.json` moved with it, so repository and marketplace still share a
+> name and the paragraph below still holds. GitHub redirects the old path, so an existing
+> `marketplace add` and any pinned `@v0.x.y` keep resolving. **A client that already added the
+> marketplace under the old name may need `/plugin marketplace update`, or to re-add it** —
+> the marketplace id is the `name` field, not the repository path.
 
 `claude plugin tag` produces `coding-kit--v0.2.0` instead. That convention exists so a
 marketplace carrying several plugins can version them independently. This marketplace

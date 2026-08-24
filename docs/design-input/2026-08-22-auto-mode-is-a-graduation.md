@@ -28,8 +28,9 @@ directed chain and raises a naming decision that is the operator's, not the next
 records the operator's enumeration of the dimensions and what it resolves, and §17 settles the
 taxonomy at three kinds and gives the industry kind its shape. **§18 states the thesis the
 others are details of, and corrects §17.6; §19 makes posture a vector and dates the model's
-contemporary analysis; **§20 closes the session — the dimensions are illustrative, and the kit
-standardizes a practice it did not invent.**
+contemporary analysis; **§20 — the dimensions are illustrative, and the kit
+standardizes a practice it did not invent; §21 corrects how §§14–19 reported absences, and
+records the kit as hidden support.**
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -586,8 +587,10 @@ over every population rather than only over `via:kit`.
 - **What makes the model's contemporary analysis contemporary** (§19.5) — a live input at
   analysis time, or a recommendation stamped with the knowledge boundary it was made under.
   Without one, "contemporary" silently means "as of training".
-- Whether an industry accelerator carries reviewer obligations, industry knowledge, or both
-  (§17.6). The shipped seed is entirely the first; the operator described the second.
+- ~~Whether an industry accelerator carries reviewer obligations, industry knowledge, or both~~
+  (§17.6) — **not a live question: §21.1 corrects the framing.** The seed is an early draft in
+  an iterative process and the constituents of §17.2 are **to be created**. What the kind
+  carries is settled; what exists is a starting point.
 - **How a pattern accelerator reaches a project** (§14.5). The overlay selects technology and
   industry accelerators; the pattern kind is in neither sentence, and two documents imply
   different answers.
@@ -1997,3 +2000,112 @@ rather than a recommendation.
 Nothing filed as work, nothing marked done. §20.1 constrains what may be built from §17–§19 and is
 the section to read before writing any template or self-check. §20.2 names a measurement a single
 trial cannot produce.
+
+---
+
+## 21. Amendment, 2026-08-24 — a draft is not a gap, and the kit is hidden support
+
+Operator correction, and it lands on how this document has been reporting rather than on what it
+records:
+
+> Whenever you mention as absent — all my examples are **samples of pointed constituents** of
+> industry accelerators and kind of. **Those are to be created.** We attempted a few samples
+> (initial draft) a few months earlier, which denotes a starting point, and those **need evolution,
+> even when written by experienced architects — accelerator development is iterative**. Their
+> **measurement will be seen when referenced and used** for software development in the solution
+> overlay and supported by ADRs, within the bounds of a specific project's requirements.
+>
+> Even without this coding kit, people can create **prompts in different scopes and use them with
+> different models**. What this coding kit brings is **aligning a flexible perimeter** that can
+> accommodate and expedite development of different kinds of software, to achieve a **bounded
+> outcome**, in a quality-oriented way and with the **most efficient token usage** for the purpose.
+> **Human+AI is as live as before; this coding kit serves as hidden support** in that context.
+
+### 21.1 §17.6 is corrected: the seed is an early draft, not a different conception
+
+§17.6 observed that `accelerators/industry/bfsi.md` carries tier floors and reviewer obligations and
+**no** pain point, business solution or NFR requirements, and then interpreted that as *a difference
+about what the kind is for*. **The observation stands; the interpretation is withdrawn.** It is an
+initial draft at an expected point in an iterative process, and the constituents described in §17.2
+are **to be created**, not missing.
+
+The repository already said so, which is the part I should have read as answering the question
+rather than raising it. `accelerators/README.md` states of the shipped seeds:
+
+> They are **drafts**, not earned content. The failure shapes listed in each are plausible rather
+> than observed, and should be treated as **hypotheses** until the findings table says otherwise.
+
+**And the correction generalises past this one case.** Several observations across these amendments
+were reported as gaps when they are expected states of an artefact that is authored iteratively:
+the missing `id`/`version`/`source` frontmatter on the industry seed (§14.5), the absent constituents
+(§17.6), and arguably the unwritten posture keys (§18.5, §19.2). Each is *not yet written* rather
+than *overlooked*, and the kit has a name for exactly this distinction — **absent is not zero**, and
+an undocumented design choice is *a question, not a defect*. Applying that rule to my own reporting:
+**absent-because-not-yet-authored is not absent-because-missed**, and the two should not be written
+in the same voice. `[judgement]` The practical difference is that the first needs a person to
+continue drafting and the second needs someone to be told.
+
+### 21.2 An accelerator's measurement is its use, and the instrument already has a task
+
+> Their measurement will be seen when referenced and used for software development in the solution
+> overlay and supported by ADRs, within the bounds of a specific project's requirements.
+
+That is the earning ladder stated as a measurement rather than a promotion rule, and it gives
+§20.2's delta something concrete to read: an accelerator is judged by **whether a project referenced
+it and what happened next**, bounded by that project's own requirements rather than against an
+abstract standard.
+
+**The instrument is an existing open task**, not new work: `T-20260808-record-which-mechanism-produced-a-findin`
+(T2, open) — *record which mechanism produced a finding **so the accelerator and the second reviewer
+can be judged***. Its declared paths are `tooling/schema.sql`, `kit-finding.sh` and `kit-status.sh`.
+Without it, a finding cannot say whether an accelerator produced it, and "measurement will be seen
+when referenced and used" has nothing to read. It sits alongside the `Via:` provenance gap — same
+shape, different subject.
+
+### 21.3 The alternative is ad-hoc prompting, not nothing
+
+§20.2 sized the kit's claim against an architect who would do the thinking anyway. The operator
+sharpens the comparison: **people can already write prompts in different scopes and run them against
+different models.** So the baseline the kit is measured against is not an unaided team — it is a team
+with prompts and no perimeter.
+
+That makes the delta more specific and more testable `[judgement]`: not *could this be built* but
+*does the same work land more consistently, and at lower token cost, than the same people prompting
+directly*. Both halves of that are measurable, and neither is measured today.
+
+### 21.4 "Flexible perimeter, bounded outcome" — and it is consistent with §20.1
+
+The formulation is worth keeping verbatim because it resolves an apparent tension in one phrase.
+**Flexible at the edge** — it accommodates different kinds of software, different stacks, dimensions
+nobody has enumerated. **Bounded at the outcome** — quality, and token efficiency for the purpose.
+
+This is §20.1 and §5 in the operator's own words. A perimeter that must stay flexible **cannot be a
+closed vocabulary**, which is exactly why a template may check shape and not enumerate categories.
+And *bounded outcome* is *determinism of conformance*: what is fixed is what the result must conform
+to, not the text that gets written.
+
+### 21.5 "Hidden support" is a design principle with consequences
+
+> Human+AI is as live as before; this coding kit serves as **hidden support** in that context.
+
+Recorded as a principle rather than a sentiment, because three things already in the record are
+instances of it and become easier to judge under it:
+
+- **Every interrupt is the kit becoming visible.** §3's interrupt budget is the instrument for this
+  principle, not merely a scarcity argument — and §13.5's rule follows directly: an out-of-set
+  library choice interrupts, an in-set one must not.
+- **Footprint in the adopted repository.** `T-20260812-kit-init-leaves-a-footprint-in-an-adopte`
+  (T2, open) is this principle unmet in the most literal way — support that cannot be removed is not
+  hidden.
+- **Token overhead is part of being hidden.** The line budget and eviction work (§12.3) is not only
+  about correctness and cost; an accelerator that grows monotonically makes the support obtrusive in
+  the only currency the model actually feels.
+
+It also sits directly alongside the ranked constraint that **the kit must leave the product
+ordinary** — the same instinct applied to the artefact rather than to the process.
+
+### 21.6 Status
+
+Nothing filed as work, nothing marked done. §21.1 corrects §17.6's interpretation and generalises
+the correction to how absences have been reported throughout §§14–19. §21.2 names an existing open
+task as the instrument for the measurement the operator describes.

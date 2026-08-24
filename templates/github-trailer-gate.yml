@@ -35,7 +35,7 @@ jobs:
       - name: Check out the kit
         uses: actions/checkout@v4
         with:
-          repository: raghuveer/ai-assisted-claude-coding-kit
+          repository: raghuveer/coding-kit
           # Pin it. An unpinned gate changes its own rules under you, and then a build that
           # went red tells you nothing about whether your commits or the rules moved.
           ref: v0.3.0

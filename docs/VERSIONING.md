@@ -33,8 +33,28 @@ So the test for MAJOR is: *does someone pulling this have to take an action?*
 | Bump | Covers |
 |---|---|
 | **MAJOR** | commit trailer vocabulary · `.project/` layout · `events.ndjson` record schema · `project-profile.md` frontmatter keys — anything that requires migrating committed state |
-| **MINOR** | new skills, agents, scripts, flags, tier rules, accelerators · **any `index.db` schema change** · additive `events.ndjson` fields |
+| **MINOR** | new skills, agents, scripts, flags, tier rules, accelerators · **any `index.db` schema change** · additive `events.ndjson` fields · **repository or marketplace identity** (see below) |
 | **PATCH** | bug fixes, documentation, warnings, performance |
+
+### Identity changes are MINOR, and they are the only break that is not committed state
+
+Added 2026-08-24, after the rename to `coding-kit` was classified by the test above and the
+table turned out not to cover it.
+
+Renaming the repository or the marketplace **does** require an action — the marketplace id is
+the `name` field in `marketplace.json`, so a client that added it under the old id may need
+`/plugin marketplace update` or a re-add. By the MAJOR test alone that reads as MAJOR.
+
+It is not. **Nothing in a consumer's repository becomes wrong.** No committed schema moved, no
+record needs migrating, and the only committed artefact that carries the name is the copied
+`github-trailer-gate.yml` workflow — which keeps working, because the host redirects the old
+path. The action is re-pointing a subscription, not repairing state, and that is a different
+kind of cost from the one MAJOR exists to price.
+
+So: **MINOR, with the break called out in the release notes** — which is exactly what "Staying
+on 0.x" below permits. After 1.0 this deserves re-examination, because the promise 1.0 makes is
+about committed state and an identity change would then be the loudest thing in a release that
+the promise does *not* cover.
 
 ### Why `index.db` schema changes are only MINOR
 
@@ -79,7 +99,15 @@ Format: **`vMAJOR.MINOR.PATCH`** — `v0.2.0`. One annotated tag per release, on
 
 That string is not decoration; it is what a stranger types:
 
-    /plugin marketplace add raghuveer/ai-assisted-claude-coding-kit@v0.2.0
+    /plugin marketplace add raghuveer/coding-kit@v0.2.0
+
+> **Renamed 2026-08-24.** The repository was `ai-assisted-claude-coding-kit` and is now
+> [`raghuveer/coding-kit`](https://github.com/raghuveer/coding-kit); the marketplace `name` in
+> `.claude-plugin/marketplace.json` moved with it, so repository and marketplace still share a
+> name and the paragraph below still holds. GitHub redirects the old path, so an existing
+> `marketplace add` and any pinned `@v0.x.y` keep resolving. **A client that already added the
+> marketplace under the old name may need `/plugin marketplace update`, or to re-add it** —
+> the marketplace id is the `name` field, not the repository path.
 
 `claude plugin tag` produces `coding-kit--v0.2.0` instead. That convention exists so a
 marketplace carrying several plugins can version them independently. This marketplace

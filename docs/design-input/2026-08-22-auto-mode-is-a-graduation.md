@@ -25,7 +25,8 @@ that collision: versions carry currency, so no third provenance state is needed.
 accelerator names — a closed set of patterns over an open set of implementations — and §14
 says what each accelerator kind carries and what a version bump means; §15 makes the kinds a
 directed chain and raises a naming decision that is the operator's, not the next writer's; §16
-records the operator's enumeration of the dimensions and what it resolves.
+records the operator's enumeration of the dimensions and what it resolves, and §17 settles the
+taxonomy at three kinds and gives the industry kind its shape.
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -561,10 +562,18 @@ over every population rather than only over `via:kit`.
   by §16.2**, on an enumeration that named no separate solution asset. The structural
   consequence — withdraw `accelerators/solution/`, give the overlay its own path key — is
   **proposed and not made**, and one sentence from the operator confirms or refutes it.
-- **Whether the pattern kind survives as a kind** (§16.5). It is asserted by a file, assumed by
-  an open task, and absent from the operator's enumeration. This is §14.5's question with a
-  sharper edge: if patterns live inside the technology accelerator, it is `cache-port.md`'s
-  claim to a third axis that needs revising, not the selection chain.
+- ~~Whether the pattern kind survives as a kind~~ (§16.5) — **closed by §17.1**: pattern is a
+  subset of technology, so there are three kinds. `cache-port.md`'s claim to a third axis is
+  the sentence that is wrong, and `T-20260801`'s criterion needs rewording.
+- Whether a language-neutral pattern obligation is restated per stack or cited as shared prose
+  from inside each technology accelerator (§17.1). A file-layout question now, not a taxonomy
+  one.
+- **Whether an industry accelerator is really industry × jurisdiction** (§17.6). NEFT, the DPDP
+  Act and PCI-DSS are not all territorial in the same way, the shipped seed already says
+  obligations vary by jurisdiction, and nothing in the naming or the selection chain carries
+  one. Cheap to name now, expensive to retrofit into published versioned files.
+- Whether an industry accelerator carries reviewer obligations, industry knowledge, or both
+  (§17.6). The shipped seed is entirely the first; the operator described the second.
 - **How a pattern accelerator reaches a project** (§14.5). The overlay selects technology and
   industry accelerators; the pattern kind is in neither sentence, and two documents imply
   different answers.
@@ -1427,3 +1436,148 @@ axis is what needs revising, not the selection chain.
 
 Nothing filed as work, nothing marked done. §16.2 proposes one structural change and does not make
 it. §14.5's pattern question is the only accelerator-taxonomy item still genuinely open.
+
+---
+
+## 17. Amendment, 2026-08-24 — pattern folds into technology, and the industry kind gets its shape
+
+Operator statement, closing §16.5 and then setting out the industry kind by worked example:
+
+> **Pattern accelerator is a subset of technology accelerator.**
+>
+> Detailed scope of an industry accelerator:
+> - **Pain point:** transaction settlement time — a few times a day for NEFT, a few years earlier.
+> - **Business solution:** changed to 24/7, at 30-minute to 1-hour intervals during working hours
+>   and 1 to 2 hours during holidays.
+> - **NFR requirements:** *security* — PCI-DSS and DPDP Act compliance; *scalability* — 10,000
+>   transactions per second as expectation.
+
+### 17.1 §16.5 closes: there are three kinds, not four
+
+**Pattern is a subset of technology.** That is consistent with §14's statement that a technology
+accelerator's version bump is *scope and enhancements of design-pattern usage* — patterns were
+always inside the technology kind's scope, and §16.5's open question was whether the filesystem
+agreed. It does not, and the record now says which side is wrong.
+
+Three consequences, all naming existing text rather than proposing new work:
+
+- **`accelerators/pattern/cache-port.md` states the opposite about itself** — *about a design, not a
+  language and not an industry, which is why it lives on neither of the other two axes*. Under this
+  decision that sentence is wrong, and it is the sentence that needs revising, not the selection
+  chain of `DESIGN-NOTES` §2 — which turns out to have been right to name only technology and
+  industry.
+- **`T-20260801-declare-and-enforce-a-library-catalogue`** carries the criterion *a pattern
+  accelerator entry can name its catalogue implementations per language*. It needs rewording to a
+  pattern **entry within a technology accelerator** — and the phrase *per language* becomes
+  redundant there, since a technology accelerator is already stack-scoped.
+- **The layout question this leaves.** A design obligation like `cache-port.md`'s is
+  language-neutral; a technology accelerator is stack-specific. Folding one into the other means
+  either the same obligations are restated in every stack's accelerator, or the stacks reference
+  shared pattern text that is **not itself an accelerator kind**. `[judgement]` The second is
+  cheaper and does not reopen the taxonomy — a pattern section inside a technology accelerator, and
+  shared prose it can cite. **Not decided here**, but it is a file-layout question now rather than
+  a taxonomy one, which is a smaller thing to get wrong.
+
+### 17.2 The industry kind has a shape, and it is a template
+
+The example gives the industry accelerator a structure that `T-20260811`'s authoring template can
+take almost verbatim:
+
+**pain point → business solution → NFR requirements (security, scalability, …)**
+
+Each row of the NEFT example shows what belongs at that granularity: the pain point is business
+reality (*settlement ran a few times a day*), the solution is business behaviour (*24/7, at 30-to-60
+minute intervals in working hours*), and the NFRs are named regimes and numbers — *PCI-DSS*, *DPDP
+Act*, *10,000 TPS* — with **no implementation anywhere in it**.
+
+### 17.3 This refines §16.3 in a way that matters, and prevents a check being written too aggressively
+
+§16.3 recorded the rule as *no references to technology libraries in an industry accelerator*. The
+NEFT example makes the boundary precise, and a self-check written from §16.3 alone would strip
+exactly the content the operator wants:
+
+**The prohibition is on naming an implementation, not on being technical.** An industry accelerator
+may state a compliance regime, a throughput target, an interval, a residency constraint — these are
+*obligations and numbers*, and they are the substance of the kind. What it may not name is the
+library, package or product that meets them. PCI-DSS is a regulation; 10,000 TPS is a target;
+neither is a technology reference in the sense §16.3 forbids.
+
+### 17.4 The NFR route completes, and §8.6's original insight returns in the form §10.4 left it
+
+This is the part worth reading twice. §8.6 argued that for the kit to say a limit is *missing* it
+needs a basis for expecting one, and that *what a given kind of project ought to specify is
+precisely what a technology or industry accelerator carries*. §10.4 downgraded that: an accelerator
+**may offer candidates into overlay authoring**, but creates no obligation the kit enforces.
+
+The NEFT example is that downgraded form with real content in it. An industry accelerator saying
+*BFSI settlement in this market expects PCI-DSS, DPDP and about 10,000 TPS* is **the candidate list
+an architect draws on when authoring an overlay** — and it is not a commitment, because the
+architect may write something else and the project wins.
+
+So the distinction is clean, and both halves were already in the record:
+
+| Artefact | Carries | Standing |
+|---|---|---|
+| **Industry accelerator** | what this industry **typically expects** | candidates — a base for a stranger (§14.4) |
+| **Solution overlay** | what **this project commits to** | given, authoritative from the first commit |
+
+`accelerators/industry/bfsi.md` already encodes the precedence in its closing note: *real obligations
+vary by jurisdiction and by client, and belong in the project overlay when they do. Anything here
+that a project contradicts, the project wins.*
+
+**The full route, end to end, assembled from these amendments:**
+
+1. **Industry accelerator** — the pain point, the business solution, and the NFRs the industry
+   expects (§17.2).
+2. **Solution overlay** — what this project commits to; given, authoritative, prose (§16.1).
+3. **ADRs** — every subsequent refinement (§10.5).
+4. **Technology accelerator** — which library shape in this stack satisfies that requirement, at
+   that scale, for the pattern the feature implements (§15.3, §17.1).
+5. **Task** — receives it as an acceptance criterion (§10.4).
+6. **Review and auto-mode** — a breach is a finding; a library chosen outside the known set is an
+   interrupt (§13.5).
+
+**The kit owns no non-functional mechanism at any step, and a non-functional requirement travels
+the whole distance.** That is §10's withdrawal vindicated rather than merely tolerated.
+
+### 17.5 Industry content supersedes; technology content expires
+
+The pain point is stated **with its history** — *a few times a day, a few years earlier* — and then
+what it became. That is not incidental phrasing, and it separates the industry kind from the
+technology kind under §12.3's phase-out:
+
+- **A stale technology entry is wrong.** The library moved; keeping the entry misleads. Evict it.
+- **A superseded industry pain point is still true of the past, and explains the present.** Knowing
+  that settlement used to run in batches a few times a day is exactly what explains why an existing
+  system is shaped the way it is — which is the input a brownfield or modernization entry needs
+  most.
+
+So for the industry kind, `stale` should mean **superseded and retained**, not evicted. `[judgement]`
+This sharpens §14.3's ageing asymmetry: it is not only that industry content ages more slowly, it is
+that industry content **ages differently** — its old state keeps explanatory value that a stale
+library binding never has.
+
+### 17.6 Two observations against the files — checked, not filed
+
+**1. The shipped BFSI seed does not have the shape described here.** `accelerators/industry/bfsi.md`
+is entirely tier floors and reviewer obligations — auditability, determinism of monetary arithmetic,
+fail-closed authorisation, residency and retention, segregation of duties. It carries **no pain
+point, no business solution, and no NFR requirements**: no PCI-DSS, no DPDP, no throughput figure.
+It is a **reviewer checklist**, which is a different artefact from a body of industry knowledge
+written so a stranger can build for the industry (§14.4). Both may be legitimate content for the
+kind, but the seed embodies only one of them, and it is the one the operator did not describe.
+This is more than the frontmatter gap of §14.5 — it is a difference about what the kind *is for*.
+
+**2. The example is jurisdiction-bound, and the taxonomy has no axis for that.** NEFT is an Indian
+retail payment system, the DPDP Act is Indian law, and PCI-DSS is card-scheme rather than
+territorial. The seed's own note already says *real obligations vary by jurisdiction*. So an
+industry accelerator is in practice **industry × jurisdiction**, and nothing in the naming, the
+selection chain or the overlay's *names the chosen stack and industry* carries a jurisdiction.
+Recorded now because it is cheap to name and expensive to retrofit into published, versioned,
+importable files. **Not filed.**
+
+### 17.7 Status
+
+Nothing filed as work, nothing marked done. §16.5 closes at §17.1 and the accelerator taxonomy is
+now settled at three kinds. §17.6 raises two observations, one of which — jurisdiction — is a new
+open question rather than a gap in existing work.

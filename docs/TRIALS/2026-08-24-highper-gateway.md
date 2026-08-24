@@ -122,11 +122,39 @@ polyglot case, where one value per axis is not enough.
 
     kit-task.sh --title 'The profile template does not say the accelerator keys are repeatable' --tier T3 --paths 'templates/project-profile.md'
 
+**K-7 (new, T2, found in the walkthrough) — the provenance vocabulary cannot express AI-assisted
+work done without the kit.** `kit_via_vocab` is exactly `kit agent manual unknown`
+(`tooling/kit-lib.sh:126`). The maintainer's account of how this subject was built is *"before I
+started creating sub-agents, mostly up to Sonnet 4.5 on Claude subscription"* — a human driving an
+assistant interactively, no kit, no subagents. **None of the four values says that:** `kit` is
+false, `agent` implies an agent ran it, `manual` erases the assistant, and `unknown` is honest but
+discards information the maintainer actually has. The proposal wrote `--via manual` on all ten
+completed candidates; under that account it is **false on all ten**, and `unknown` is the only
+defensible value today.
+
+This is not an edge case on this subject. Escape rate is reported over `via:kit` and over `all`,
+and the population between them — **AI-assisted but not kit-run** — has no name. The maintainer
+reports a second project in the same state. A kit whose thesis is human-plus-AI collaboration
+cannot currently label the ordinary case of it.
+
+    kit-task.sh --title 'The provenance vocabulary cannot express AI-assisted work done without the kit' --tier T2 --paths 'tooling/kit-lib.sh'
+
+**K-8 (field evidence for an existing task) —
+`T-20260808-task-state-cannot-express-no-longer-rele`.** No longer a hypothesis. The subject's
+roadmap uses five states (`[ ] [~] [x] [d] [k]`); the kit has no `deferred`, so four of the five
+proposed cancellations were `[d]` mapped to `cancelled`. **The maintainer then contradicted one of
+them in the same conversation** — see the walkthrough below. A vocabulary gap that silently
+converts *"do this later"* into *"never do this"* is now demonstrated end to end, on a real
+backlog, with the owner present.
+
 ### Subject defects — a proposal for the subject's owner, filed nowhere
 
 `.project/entry-candidates.md` on the copy: **18 open questions, 103 candidates, 11 Could-not-determine**,
 `kit-entry.sh --check` → *"proposal conforms — 18 question(s), 103 candidate(s), none filed by this
-check"*. It awaits the maintainer's confirmation and nothing has been filed from it.
+check"*. Nothing has been filed from it. The 103 split **88 new work · 10 already-finished · 5
+should-never-be-done**, tiered T0 ×6, T1 ×45, T2 ×37, T3 ×15.
+
+**After the walkthrough below: 1 of the 10 confirmed, 1 of the 5 refuted, the rest open.**
 
 The strongest items are the ones that read the v1→v2 roadmap transition against the tree: roughly
 60 v1 per-UC backlog items and the whole competitor net-add table appear in neither v2 nor any
@@ -172,10 +200,45 @@ measured path and this report says so.
   performed, under the time-box.
 - **Build and test verification of anything**, per the baseline.
 
+## Walkthrough with the maintainer — 2026-08-24, same day
+
+The inventory was walked in order of cost-of-being-wrong rather than document order: the ten
+`completed` claims first (they assert work is finished), then the five `cancelled` ones (they
+assert work should never happen), then the six T0 tiers, then the four questions that move many
+candidates at once.
+
+**Ten claims that work is already finished — 1 confirmed, 9 open.**
+
+- **Confirmed:** the SBOM and CVE scan workflow.
+- **Left deliberately unconfirmed:** `3.3.A`, the CI gate on the `rsa` crate. The agent claimed it
+  done **against the roadmap, which still lists it pending**, on the strength of reading a workflow
+  file. That is exactly the claim a maintainer should settle, and it was not settled here.
+- The remaining eight stay open. Five of them (`B4.1`, `B4.2`, `B6`, `B11`, Workstream 0.J) come
+  from the roadmap's own status snapshot and are low-risk, but low-risk is not confirmed.
+
+**Five claims that work should never be done — "mostly true", with one refuted.**
+
+`3.10.C UC16 vertical implementation` is **wrong**. The maintainer confirmed the set broadly and
+then, in the same message, described the plan for UC16: a comparative study of LiteLLM alternatives
+first, **then implementation using the kit**. That is *deferred pending research*, the exact
+opposite of `cancelled`. Filing that line would have removed a planned programme from the backlog
+permanently.
+
+**This is the trial's most valuable single result.** It is not that the model mis-classified —
+given a vocabulary of `created | completed | cancelled`, `cancelled` was the least-wrong available
+value for a `[d]`. The defect is the vocabulary, the loss was silent, and it took the owner reading
+one line to catch it. Nothing in the kit would have.
+
+**Provenance.** The maintainer's account of how the subject was built invalidated `--via manual` on
+all ten completed candidates and produced K-7 above.
+
 ## Disputed
 
-Nothing. The subject's maintainer has not yet reviewed the inventory; when they do, disagreements
-belong here.
+- **`3.10.C UC16` — disputed and resolved against the inventory.** Proposed `cancelled`; the
+  maintainer's stated plan makes it deferred. Recorded rather than corrected in place, because the
+  kit has no state to correct it *to*.
+- **`3.3.A` rsa CI gate — unresolved.** The agent says complete, the roadmap says pending, the
+  maintainer did not adjudicate. It stays unconfirmed, which is the honest state.
 
 ---
 

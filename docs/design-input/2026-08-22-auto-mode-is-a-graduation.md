@@ -23,7 +23,8 @@ are both readable. Read §10 before acting on §7, §8.4 or §8.6. §11 records 
 for, and raises the one collision that follows from it — recency is not recurrence. §12 closes most of
 that collision: versions carry currency, so no third provenance state is needed. §13 settles what an
 accelerator names — a closed set of patterns over an open set of implementations — and §14
-says what each of the three accelerator kinds carries, and what a version bump means.
+says what each accelerator kind carries and what a version bump means; §15 makes the kinds a
+directed chain and raises a naming decision that is the operator's, not the next writer's.
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -551,8 +552,13 @@ over every population rather than only over `via:kit`.
 - ~~Whether an accelerator points at a library's release channel or copies its versions~~
   (§13.4) — **closed by §14.1**: a bump is an editorial act, recording that the
   accelerator's scope changed. The moving numbers live where they already move.
-- Whether the stable-or-n-1 default (§14.2) governs library selection only, or also the
-  pinning of an accelerator version. Recorded as the former.
+- ~~Whether the stable-or-n-1 default governs library selection only, or also the pinning of
+  an accelerator version~~ (§14.2) — **closed by §15.1**: it governs the model's per-feature
+  library-version choice inside a project, so the check is a review obligation on a task.
+- **Whether "solution accelerator" is the overlay renamed, a distinct project-scoped asset the
+  overlay populates, or a widening of what "accelerator" means** (§15.5). Four kinds are in
+  play and no single place lists all four; the earned/given distinction currently rides on
+  the noun. Naming governance — the operator's call.
 - **How a pattern accelerator reaches a project** (§14.5). The overlay selects technology and
   industry accelerators; the pattern kind is in neither sentence, and two documents imply
   different answers.
@@ -1153,3 +1159,171 @@ naming it, or by naming a technology accelerator that references it?
 
 Nothing filed as work, nothing marked done. §13.4 closes at §14.1. §14.5 records two observations
 against the files; neither is filed, and the first is already covered by an open task.
+
+---
+
+## 15. Amendment, 2026-08-24 — the kinds are directed, and "solution accelerator" collides with a live decision
+
+Operator statement, answering §14.2 and then setting out how the kinds relate:
+
+> The version rule governs **features and the specific library version chosen by GenAI**, to cater
+> to specific design patterns for implementation of a specific feature in the project the coding
+> kit is used in.
+>
+> The **industry accelerator** mentions pain points and industry solutions **business-wise**.
+>
+> The **technology accelerator** chooses libraries based on **design patterns and the scale of the
+> delivered application** — for example an event-driven, stream-oriented library can read and write
+> files of any size, where a thread-oriented library tends to load a whole file into memory first.
+> **How we implement the industry accelerators as technology solutions is guided by technology
+> accelerators.**
+>
+> **Solution accelerators bridge the gap**, allowing the solution architect to **nurture and
+> personalize** the solution to a specific client's needs, considering their inputs, expectations
+> and pain points — in a project scenario, or when developing a **product for an industry**.
+>
+> To summarize: the coding kit **takes inputs in different dimensions, defines tasks, and is
+> helpful for delivery**.
+
+### 15.1 §14.2 closes, and lands somewhere different from where it was pointing
+
+The stable-or-n-1 default governs **the model's per-feature library-version choice inside a
+project** — neither accelerator pinning (§14.2's alternative reading) nor catalogue authorship.
+
+That relocates the check. §14.2 implied something evaluated where accelerators are written; it is
+actually evaluated **at implementation and review time, against a task**, because that is when a
+feature gets a library and a version. So it is a **review obligation** rather than a catalogue
+property, and it composes with §13.2's rule directly: prefer the known, and a choice outside the
+default is recorded with its purpose rather than made silently. Both are the same act seen from
+two sides — one names *what* was chosen, the other *which version of it*.
+
+### 15.2 Industry is business-wise, and that makes drift detectable
+
+§14.3 called the industry kind "the problem space". The operator narrows it: **pain points and
+industry solutions stated in business terms.**
+
+That is more useful than it looks, because it makes a specific failure detectable. **An industry
+accelerator that starts naming libraries has drifted into the technology kind** — and drift like
+that is invisible without a stated boundary, since a fluent draft about a BFSI reconciliation pain
+point would slide into naming a queue technology without anyone noticing. This is a concrete thing
+for the authoring self-check in `T-20260811-an-accelerator-authoring-template-and-se` to catch,
+and it is cheaper than it sounds: the check is about the *kind* of noun a section contains.
+
+### 15.3 Technology selects on pattern **and scale** — which closes the loop §10 opened
+
+The operator's example is doing real work. A stream-oriented library and a thread-oriented one may
+implement the same pattern and satisfy the same obligations, and still differ on whether a file
+larger than memory can be processed at all. So **scale is a selection criterion, not a footnote**,
+and an entry that names a library without saying at what scale the claim holds is incomplete in the
+same way an entry without its evidence is.
+
+**And this answers a question §10 left open without anyone noticing it was open.** §10 established
+that non-functional criteria are project content — the architects state them in the overlay, the
+ADRs refine them, and the kit needs no NFR mechanism of its own. What §10 did **not** say is where
+the *knowledge of how to satisfy* such a requirement lives. It now has an answer:
+
+- the **overlay** states the requirement — *this system must process files of arbitrary size*;
+- the **technology accelerator** carries which library shape satisfies it, at what scale;
+- the **task** receives it as an acceptance criterion, per §10.4.
+
+**The kit still owns no non-functional mechanism, and yet a non-functional requirement now has a
+complete route from statement to implementation.** `[judgement]` That is the strongest single
+connection made across these amendments, and it is worth stating plainly because it is what makes
+§10's withdrawal safe rather than merely correct: nothing was lost when the prerequisite was
+withdrawn, because the capability was never the kit's to hold.
+
+### 15.4 The kinds are directed, not peers
+
+> How we implement the industry accelerators as technology solutions is **guided by** technology
+> accelerators.
+
+So the three shared kinds form a chain rather than three parallel drawers:
+
+**Industry** — the business problem and how the industry solves it →
+**Pattern** — the obligations any implementation of that solution must satisfy →
+**Technology** — how to build it in this stack, with these libraries, at this scale.
+
+Each layer is a translation of the one above, and each is reusable across a wider set than the one
+below it: a pain point serves every stack, a pattern serves every language that has the problem, a
+technology entry serves one stack. That ordering is also §14.3's ageing asymmetry seen from another
+angle — the wider the reuse, the slower the decay.
+
+### 15.5 "Solution accelerator" — the term collides with an unresolved decision, and with the definition of accelerator
+
+**This is not settled here, and it should not be settled by whoever writes the next file.** Checked
+against the record rather than inferred:
+
+- **`DESIGN-NOTES` §2 already declares a solution kind**, and calls it *a third accelerator kind,
+  not a new subsystem*: `accelerators/technology/` and `accelerators/industry/` shared across
+  projects, `accelerators/solution/` **PROJECT-SCOPED — never shared**. It also says *the overlay is
+  what populates `constrained_by`*.
+- **The disk holds a different third kind.** `accelerators/` contains `industry/`, `pattern/` and
+  `technology/` — there is no `solution/` — and `accelerators/pattern/cache-port.md` argues it is
+  about a design *"not a language and not an industry, which is why it lives on neither of the other
+  two axes"*, i.e. that **pattern** is the third axis.
+- **The 2026-08-16 document already has this as an open decision**, its item 2: *where the overlay
+  lives — **not** `accelerators/solution/`, because `DESIGN-NOTES` §2 states in bold that an overlay
+  is not an accelerator, and siting it there contradicts that in the filesystem. The word "overlay"
+  has already collided twice in this repository.*
+
+So **four kinds are in play — industry, pattern, technology, solution — and no single place lists
+all four.**
+
+Underneath the naming is a definitional problem that matters more. The record's whole
+accelerator/overlay distinction is the **direction of evidence**: accelerators are *earned* across
+projects and *shared*; an overlay is *given* and authoritative from the first commit. A
+**project-scoped, never-shared, architect-given** asset satisfies the overlay's definition and
+contradicts the accelerator's. Calling it an accelerator therefore widens what the word means, and
+that word is currently carrying the earned/given distinction on its own.
+
+Three readings, none chosen:
+
+1. **"Solution accelerator" is the solution overlay under another name.** Fits the operator's
+   description closely — *nurture and personalize to the client's needs, considering inputs,
+   expectations and pain points* is what the overlay is defined to do, and "personalize" is already
+   the record's own word for it. Cost: the term collides with a distinction the record makes in
+   bold, for the third time.
+2. **It is a distinct project-scoped asset that the overlay populates.** This is what `DESIGN-NOTES`
+   §2 literally already describes — the solution slot exists, and *the overlay is what populates
+   `constrained_by`*. Under this reading the overlay stays the given input and the solution
+   accelerator is its **materialised, agent-readable form**, which also resolves 2026-08-16 open
+   decision 1 (prose truth, derived projection) rather than fighting it. `[judgement]` This is the
+   reading that fits both the operator's words and the existing text with the least damage.
+3. **The taxonomy widens** so "accelerator" stops implying *earned*, and the earned/given
+   distinction is carried by an explicit field instead of by the noun. Honest, and the most
+   disruptive to existing prose.
+
+**What would settle it:** the operator choosing, since this is naming governance rather than a
+technical finding, and the record already forbids renaming unilaterally.
+
+### 15.6 A product for an industry is a third scope, not a variant of the first two
+
+The record says *"client" means both directions* — consulting engagements, and teams doing this for
+their own internal systems. The operator adds a third: **a product developed for an industry**,
+where there is no single client to ask and the industry accelerator is the primary input rather
+than a supporting one.
+
+That is the same motion as §14.4's stranger-audience, arriving from the other end. An industry
+accelerator is written so someone else can build for that industry; a product for an industry is
+the case where **you are that someone else**. `[judgement]` It follows that the industry kind is the
+only one whose quality can be judged without a client in the room, which makes it the natural
+first candidate for publication — and, per §14.4, the one needing the hardest de-identification.
+
+### 15.7 The kit's job, in the operator's summary
+
+> Takes **inputs in different dimensions**, **defines tasks**, and is **helpful for delivery**.
+
+The dimensions are now enumerable — the overlay (or solution asset, per §15.5), industry, pattern,
+technology — and delivery is what the existing machinery already serves: tiers, review, findings,
+dispositions, spend, the record.
+
+**The middle arrow is the thin one, and this is worth stating in the operator's own frame.** The
+scope boundary has recorded since 2026-08-15 that everything built is downstream of *a task already
+exists* — the kit verifies **change** while the goal is supporting **development**, and the entry
+path is the gap between them. The summary above names that gap as the kit's central verb. Nothing
+in these amendments closes it; §12.4 and §15.1 add obligations that assume it works.
+
+### 15.8 Status
+
+Nothing filed as work, nothing marked done. §14.2 closes at §15.1; §15.3 closes an implicit gap in
+§10. §15.5 is an open decision for the operator and must not be resolved by whoever writes next.

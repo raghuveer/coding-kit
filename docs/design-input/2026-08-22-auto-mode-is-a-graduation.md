@@ -22,7 +22,8 @@ inference; §8.4 carries a banner and is otherwise left as written, so the claim
 are both readable. Read §10 before acting on §7, §8.4 or §8.6. §11 records what accelerators are
 for, and raises the one collision that follows from it — recency is not recurrence. §12 closes most of
 that collision: versions carry currency, so no third provenance state is needed. §13 settles what an
-accelerator names — a closed set of patterns over an open set of implementations.
+accelerator names — a closed set of patterns over an open set of implementations — and §14
+says what each of the three accelerator kinds carries, and what a version bump means.
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -547,9 +548,14 @@ over every population rather than only over `via:kit`.
   library-and-version binding is the perishable pointer.
 - Whether a library chosen outside the known set is surfaced as an interrupt in auto-mode, and
   at what threshold (§13.5). The machinery exists; the population is new.
-- Whether an accelerator points at a library's release channel or copies its versions
-  (§13.4) — which decides whether an accelerator version bump means an editorial act or a
-  dependency patch.
+- ~~Whether an accelerator points at a library's release channel or copies its versions~~
+  (§13.4) — **closed by §14.1**: a bump is an editorial act, recording that the
+  accelerator's scope changed. The moving numbers live where they already move.
+- Whether the stable-or-n-1 default (§14.2) governs library selection only, or also the
+  pinning of an accelerator version. Recorded as the former.
+- **How a pattern accelerator reaches a project** (§14.5). The overlay selects technology and
+  industry accelerators; the pattern kind is in neither sentence, and two documents imply
+  different answers.
 - Whether the accelerator update produced at project completion (§11.2, §12.4) lives in the retro
   artefact or somewhere of its own.
 - Whether divergence detection is one mechanism across all definition classes or one per class.
@@ -1032,3 +1038,118 @@ accident; **not filed**.
 Nothing filed as work, nothing marked done. §12.5's granularity question closes at §13.1. The one
 open item from §12.3 — no retirement rule for an `[earned]` entry the industry moved past — is
 unaffected and still open.
+
+---
+
+## 14. Amendment, 2026-08-24 — what a bump means, and what each accelerator kind is for
+
+Operator statement, answering §13.4 and then separating the accelerator kinds:
+
+> A technology accelerator **version bump is scope and enhancements of design-pattern usage** and
+> kind of. **A particular version choice is made to address a specific purpose, even though stable
+> or n-1 is preferred.** Coming to the **industry-specific accelerator** — knowledge about
+> **solutions to different pain points** is to be documented, so that knowledge can **serve as a
+> base if someone else tries to create a solution for that industry**. **Code differs** based on
+> chosen architecture, tech stack, design patterns, chosen libraries.
+
+### 14.1 §13.4 closes: a bump is an editorial act
+
+§13.4 offered two readings of "referenced externally" and said the choice decides whether an
+accelerator version bump means an editorial act or a dependency patch. **Answered: editorial.** A
+bump records that the accelerator's *scope* changed — patterns added, pattern usage improved,
+coverage extended — not that something it points at shipped a release.
+
+That settles the reading in §13.4's second bullet: the accelerator carries the **binding**, and the
+moving version numbers live where they already move. An accelerator whose version advanced on a
+dependency's patch release would tell a project nothing about whether re-reading it is worthwhile,
+which is the only question a version is asked.
+
+### 14.2 The version-choice default, which is the first mechanically checkable rule in these amendments
+
+> **Stable, or n-1, is preferred. A particular version is chosen to address a specific purpose.**
+
+This is a **default with a reasoned override**, and it is the same shape the kit already uses
+everywhere — a gate that can be cleared while saying why (§8.6's resolution design, the fix and
+exclusion marks, the not-applicable disposition). Two properties make it unusually tractable:
+
+- **It is checkable without judgement.** Whether a pinned version is latest, stable or n-1 is a
+  fact about a registry, not an opinion.
+- **The override carries its reason or it is not an override.** A version outside the default with
+  no stated purpose is the *absent definition* class of §8.6, not a breach — nothing failed,
+  nothing was said.
+
+`[judgement]` **Which binding this governs is left slightly open by the statement.** It is recorded
+here as applying to **library** version selection — the perishable pointer of §13.1 — because that
+is what §13 was about and where stable-or-n-1 is the familiar heuristic. It reads equally sensibly
+as a policy for **pinning an accelerator version** (`import <id>@<version>`), and if that second
+reading was intended then this section should say so rather than be silently widened later.
+
+### 14.3 What each accelerator kind is for — the clearest statement so far, and it is three-way
+
+The record has all three kinds on disk (`accelerators/industry/bfsi.md`,
+`accelerators/pattern/cache-port.md`, `accelerators/technology/go.md`) and `cache-port.md` states
+its own axis — *about a design, not a language and not an industry, which is why it lives on
+neither of the other two axes*. What the operator's statement supplies is the **division of
+labour**, which the record has never put in one place:
+
+| Kind | Carries | Why it cannot carry the next column |
+|---|---|---|
+| **Industry** | the **problem space** — pain points and the knowledge of what solved them | *code differs* by architecture, stack, patterns and libraries, so a solution here would be wrong for most readers of it |
+| **Pattern** | the **design obligations** an implementation must satisfy | language- and industry-neutral by construction; naming a library would bind it to one stack |
+| **Technology** | the **binding into a stack** — how the patterns are used here, which libraries, which versions | stack-specific, so it cannot be reused across the stacks the pattern serves |
+
+**This predicts the phase-out pressure of §12.3, and the prediction is asymmetric.** Technology
+content ages fastest — it is the layer holding the library bindings §13.1 called perishable.
+Pattern obligations age slowly; a cache port's obligations outlive several cache libraries.
+Industry pain points age slowest of all, and when they do move it is usually regulation or market
+structure rather than technology. So **eviction and `stale` are overwhelmingly a technology-kind
+concern**, and applying the same retirement pressure uniformly across all three would delete the
+most durable knowledge the kit accumulates. `[judgement]`
+
+### 14.4 The industry accelerator is written for a stranger, which makes one existing rule load-bearing
+
+*"So that knowledge can serve as a base if someone else tries to create a solution for that
+industry"* names an audience that is **not this project and not this client**. That is a
+publication, and it lands directly on a rule `DESIGN-NOTES` already carries:
+
+> **The library is public.** Versioned accelerator files anyone can import. These are conclusions,
+> and conclusions carry no client data. … Publish what was learned; do not publish who taught it.
+
+The industry accelerator is the kind where that rule is hardest to keep, because **its value comes
+from real client pain** — a pain point is client-shaped in a way a Go idiom is not, and the more
+specific it is the more useful and the more identifying it becomes simultaneously. `[judgement]`
+The existing rule is the right one and needs no amendment; what it needs is to be **applied hardest
+exactly where the content is most valuable**, which is the opposite of how such rules usually get
+applied.
+
+The overlay-exclusion rule points the same way and already exists: an overlay is client
+architecture and must be excluded from `kit-accel.sh propose` **by construction**, not by a filter
+someone remembers.
+
+### 14.5 Two things in the record that this statement does not fit — observed, not filed
+
+Both were checked against the files rather than inferred.
+
+**1. `bfsi.md` has no version to bump.** `accelerators/pattern/cache-port.md` carries the
+frontmatter `DESIGN-NOTES` §3 specifies — `id`, `version`, `kind`, `source` — and
+`accelerators/industry/bfsi.md` carries none of it; its frontmatter is three `tier.rule` lines.
+If a version bump is to mean what §14.1 says, **every accelerator needs the frontmatter, and one of
+the three shipped seeds does not have it.** This is the gap
+`T-20260811-an-accelerator-authoring-template-and-se` (T1, open) exists to close — *two
+accelerators written months apart by different people are structurally interchangeable* — and it is
+evidence that the task is real rather than tidy-minded.
+
+**2. The pattern kind has no declared route into a project.** `DESIGN-NOTES` says the overlay names
+the chosen stack and industry, and *that choice is what selects which technology and industry
+accelerators apply*. Pattern accelerators are not in that sentence. The operator's statement
+suggests the answer — if a technology accelerator's scope is *design-pattern usage*, patterns
+plausibly arrive **through** the technology binding rather than being selected directly — but
+nothing in the record says so, and `T-20260801-declare-and-enforce-a-library-catalogue` assumes a
+*pattern* accelerator entry names implementations per language, which reads like direct selection.
+**Recorded as a question, not resolved here:** does a project acquire a pattern accelerator by
+naming it, or by naming a technology accelerator that references it?
+
+### 14.6 Status
+
+Nothing filed as work, nothing marked done. §13.4 closes at §14.1. §14.5 records two observations
+against the files; neither is filed, and the first is already covered by an open task.

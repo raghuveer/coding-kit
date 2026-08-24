@@ -33,8 +33,28 @@ So the test for MAJOR is: *does someone pulling this have to take an action?*
 | Bump | Covers |
 |---|---|
 | **MAJOR** | commit trailer vocabulary · `.project/` layout · `events.ndjson` record schema · `project-profile.md` frontmatter keys — anything that requires migrating committed state |
-| **MINOR** | new skills, agents, scripts, flags, tier rules, accelerators · **any `index.db` schema change** · additive `events.ndjson` fields |
+| **MINOR** | new skills, agents, scripts, flags, tier rules, accelerators · **any `index.db` schema change** · additive `events.ndjson` fields · **repository or marketplace identity** (see below) |
 | **PATCH** | bug fixes, documentation, warnings, performance |
+
+### Identity changes are MINOR, and they are the only break that is not committed state
+
+Added 2026-08-24, after the rename to `coding-kit` was classified by the test above and the
+table turned out not to cover it.
+
+Renaming the repository or the marketplace **does** require an action — the marketplace id is
+the `name` field in `marketplace.json`, so a client that added it under the old id may need
+`/plugin marketplace update` or a re-add. By the MAJOR test alone that reads as MAJOR.
+
+It is not. **Nothing in a consumer's repository becomes wrong.** No committed schema moved, no
+record needs migrating, and the only committed artefact that carries the name is the copied
+`github-trailer-gate.yml` workflow — which keeps working, because the host redirects the old
+path. The action is re-pointing a subscription, not repairing state, and that is a different
+kind of cost from the one MAJOR exists to price.
+
+So: **MINOR, with the break called out in the release notes** — which is exactly what "Staying
+on 0.x" below permits. After 1.0 this deserves re-examination, because the promise 1.0 makes is
+about committed state and an identity change would then be the loudest thing in a release that
+the promise does *not* cover.
 
 ### Why `index.db` schema changes are only MINOR
 

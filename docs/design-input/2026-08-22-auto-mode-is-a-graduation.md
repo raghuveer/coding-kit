@@ -32,6 +32,11 @@ contemporary analysis; **§20 — the dimensions are illustrative, and the kit
 standardizes a practice it did not invent; §21 corrects how §§14–19 reported absences, and
 records the kit as hidden support.**
 
+**The synthesis of §§1–21 lives in [`../CHARTER.md`](../CHARTER.md)** (2026-08-24) — the goal,
+the four artefacts, what is measured today, and the basis for evaluation. Read that first if
+you want the model rather than how it was arrived at; read this for the arguments and the
+corrections, which the charter deliberately does not repeat.
+
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
 

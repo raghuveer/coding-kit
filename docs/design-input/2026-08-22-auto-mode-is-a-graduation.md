@@ -28,7 +28,8 @@ directed chain and raises a naming decision that is the operator's, not the next
 records the operator's enumeration of the dimensions and what it resolves, and §17 settles the
 taxonomy at three kinds and gives the industry kind its shape. **§18 states the thesis the
 others are details of, and corrects §17.6; §19 makes posture a vector and dates the model's
-contemporary analysis.**
+contemporary analysis; **§20 closes the session — the dimensions are illustrative, and the kit
+standardizes a practice it did not invent.**
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -599,7 +600,12 @@ over every population rather than only over `via:kit`.
   sibling sharing its guard design — and what the corroborating marker is for
   `accepted-with-changes`, which is the value that most easily launders a silent amendment.
 - Whether "planned" and brownfield entry can share one roadmap-to-task-rows mechanism, given both
-  need it and neither exists.
+  need it and neither exists. **§20.5 makes this the sequencing consequence of the 2026-08-24
+  session** — task segregation is the step between authoring and auto-mode, and four of these
+  amendments assume it works.
+- **How the kit's delta is measured when the practice exists without it** (§20.2) — whether
+  reuse actually occurred across projects, and whether terms stayed consistent across people.
+  Neither is visible in a single trial.
 - What a stop condition looks like that is not simply "an error occurred".
 - Whether goals-as-delegation-unit needs anything beyond the `goal` rows that already exist.
 - How a team shares an overlay — the style half of this is parked by §8.5, but the team story
@@ -1878,3 +1884,116 @@ is a handful of sibling keys rather than a new subsystem. **Not filed.**
 Nothing filed as work, nothing marked done. §19.2 narrows §18.5 rather than repeating it. §19.3
 raises a question against a ranked constraint and explicitly does not answer it. §19.5 reconciles
 §13.3 with the operator's assignment rather than overturning either.
+
+---
+
+## 20. Amendment, 2026-08-24 — the dimensions are illustrative, and the kit standardizes a practice rather than inventing it
+
+Closing statement of the session, and it reframes everything from §17 onward:
+
+> Whatever I have provided are **different dimensions — and there are many more**. I do write all
+> that in a **personalized way** when designing a solution for a specific project. Being the coding
+> kit developer, I presume things will be done in a similar way by the architect of a specific
+> project **irrespective of whether they use this coding kit or not** — but terms and documentation
+> be as so when using the coding kit, and they can use **accelerators of different kinds, to make
+> work simpler, with accelerators as re-usable inputs**.
+>
+> Likewise, how a technology accelerator supports different usage of different design patterns for
+> feature implementations **in different scopes of NFR**, and how that leads to technology choices —
+> all based on **confirmed project-level inputs in the solution overlay**. Post that, any changes in
+> **functional and non-functional scope** are documented in respective **ADRs**, and the coding kit
+> takes forward **task segregation** accordingly and guides the implementation **in auto-mode, on a
+> per-goal basis**. This makes life easier for the dev team and the architect, **with predictable
+> outcomes**.
+
+### 20.1 The dimensions are illustrative — and hardening them into a schema is the failure to avoid
+
+This is the most operationally important sentence in the session, because it constrains what may be
+built from §17 to §19. The NEFT structure (pain point → business solution → NFR requirements), the
+security and scalability categories, the three posture axes of §19.6 — **all of it is example, not
+enumeration.** There are more dimensions, and an architect writes them personalized per project.
+
+**So a template or self-check that enumerates exactly those categories would reject legitimate
+content**, and it would do so most often on the projects with the most thought behind them. That is
+the failure shape the kit has already named twice and should not now build a third instance of:
+
+- §13.6 — *absent from the catalogue must never read as disallowed*;
+- the kit's own absent-is-not-zero rule — an absent denominator is reported as absent, never as
+  a zero.
+
+**Applied here: an unlisted dimension is not an invalid one.** `[judgement]` The authoring template
+of `T-20260811-an-accelerator-authoring-template-and-se` should therefore check **shape, not
+vocabulary** — that a pain point has a solution, that a claim has its evidence, that an industry
+entry names no implementation (§17.3) — and must not check that the NFR headings are drawn from a
+fixed list. Its stated criterion is that two accelerators written months apart are *structurally
+interchangeable*, which is satisfied by a common skeleton and is **not** the same as a closed
+vocabulary.
+
+### 20.2 The kit standardizes a practice it did not invent — which is testable
+
+> I presume things will be done in a similar way by the architect of a specific project irrespective
+> of whether they use this coding kit or not.
+
+Recorded because it sets the honest size of the claim. A competent architect already writes the
+overlay's content in some form; the kit does not make the thinking possible. What it contributes is
+narrower and real:
+
+1. **Shared terms and a documentation shape**, so the same thinking lands in the same place across
+   projects and people.
+2. **Accelerators as re-usable inputs**, so the second project does not re-derive the first one's
+   conclusions.
+
+**This changes what the trial should look for**, which is the practical consequence `[judgement]`.
+If the practice exists without the kit, then the kit's value is a **delta**, not an enablement — and
+a delta is measurable in exactly two places: whether reuse actually occurred across projects, and
+whether terms stayed consistent when different people wrote them. Neither is visible in one project.
+It also gives the escape-rate denominator problem a companion measurement that a single brownfield
+trial structurally cannot produce, which is worth knowing **before** the trial rather than as a
+finding in its report.
+
+### 20.3 The flow, as the operator states it, and the three things it confirms
+
+Industry accelerators supply what the problems and solutions are → technology accelerators support
+different design-pattern usage **for different NFR scopes**, leading to technology choices → **all
+based on confirmed project-level inputs in the solution overlay** → subsequent changes in
+**functional and non-functional** scope are documented in **ADRs** → the kit takes forward **task
+segregation** → and guides implementation **in auto-mode, per goal**.
+
+Three of those confirm existing record rather than adding to it, and are recorded as confirmations
+so a later session does not reopen them:
+
+- **Auto-mode is enabled per goal, not per project.** §2 and §6 already treat the goal as the unit of
+  delegation; the operator now states the run granularity directly.
+- **ADRs carry functional *and* non-functional scope changes.** §10.5 said the overlay is amended by
+  ADR and by nothing else; this says explicitly that non-functional change travels the same route,
+  which closes any reading of §10 in which NFRs get a private channel.
+- **Task segregation is the kit's job.** The decomposition from confirmed inputs into tasks is named
+  as what the kit does after the overlay and the ADRs are settled.
+
+### 20.4 "Predictable outcomes" is the honest phrase, and it is already defined
+
+The operator says **predictable**, not deterministic — which is precisely what §5 argued the goal
+has to mean: *determinism of conformance, not of text*. Two runs may write different code and both
+be correct outcomes. Predictability is a property of what conforms, and that is what makes the claim
+survivable rather than a slogan the first diff refutes.
+
+### 20.5 The one part of the flow that is not built
+
+Said once, plainly, because it is now the operator's own framing that names it. In the flow above,
+everything up to *confirmed project-level inputs* is authoring, and everything from *auto-mode*
+onward is machinery the kit largely has — tiers, review, findings, dispositions, spend, the record.
+**Task segregation is the step between them, and it is the least built thing in the kit.** The scope
+boundary has recorded since 2026-08-15 that everything built is downstream of *a task already
+exists*.
+
+Nothing in §10–§20 closes it, and several of these amendments assume it works: §10.4's
+goal-readiness gate, §12.4's extraction of lessons, §15.1's per-feature review obligation, and
+§20.3's per-goal auto-mode all presuppose tasks that carry acceptance criteria derived from the
+overlay. **That is the sequencing consequence of this session**, and it is stated as an observation
+rather than a recommendation.
+
+### 20.6 Status
+
+Nothing filed as work, nothing marked done. §20.1 constrains what may be built from §17–§19 and is
+the section to read before writing any template or self-check. §20.2 names a measurement a single
+trial cannot produce.

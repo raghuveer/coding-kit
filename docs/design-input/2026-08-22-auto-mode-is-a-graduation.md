@@ -24,7 +24,8 @@ for, and raises the one collision that follows from it — recency is not recurr
 that collision: versions carry currency, so no third provenance state is needed. §13 settles what an
 accelerator names — a closed set of patterns over an open set of implementations — and §14
 says what each accelerator kind carries and what a version bump means; §15 makes the kinds a
-directed chain and raises a naming decision that is the operator's, not the next writer's.
+directed chain and raises a naming decision that is the operator's, not the next writer's; §16
+records the operator's enumeration of the dimensions and what it resolves.
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -555,10 +556,15 @@ over every population rather than only over `via:kit`.
 - ~~Whether the stable-or-n-1 default governs library selection only, or also the pinning of
   an accelerator version~~ (§14.2) — **closed by §15.1**: it governs the model's per-feature
   library-version choice inside a project, so the check is a review obligation on a task.
-- **Whether "solution accelerator" is the overlay renamed, a distinct project-scoped asset the
-  overlay populates, or a widening of what "accelerator" means** (§15.5). Four kinds are in
-  play and no single place lists all four; the earned/given distinction currently rides on
-  the noun. Naming governance — the operator's call.
+- ~~Whether "solution accelerator" is the overlay renamed, a distinct asset the overlay
+  populates, or a widening of what "accelerator" means~~ (§15.5) — **resolved toward the first
+  by §16.2**, on an enumeration that named no separate solution asset. The structural
+  consequence — withdraw `accelerators/solution/`, give the overlay its own path key — is
+  **proposed and not made**, and one sentence from the operator confirms or refutes it.
+- **Whether the pattern kind survives as a kind** (§16.5). It is asserted by a file, assumed by
+  an open task, and absent from the operator's enumeration. This is §14.5's question with a
+  sharper edge: if patterns live inside the technology accelerator, it is `cache-port.md`'s
+  claim to a third axis that needs revising, not the selection chain.
 - **How a pattern accelerator reaches a project** (§14.5). The overlay selects technology and
   industry accelerators; the pattern kind is in neither sentence, and two documents imply
   different answers.
@@ -1327,3 +1333,97 @@ in these amendments closes it; §12.4 and §15.1 add obligations that assume it 
 
 Nothing filed as work, nothing marked done. §14.2 closes at §15.1; §15.3 closes an implicit gap in
 §10. §15.5 is an open decision for the operator and must not be resolved by whoever writes next.
+
+---
+
+## 16. Amendment, 2026-08-24 — the dimensions, enumerated by the operator
+
+Asked to separate the solution overlay from the "solution accelerator" of §15.5, the operator
+enumerated the dimensions instead:
+
+> **Solution overlay** — prose, given, authoritative, **project-scoped**, provided by the architect
+> and the lead developer.
+>
+> **Industry accelerator** — pain points and solutions. **Solutions in business scope, and not
+> references to technology libraries in here.**
+>
+> **Technology accelerator** — as §15.3 states it: the non-functional parameter is one of the inputs
+> by which a technology accelerator chooses libraries in a specific stack, to implement a specific
+> design pattern, **for a feature implementation**.
+
+### 16.1 The overlay is confirmed exactly as the record already has it
+
+Prose, given, authoritative, project-scoped, architect with lead developer. That matches
+`DESIGN-NOTES` §2 and the 2026-08-16 authorship table without amendment — with the authorship
+widening of §10.5 (solution, application or enterprise architect) still standing, since it was
+about which architect rather than about the artefact.
+
+Worth noting what "prose" settles in passing: 2026-08-16's open decision 1 asked whether the
+overlay is prose or prose plus a derived projection the planner reads. **Prose is the answer given
+here**, and the kit's existing pattern applies unchanged — text is truth, any derived form is
+disposable, exactly as with task files and `index.db`.
+
+### 16.2 §15.5 resolves toward one artefact, and the resolution rests on an enumeration
+
+Asked directly what a solution accelerator is relative to the overlay, the operator listed the
+dimensions and **named no separate solution asset**. Read with the §15 statement it clarifies —
+*solution accelerators bridge the gap, allowing the solution architect to nurture and personalize
+the solution* — the reading is that **the overlay is the solution-scope artefact, and "solution
+accelerator" was that role described in accelerator terms**, not a fourth thing.
+
+That is §15.5's reading 1, and it carries the cost §15.5 named: `DESIGN-NOTES` §2 declares
+`accelerators/solution/` as a third accelerator kind, and under this reading **that slot has no
+occupant**. It also settles 2026-08-16's open decision 2 in the direction that document already
+leaned: the overlay does not live at `accelerators/solution/` — *it wants its own path key*.
+
+**This is recorded as a reading, not as a decision, and the structure is deliberately left
+unedited.** The evidence is an enumeration that did not mention something, which is weaker than a
+statement that it does not exist. Removing a declared directory from `DESIGN-NOTES` §2 is a
+structural change to the artifact model and it is proposed here, not made: **withdraw
+`accelerators/solution/`, and give the overlay its own path key.** One sentence from the operator
+confirms or refutes it.
+
+### 16.3 Industry: the boundary is now a rule, not a tendency
+
+§15.2 observed that an industry accelerator naming libraries would have *drifted* into the
+technology kind. The operator states it as a prohibition: **solutions in business scope, and no
+references to technology libraries in an industry accelerator.**
+
+That upgrade matters because a prohibition is checkable where a tendency is not. It gives
+`T-20260811-an-accelerator-authoring-template-and-se`'s self-check something mechanical to hold:
+an industry accelerator carrying a library name, package identifier or version constraint is
+malformed, whatever else is true of it. `[judgement]` The check is cheap and the failure it
+prevents is not — a BFSI pain point that names a queue technology quietly turns the most durable
+kind (§14.3) into the fastest-ageing one.
+
+`accelerators/industry/bfsi.md` is consistent with the rule as written today: its content is tier
+floors and compliance obligations — auditability, reconstructing a decision from what was persisted
+— with no library named.
+
+### 16.4 Technology: confirmed, with the scope tightened to a feature
+
+Confirmed as §15.3 records it, with one word added that matters: the choice is made **for a feature
+implementation**. That aligns the three statements about the technology kind into one scope — §15.1
+put the version rule at per-feature granularity, §15.3 put scale alongside pattern as a selection
+criterion, and this puts both in the same place: **a feature, in a stack, implementing a pattern, at
+a scale.** The technology accelerator is consulted at that granularity and nowhere coarser.
+
+### 16.5 What this does **not** decide — the pattern kind
+
+The enumeration omits the **pattern** accelerator as well as the solution one, and the two absences
+are not the same. There is no `accelerators/solution/` on disk; there **is**
+`accelerators/pattern/cache-port.md`, it argues its own axis explicitly — *about a design, not a
+language and not an industry* — and
+`T-20260801-declare-and-enforce-a-library-catalogue` carries an acceptance criterion that a
+**pattern** accelerator entry names its catalogue implementations per language.
+
+So the pattern kind is asserted by a file, assumed by an open task, and absent from the operator's
+enumeration. **Two silences do not make a decision**, and §14.5's question is unchanged and now
+sharper: does a project acquire a pattern accelerator by naming it, or does the pattern live inside
+the technology accelerator that references it — in which case `cache-port.md`'s claim to a third
+axis is what needs revising, not the selection chain.
+
+### 16.6 Status
+
+Nothing filed as work, nothing marked done. §16.2 proposes one structural change and does not make
+it. §14.5's pattern question is the only accelerator-taxonomy item still genuinely open.

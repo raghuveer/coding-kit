@@ -17,6 +17,9 @@ Marked as before: unmarked statements are the operator's stated goals or facts a
 definitions are fixed before a run. It is marked as a correction in place rather than folded into
 §3, so that the assumption and its refutation are both visible.
 
+**§10 was added on 2026-08-24**, after the operator corrected §8.4's central inference. §8.4 carries a banner and is otherwise left as written, so the claim and its correction are
+both readable. Read §10 before acting on §7, §8.4 or §8.6.
+
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
 
@@ -345,6 +348,11 @@ already makes per task.
 
 ### 8.4 What "appropriate outcome" means — and it includes non-functional conformance
 
+> **CORRECTED 2026-08-24 — see §10.** The conclusion below, that non-functional coverage is a
+> **graduation prerequisite for the kit**, is withdrawn. Non-functional criteria are project
+> content: the architects state them in the solution overlay and the ADRs refine them. The
+> observation about what a developer inspects still stands; the inference from it does not.
+
 Asked what a developer inspects beyond unit and integration tests, the operator named **all four
 offered signals** — runs it and exercises the behaviour; reads the diff and the reasoning; checks
 against the plan and acceptance criteria; looks at what it chose *not* to do — **and added a
@@ -513,7 +521,8 @@ over every population rather than only over `via:kit`.
   authority over the layer, and on a budget threshold breach.
 - ~~Whether a breached limit and an absent limit are the same finding class or two~~ — **closed by
   §8.6**: two.
-- Which non-functional dimensions get a mechanism first (§8.4).
+- ~~Which non-functional dimensions get a mechanism first (§8.4)~~ — **withdrawn by §10.2**:
+  the kit does not own the dimensions. What remains is §10.4's goal-readiness gate.
 - ~~Whether an absent-limit check can run before an accelerator exists to say what should be
   present~~ — **closed by §8.7**: they may land together.
 - ~~What minimum makes an outside result evidence rather than a claim~~ — **closed by §8.8**: the
@@ -536,3 +545,127 @@ over every population rather than only over `via:kit`.
   itself is not designed.
 - What a junior developer sees that a senior does not need (§8.1), and whether that is extra
   surfacing or the same surfacing with more explanation.
+
+---
+
+## 10. Amendment, 2026-08-24 — the kit is a tool, and non-functional criteria are project content
+
+Operator statement, given after reading §8.4 and correcting it. Recorded here as an amendment
+rather than folded into §8.4, so that the claim and its correction are both visible — the same
+treatment §3.1 gave §3, and the banner on `docs/COMPETITIVE-LANDSCAPE.md` §3.
+
+### 10.1 The scope statement, in the operator's terms
+
+> The coding kit is a **tool**, that works as a **nurturing mechanism**, to have AI-assisted coding
+> agents fast-track application development — brownfield, greenfield, legacy application
+> modernization — **in the projects it is used in**.
+
+And the authoring chain that surrounds it:
+
+> **Solution architect / application architect / enterprise architect, with the lead developer,
+> provide the inputs that constitute the solution overlay. All subsequent discussions and derived
+> changes are documented in ADRs.**
+
+Neither sentence is new policy. Both restate what
+`2026-08-16-artifact-model-and-distribution.md` already records — the overlay is *given before the
+project starts, amended by ADR, authoritative from the first commit, not the coding agent's to
+re-open* — and what the scope boundary has said since 2026-08-14: this is a support kit riding on
+Claude Code, not an agent framework. What they do is settle which side of the boundary a
+non-functional requirement falls on.
+
+**It falls on the project's side.** Latency limits, security guidelines, compliance obligations and
+the rest are **content the overlay carries and the ADRs refine** — stated by the architects for the
+project at hand, or absent because the project has no such obligation. They are not capability the
+kit must possess before any project can be run.
+
+### 10.2 §8.4 is withdrawn as a prerequisite claim
+
+§8.4 took the operator's fifth inspection signal — *latency within prescribed limits, functional
+and security guidelines compliance in code* — and concluded that **the kit** needs a non-functional
+mechanism before graduation, moving it "ahead of most of what the earlier roadmap put in front of
+it". That inference is the error, and it is a category error rather than a wrong priority: it
+converted **project content into kit capability**.
+
+Withdrawn with it:
+
+- the §7 re-sequencing that placed non-functional coverage ahead of the existing roadmap;
+- the §9 open question *"which non-functional dimensions get a mechanism first"*, which only exists
+  if the kit owns the dimensions. It does not. What survives of that question is narrower and is
+  stated in §10.4.
+
+The **observation** in §8.4 stands and is not withdrawn: a developer judging an outcome appropriate
+does weigh non-functional conformance, and three of the five signals are mechanisable while two are
+not. What changes is who supplies the standard being conformed to.
+
+### 10.3 What survives untouched
+
+- **§6 item 1 — the definitions exist.** Overlay present, acceptance criteria on every task in the
+  goal, tier floors populated. This was always a *per-project* checklist rather than a kit
+  milestone, so it carries the corrected model rather than contradicting it. If a project's
+  architects put a latency limit in the overlay, item 1 already requires it to be present before
+  that project runs unattended — with no kit-level non-functional feature involved.
+- **§3.1** — a deviation is an event with a disposition.
+- **§2, §5** — graduation is per project, judged on outcomes.
+- The thirteen prerequisites for unattended operation in `2026-08-16` §5, in four groups. Note that
+  non-functional coverage was never among them; §8.4 added it from outside that list.
+
+### 10.4 What §8.6 narrows to, and the residual mechanism
+
+§8.6 split *absent limit* from *breached limit* and gave accelerators a second job: **defining what
+must be specified at all**, which it called "a stronger reason to build accelerator distribution
+than reuse was".
+
+That second job is downgraded. Under the corrected model the **overlay and the ADRs** decide what
+applies to a project; an accelerator may **offer candidates into overlay authoring** — a checklist
+an architect draws on — but it does not create an obligation the kit then enforces. The two finding
+classes remain worth distinguishing, because they still differ on subject, authority, timing and
+resolution. Their *source of expectation* moves from the accelerator to the overlay.
+
+**The consequence, stated rather than discovered later `[judgement]`:** if a non-functional
+requirement exists only where the overlay or an ADR puts it, then the kit can detect a **breach**
+of a stated limit but never an **absence**. Absence moves upstream, to overlay authoring and ADR
+discussion — both human, both already the architects' responsibility. That is a deliberate transfer
+of risk out of the kit and into the authoring chain, and it is consistent with §10.1: a tool that
+nurtures does not invent the project's obligations.
+
+What remains for the kit is smaller and better shaped than "non-functional coverage". In the
+operator's words, the kit takes implementation forward for set-defined goals in its own scope,
+
+> ensuring all dependency-related queries are cleared, for chosen tasks with respect to that goal
+
+— a **goal-readiness gate before auto-mode is enabled**: every task in the goal has its acceptance
+criteria resolved, including whatever the overlay and the ADRs imposed on it, with open questions
+cleared rather than carried into an unattended run. Where a limit applies and is stated, it reaches
+the task as an acceptance criterion like any other, and §8.2's authority rule already covers who
+may accept a deviation from it. No new vocabulary is required for the non-functional case.
+
+This is the part of §8.4 worth keeping, and it is **not** filed as work here.
+
+### 10.5 The collaboration model this states, end to end
+
+Recorded because §8.4's error came from having the chain only partly written down:
+
+1. The architects — solution, application or enterprise — **with the lead developer** supply the
+   inputs that constitute the **solution overlay**. This is where a tech-stack override to a
+   specific software mandate is expressed, whether it originates as the architect's recommendation
+   or as the client's preference for that project.
+2. **Discussion absorbs details and changes, and produces ADRs.** The overlay is amended by ADR and
+   by nothing else.
+3. The **kit takes implementation forward** for goals defined within its scope, having cleared the
+   dependency questions for the tasks chosen against that goal.
+4. **Auto-mode is enabled** to complete the work.
+5. **Intervention needs that are prominent enough trigger the human anyway**, through notifications
+   and prompts — which is §3's interrupt budget and §8.3's uncertainty default, not a new mechanism.
+
+Step 1 **amends** the authorship row in `2026-08-16-artifact-model-and-distribution.md` §1, which
+names only the *solution* architect with the lead developer. The role is wider: application and
+enterprise architects author the overlay on the same footing. Nothing else in that row changes.
+
+### 10.6 What this amendment does not settle
+
+**The trial-versus-overlay fork stays open.** The chain in §10.5 places the overlay upstream of
+everything the kit does, which reads like an argument for building it first — but
+`2026-08-16` §5 explicitly lists the solution overlay as **not** a prerequisite for unattended
+operation, while its §4 says to prove the overlay against greenfield first. Those are different
+goals, not a contradiction, and conceptual upstream is not build order. This amendment corrects a
+category error; it does not choose a next task.

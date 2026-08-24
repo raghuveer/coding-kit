@@ -18,8 +18,12 @@ were one layer. They are three, with different authors, mutability and standing.
 | | Author | Lifetime | Standing |
 |---|---|---|---|
 | **`project-profile.md`** | A human's initial thinking, **or** the agent's observations after analysing existing code. Either, or both. | Mutable; added to and updated throughout | Operational configuration. Paths, tier floors, ingest sources, trailer enforcement |
-| **Solution overlay** | Solution architect **with** the lead developer | Given before the project starts; amended by ADR | **Authoritative from the first commit.** Not the coding agent's to re-open |
+| **Solution overlay** | Solution, application or enterprise architect **with** the lead developer | Given before the project starts; amended by ADR | **Authoritative from the first commit.** Not the coding agent's to re-open |
 | **Accelerators** | Earned across projects, or seeded from architect input | Versioned, evolved project after project | Reference material. Seeded content is hypothesis until earned |
+
+**Amended 2026-08-24:** the first author was recorded as the *solution* architect alone. The
+operator widened it — application and enterprise architects author the overlay on the same
+footing. See `2026-08-22-auto-mode-is-a-graduation.md` §10.5.
 
 **The second author on the overlay is not ceremony.** Stack choice has two non-architectural
 parameters — business growth projections, and what the team can actually maintain. The lead

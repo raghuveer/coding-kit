@@ -21,7 +21,8 @@ definitions are fixed before a run. It is marked as a correction in place rather
 inference; §8.4 carries a banner and is otherwise left as written, so the claim and its correction
 are both readable. Read §10 before acting on §7, §8.4 or §8.6. §11 records what accelerators are
 for, and raises the one collision that follows from it — recency is not recurrence. §12 closes most of
-that collision: versions carry currency, so no third provenance state is needed.
+that collision: versions carry currency, so no third provenance state is needed. §13 settles what an
+accelerator names — a closed set of patterns over an open set of implementations.
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -541,8 +542,14 @@ over every population rather than only over `via:kit`.
 - **There is no rule for retiring an `[earned]` entry the industry moved past** (§12.3). The
   eviction order already names `stale`, but it was argued from context cost, and the deletion
   rule that exists covers only seeded content that never recurred.
-- Whether phase-out applies to a design pattern or only to the open-source solution named under
-  it (§12.5) — the pattern outlives the library that implements it.
+- ~~Whether phase-out applies to a design pattern or only to the open-source solution named
+  under it~~ (§12.5) — **closed by §13.1**: the pattern is the stable unit, the
+  library-and-version binding is the perishable pointer.
+- Whether a library chosen outside the known set is surfaced as an interrupt in auto-mode, and
+  at what threshold (§13.5). The machinery exists; the population is new.
+- Whether an accelerator points at a library's release channel or copies its versions
+  (§13.4) — which decides whether an accelerator version bump means an editorial act or a
+  dependency patch.
 - Whether the accelerator update produced at project completion (§11.2, §12.4) lives in the retro
   artefact or somewhere of its own.
 - Whether divergence detection is one mechanism across all definition classes or one per class.
@@ -901,3 +908,127 @@ Two consequences `[judgement]`:
 Nothing filed as work, nothing marked done. §12.2 and §12.3 close most of §11.3; what remains open
 is the single missing rule named at the end of §12.3, and the granularity question at the end of
 §12.5.
+
+---
+
+## 13. Amendment, 2026-08-24 — the pattern is closed, the implementation list is open
+
+Operator statement, refining §12.5 and answering the granularity question it left open:
+
+> Accelerators reference **design patterns**. For specific design-pattern usage, **libraries and
+> corresponding versions can be referenced externally**. GenAI can handle this, based on **industry
+> maturity** and references that are good for specific tech stacks. **I am trying to keep this
+> open.** At the same time, provide **guidance and references, so the model chooses among the known
+> where possible**, to ensure **deterministic and quality code outcomes**. No human architect or
+> developer can list all; only **known software may be provided as a reference**, while GenAI
+> suggests recommendations **additionally, to the actual implementation team who uses the coding
+> kit**.
+
+### 13.1 §12.5's open question closes
+
+§12.5 asked whether phase-out applies to a design pattern or only to the open-source solution named
+under it. **Answered: the pattern is the stable unit; the library-and-version binding is the
+perishable pointer.** A pattern entry persists across versions of an accelerator while the
+implementation named under it is replaced, which is why the two belong at different granularities in
+the file rather than as one entry.
+
+### 13.2 The tension the statement contains, and why it is not a contradiction
+
+*Keep it open* and *deterministic outcomes* pull against each other on the surface: if the model may
+propose a library outside the listed set, two runs of the same task can select differently.
+
+§5 already disposes of this, and it is worth reading again with libraries in mind: **the defensible
+meaning is determinism of conformance, not of text.** Two runs may write different code and both be
+correct outcomes. An open implementation set is therefore not a determinism failure by itself — it
+becomes one only if the choice is **improvised twice**, which is §5 stage 2's actual concern:
+*every answer supplied is a decision not re-made, and re-made decisions are where two runs diverge*.
+
+So the operative rule is not *the model may only pick from a list*. It is:
+
+**The known set is a preference order, not a whitelist — and a choice outside it must be recorded
+rather than silent.** Once recorded, the next run inherits it as known and stops re-deciding. That
+is the `[seeded]` → `[earned]` ladder applied to implementation selection, with the recording sites
+already defined by §10.5: an **ADR** for a project-level choice, and the **completion session**
+(§12.4) for anything that should outlive the project.
+
+**The disposition machinery already exists too.** A selection outside the known set is a **deviation
+with a disposition** in §3.1's sense — a decision made against a definition that did not cover it —
+and §8.2's authority rule already says who may accept one. No new vocabulary is required.
+
+### 13.3 What the model cannot supply, and what follows
+
+*Industry maturity* is the one input in the statement that a model **cannot verify**. Its evidence is
+what it was trained on, not the state of the industry at the moment of asking, and it will present
+both with the same fluency. This is §11.3's recency problem reappearing one level down — at the
+library rather than at the accelerator entry.
+
+The existing rule already covers it and should be applied rather than extended: `DESIGN-NOTES`'s
+third source is *best practice gathered from public material, analysed by an agent, then discussed
+with the architects who maintain accelerators*, and it enters as `[seeded]`. **A model's library
+recommendation is `[seeded]` by construction.**
+
+The consequence is about presentation, and it matches the operator's own phrasing — the
+recommendation goes **to the implementation team**. So it must arrive as a **proposal carrying its
+basis**, never as a settled fact: what pattern it implements, what it is being preferred over, and
+that its maturity claim is unverified. `[judgement]` A recommendation that arrives without its basis
+cannot be judged by the team it was addressed to, which is the only place in this chain that can
+judge it.
+
+### 13.4 Referencing externally without inheriting staleness
+
+"Referenced externally" has a strong reading and a weak one, and the difference decides whether
+§12.3's phase-out has anything to bite on.
+
+- **Copying a version table into the accelerator** makes the file a snapshot that expires, and every
+  pinned project inherits the snapshot. This is the shape §12.3 is about.
+- **Pointing at the authority** — the library's own release channel or registry — puts the moving
+  fact where it already moves. The accelerator then carries the *binding* (this pattern, this
+  library, in this stack) and not the digits.
+
+`[judgement]` The second is the reading that keeps the accelerator's own version meaningful:
+a version bump then records *the binding changed*, which is a real editorial act, rather than
+*a dependency released a patch*, which is noise.
+
+### 13.5 The auto-mode consequence, which is the first concrete one in these amendments
+
+The operator's chain terminates at a human: GenAI suggests **to the implementation team**. In
+auto-mode there is no human at that moment.
+
+So a library selection **outside the known set** is an interrupt candidate — it is a decision with
+no recorded answer, whose central claim (maturity) is made by the party least able to verify it, and
+whose consequences outlive the task. §3's interrupt budget and §8.3's uncertainty default already
+own the machinery; what has been missing is a concrete population to point them at, and this is one.
+`[judgement]`
+
+The symmetric case is quieter and matters as much: a selection **inside** the known set should
+**not** interrupt. That is what makes the guidance worth supplying at all — it converts a decision
+into a lookup, and §3's whole argument is that the interrupt budget is the scarce resource.
+
+### 13.6 This lands on an existing task, and the fit is close
+
+`T-20260801-declare-and-enforce-a-library-catalogue` (open; the file records `tier: T2` while
+`STATUS` renders `[T0]` from its commit trailers) already carries acceptance criteria that assume
+exactly this model:
+
+- *a pattern accelerator entry can name its catalogue implementations per language* — the
+  pattern-to-implementation binding of §13.1;
+- *the solution overlay can pin an implementation, and the pin is recorded not assumed* — the
+  recording site of §13.2, with `not assumed` doing the same work as *record rather than improvise*;
+- *an empty or undeclared catalogue costs nothing and warns nothing* — **openness is already the
+  default posture**, and a project that names nothing is not in violation of anything.
+
+Its scope note also holds the line §12.5 confirmed: the kit's share is **selection and enforcement**;
+the implementations are code in their own repositories with their own release cadence.
+
+**What the statement adds to that task, and it is not currently in its criteria:** the catalogue is
+**not exhaustive by design**, so nothing may treat *absent from the catalogue* as *disallowed*. The
+finding class the task proposes — *re-implementing a catalogued capability* — is safe, because it
+fires only on entries that exist. A finding class of the opposite shape, firing on a library that is
+merely unlisted, would contradict the operator's statement outright. Recorded so it is not built by
+accident; **not filed**.
+
+### 13.7 Status
+
+Nothing filed as work, nothing marked done. §12.5's granularity question closes at §13.1. The one
+open item from §12.3 — no retirement rule for an `[earned]` entry the industry moved past — is
+unaffected and still open.

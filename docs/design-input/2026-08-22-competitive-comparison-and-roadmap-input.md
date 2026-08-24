@@ -237,6 +237,13 @@ strategy, operations) a domain-focused draft skips".
 We have review classes and tiers, and the solution overlay carries baseline design patterns — but
 nothing in the kit makes an absent NFR a finding.
 
+> **Read with `2026-08-22-auto-mode-is-a-graduation.md` §10 (2026-08-24).** The gap named here
+> is real, but it is not a gap in the *kit*. Non-functional criteria are project content: the
+> architects state them in the solution overlay and the ADRs refine them. So an absent NFR is
+> an absence in a project's overlay, detectable by whoever authors it, and the kit's residual
+> job is the goal-readiness gate of §10.4 — not an NFR mechanism of its own. Takeaway 5 in §6
+> reads as a capability gap and should not be acted on as one.
+
 ### 4.6 Reuse: accelerators, constitutions, extensions
 
 Two competitors have solved parts of the accelerator problem in ways worth copying.

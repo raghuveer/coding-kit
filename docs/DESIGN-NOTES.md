@@ -283,6 +283,17 @@ belongs outside this kit even when the knowledge belongs inside it.
 
 ### Two provenance states, not three
 
+> **Scope limit raised 2026-08-24, unresolved — see
+> `design-input/2026-08-22-auto-mode-is-a-graduation.md` §11.3.** The rule below assumes a
+> claim does not expire. Accelerators understood as the result of **technology evolution** are
+> a class where it does: a true current claim cannot be earned by recurrence, and a stale one
+> can be `[earned]` from projects that ran before the technology moved. The two states are not
+> withdrawn. **Resolved 2026-08-24 by §12.2 of the same document: nothing is needed here.**
+> The accelerator's **version** carries currency and the provenance state carries
+> observation; the two are orthogonal, so the rule below stands as written. What the class
+> does need is a **retirement step** — see §12.3 and the eviction order under *"Line budget
+> is a prerequisite, not a follow-up"* below.
+
 Knowledge from projects delivered outside this kit enters as `[seeded]` — a hypothesis,
 honestly labelled — and promotes to `[earned]` when findings confirm it across distinct
 projects. Resist a third tier for "expert-provided". The operational question is only
@@ -347,6 +358,13 @@ same argument `T-20260808-co-change-has-no-eval-harness-so-its-sco` makes for co
 > Accelerator line budget and eviction. Every mechanism currently only adds; an accelerator
 > that grows monotonically eventually costs more than it buys, **multiplied across every
 > project that pins it.** Eviction order: refuted → stale → lowest occurrence.
+
+> **Second reason recorded 2026-08-24 — see
+> `design-input/2026-08-22-auto-mode-is-a-graduation.md` §12.3.** Eviction is argued below
+> from context cost. It is also a **correctness** mechanism: an entry phased out because the
+> industry moved is wrong, not merely expensive. So `stale` must be able to fire when the
+> budget is comfortable, and `refuted`/`stale` are correctness removals while `lowest
+> occurrence` is a cost removal.
 
 A central library that improves continuously is a library that grows continuously.
 Versioning protects a project from *drift* — it pins and stays put — but the head version

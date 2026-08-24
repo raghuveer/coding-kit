@@ -20,6 +20,12 @@ Read `HANDOFF.md` for why the kit is built the way it is, and `DESIGN-NOTES.md` 
 proposed on top of it. This memo only covers what *else* exists, and what that means for
 where this kit should and should not spend effort.
 
+> **Judge findings here against [`CHARTER.md`](CHARTER.md) §5 (added 2026-08-24).** It states
+> the six dimensions that follow from this kit's goal. **An advantage a competitor holds on one
+> of those six is a finding to act on; an advantage outside them is not automatically a gap** —
+> and treating it as one is how a roadmap gets cut by someone else's feature list. The banner
+> above records where that already happened once.
+
 The frame is fixed and non-negotiable for this scope: **this is a coding _support kit_ that
 rides on Claude Code, not an agent framework.** Systems that own the agent runtime
 (claude-flow and the like) are a different category and are out of scope as competitors —

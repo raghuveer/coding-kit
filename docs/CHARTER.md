@@ -106,7 +106,8 @@ Facts, so that any comparison starts from what is built rather than what is desi
 
 **Shipped and exercised**
 
-- Plugin **v0.9.0** — 8 agents, 5 skills, 4 hooks, 19 tooling scripts, distributed as a plugin with
+- Plugin at **v0.10.0** — the authoritative value is `.claude-plugin/plugin.json`, and this line
+  ages with it. 8 agents, 5 skills, 4 hooks, 19 tooling scripts, distributed as a plugin with
   a marketplace entry.
 - **Derived state**: task files and git trailers are the truth, SQLite is a rebuildable index,
   `STATUS.generated.md` is output. Nothing that matters lives only in the database.

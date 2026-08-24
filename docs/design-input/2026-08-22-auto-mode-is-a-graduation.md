@@ -27,7 +27,8 @@ says what each accelerator kind carries and what a version bump means; §15 make
 directed chain and raises a naming decision that is the operator's, not the next writer's; §16
 records the operator's enumeration of the dimensions and what it resolves, and §17 settles the
 taxonomy at three kinds and gives the industry kind its shape. **§18 states the thesis the
-others are details of, and corrects §17.6.**
+others are details of, and corrects §17.6; §19 makes posture a vector and dates the model's
+contemporary analysis.**
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -574,9 +575,16 @@ over every population rather than only over `via:kit`.
   stewardship field, and one pain point has several national solutions, so no cross-product is
   wanted. What remains: applicability sits on the file rather than the entry, and the
   selection chain has nothing to match it against.
-- **Where a project's posture is declared** (§18.5) — POC, internal, launched,
-  multi-geography. It is the fact that decides between two correct stacks, the profile has no
-  key for it, and a reviewer cannot judge a stack against a posture nobody wrote down.
+- **Where a project's posture is declared** (§18.5, narrowed by §19.2, shaped by §19.6). It is
+  the fact that decides between two correct stacks. **Deployment already has a specified key**
+  in `T-20260801`'s first acceptance criterion; **scale and lifespan have none**. And posture
+  is a **vector** — scale, deployment, lifespan vary independently — so one label will not do.
+- **Whether a declared short-lifespan posture may relax maintainable-without-GenAI** (§19.3),
+  or whether that ranked constraint holds regardless and lifespan only moves the stack and the
+  abstraction budget. Touches the constraint the record ranks above the others.
+- **What makes the model's contemporary analysis contemporary** (§19.5) — a live input at
+  analysis time, or a recommendation stamped with the knowledge boundary it was made under.
+  Without one, "contemporary" silently means "as of training".
 - Whether an industry accelerator carries reviewer obligations, industry knowledge, or both
   (§17.6). The shipped seed is entirely the first; the operator described the second.
 - **How a pattern accelerator reaches a project** (§14.5). The overlay selects technology and
@@ -1721,3 +1729,152 @@ Nothing filed as work, nothing marked done. §18.1 corrects §17.6 rather than e
 jurisdiction question resolves into an existing field plus a missing match in the selection chain.
 The unbuilt middle of §15.7 — inputs becoming tasks — is untouched by any of this and remains where
 the thesis above is thinnest.
+
+---
+
+## 19. Amendment, 2026-08-24 — posture is a vector, and "contemporary" needs a date
+
+Operator statement, adding a dimension to §18.4 and then assigning the model a job §13.3 said it
+cannot do unaided:
+
+> Not only NFR. Take also **where it is deployed** — cloud or on-premise; **solution to be cloud
+> vendor-agnostic**, in which case **interface-first and adapter-pattern-based libraries** are to be
+> used, which shows how portable an application can be.
+>
+> Before AI, people developed software, licensed it and maintained it. **Post the highs of GenAI,
+> people are speaking about use-and-throw scope for software** — even though **token-related cost is
+> to be accounted for too, which people are realizing now**.
+>
+> Whichever scenario it is, **unless domain knowledge is there, real and useful solutions cannot be
+> made**, and in a time-effective way.
+>
+> Industry accelerators document problems, pain points and corresponding solutions meaningfully.
+> Technology accelerators combine patterns and corresponding technology choices — but again,
+> **contemporary analysis is to be made by the model** when choosing technology solutions, in line
+> with the **industry accelerators in place as defined in the solution overlay** of the specific
+> project.
+
+### 19.1 Deployment is a second posture axis, and it selects a **pattern**, not only a library
+
+§18.4 made posture the discriminator over stack. Deployment target is a second axis of it, and it
+behaves differently from scale in a way worth recording: **cloud-vendor-agnosticism does not select
+a library, it selects a design — interface-first, with adapters.** The library choice is downstream
+of that.
+
+That is a sharper version of §18.4's *pattern × posture*: **posture can require a pattern**, not
+merely pick between implementations of one. It also confirms §17.1 from the other direction — a
+requirement that resolves to *use this pattern* naturally belongs inside the technology kind rather
+than beside it.
+
+**This is independently the driver already recorded in `docs/CATALOGUE.md`**, arrived at from the
+opposite end. That document's §1 states the goal as *the same application source runs unchanged
+whether it is deployed on AWS, on another cloud, or on-premises — only the deployed infrastructure
+and the bound implementation differ*, with interfaces and adapters as the mechanism. It also carries
+the warning that matters here: **a clean import graph proves containment, not portability** — an
+interface can hold no vendor types and still be shaped entirely around one vendor's semantics.
+Portability is a posture claim that only a conformance test settles, not a lint.
+
+### 19.2 This narrows §18.5 — half the posture already has a specified home
+
+§18.5 said nothing records the posture. More precisely, and checked against the task file:
+`T-20260801-declare-and-enforce-a-library-catalogue` already carries as its **first** acceptance
+criterion *`deploy.target` and `adapter.path` are declared in the profile*, and its notes call that
+criterion **the one to build first — cheap, needing no catalogue to exist, and working on any
+project**, because *one `import boto3` in a service and the portability claim is false, not
+degraded*.
+
+So the **deployment axis of posture has a specified key in an open task**; it is simply not in
+`templates/project-profile.md` yet. What has **no** home and no proposal is the **NFR-scale** axis
+of §18.4 — POC versus ten thousand transactions per second — and the lifespan axis of §19.3 below.
+§18.5's observation stands for those two and is withdrawn for deployment.
+
+### 19.3 A third axis: how long the software is meant to live — and it touches a ranked constraint
+
+> Before AI, people developed software, licensed it and maintained it. Post the highs of GenAI,
+> people are speaking about use-and-throw scope for software — even though token-related cost is to
+> be accounted for too.
+
+Recorded as observation about the market rather than as a decision, which is how it was offered.
+Its consequence for this design is that **intended lifespan is a posture axis in the same sense as
+scale and deployment**: a tool meant to be discarded next quarter and a system maintained for
+fifteen years do not get the same stack, the same abstraction budget, or the same test posture, even
+for identical business behaviour.
+
+**It touches the one constraint the record ranks above the others**, and this is flagged rather than
+resolved. `DESIGN-NOTES` states that the delivered application must be maintainable **without GenAI,
+by developers, as-is**, that four maintenance modes must all work, and that *hand maintenance is not
+the edge case; it is the baseline and the strictest of the four*. A genuinely use-and-throw posture
+is the case where that constraint would be paid for and not used.
+
+Two things keep this from being a contradiction today `[judgement]`:
+
+- The operator's own qualifier is the counterweight — **token cost is being realized**. Disposable
+  software is a choice with a running cost, not a free default, so the posture has to be declared
+  and justified like any other rather than drifting in.
+- The ranked constraint is about **what the kit may impose on a product**, and a declared short
+  lifespan is an input to that judgement rather than a defeat of it. The constraint says the kit
+  must leave the product ordinary; it does not say every product must be built to last.
+
+**What would settle it:** whether a declared short-lifespan posture is allowed to relax the
+maintainable-without-GenAI requirement, or whether that requirement holds regardless and short
+lifespan only affects stack and abstraction budget. That is the operator's call and it is not taken
+here.
+
+### 19.4 Domain knowledge is the precondition, which is why industry sits first in the chain
+
+> Unless domain knowledge is there, real and useful solutions cannot be made, and in a
+> time-effective way.
+
+This is the justification for the ordering §15.4 recorded — industry → pattern → technology — rather
+than a new claim. Worth keeping because it explains *why* the industry kind is first rather than
+merely that it is: the later layers are choices **within** a problem that the first layer defines,
+and a well-executed technology choice against a misunderstood problem is a faster route to the wrong
+system.
+
+### 19.5 "Contemporary analysis by the model" — the assignment stands, and it needs a date
+
+§13.3 recorded that *industry maturity* is the one input a model cannot verify, since its evidence
+is training data rather than the state of the industry at the moment of asking. The operator now
+assigns the model exactly that job: **contemporary analysis when choosing technology solutions**.
+
+These reconcile, and the reconciliation is the useful part rather than a concession by either side:
+
+- **The assignment is right.** Nobody else has the breadth to survey implementations across stacks
+  at the moment a feature needs one, and §13's whole point was that no architect can enumerate the
+  set. This is what the model is for.
+- **§13.3's limit is unchanged.** A model's *contemporary* is bounded by what it last saw, and it
+  will state a stale fact with the same fluency as a current one.
+
+So what makes the assignment honest is a **date, or a live input**:
+
+- either the model is given current material at analysis time — release notes, registry data,
+  advisories — in which case the analysis is contemporary in the ordinary sense, or
+- the recommendation is **stamped with the knowledge boundary it was made under**, so a reader can
+  tell *contemporary as of when*.
+
+**Without one of those, "contemporary" silently means "as of training".** `[judgement]` This is the
+same rule as §12.1 one level down: the accelerator's version carries currency for the file, and a
+dated recommendation carries currency for the claim. It also keeps §13.3's disposition intact — the
+recommendation is `[seeded]` and goes to the implementation team as a proposal carrying its basis,
+and *the date is part of that basis*.
+
+The rest of the sentence confirms the existing chain without amendment: the analysis is made **in
+line with the industry accelerators in place as defined in the solution overlay**, which is the
+import chain as recorded — the overlay names which accelerators apply, and the profile binds them.
+
+### 19.6 The consequence: posture is a vector, not a label
+
+Three axes are now named — **scale** (§18.4), **deployment** (§19.1), **lifespan** (§19.3) — and
+they vary independently. An on-premise POC, a vendor-agnostic launched product and a disposable
+cloud-native tool are three different postures, and no single value distinguishes them.
+
+`[judgement]` So a `posture: poc` key would be too coarse to do the job §18.5 asks of it, and the
+thing to declare is a small set of named dimensions rather than one label. That is a cheaper
+observation than it sounds: `deploy.target` already exists as a proposed key (§19.2), so the shape
+is a handful of sibling keys rather than a new subsystem. **Not filed.**
+
+### 19.7 Status
+
+Nothing filed as work, nothing marked done. §19.2 narrows §18.5 rather than repeating it. §19.3
+raises a question against a ranked constraint and explicitly does not answer it. §19.5 reconciles
+§13.3 with the operator's assignment rather than overturning either.

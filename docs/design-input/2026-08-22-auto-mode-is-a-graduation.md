@@ -17,8 +17,10 @@ Marked as before: unmarked statements are the operator's stated goals or facts a
 definitions are fixed before a run. It is marked as a correction in place rather than folded into
 §3, so that the assumption and its refutation are both visible.
 
-**§10 was added on 2026-08-24**, after the operator corrected §8.4's central inference. §8.4 carries a banner and is otherwise left as written, so the claim and its correction are
-both readable. Read §10 before acting on §7, §8.4 or §8.6.
+**§10 and §11 were added on 2026-08-24.** §10 records the operator's correction of §8.4's central
+inference; §8.4 carries a banner and is otherwise left as written, so the claim and its correction
+are both readable. Read §10 before acting on §7, §8.4 or §8.6. §11 records what accelerators are
+for, and raises the one collision that follows from it — recency is not recurrence.
 
 **Nothing here is filed as a defect and nothing is marked done.** Where the reasoning implies work,
 it is named as an open question with what would settle it.
@@ -531,6 +533,12 @@ over every population rather than only over `via:kit`.
   outcomes, and their environment rides in the input.
 - What *carries* an input-and-outcome pair in practice — a trailer, an ingest adapter, or a file a
   tester writes — which is now a shape question rather than a sufficiency one.
+- **Whether the two-state provenance rule survives content whose subject expires** (§11.3).
+  Recurrence cannot confirm a technology-currency claim, and past recurrence can make a stale
+  one look confirmed. Three candidate shapes are listed; settling it needs the same stack used
+  twice, months apart.
+- Whether the accelerator update produced at project completion (§11.2) lives in the retro
+  artefact or somewhere of its own.
 - Whether divergence detection is one mechanism across all definition classes or one per class.
 - Which authority may accept a deviation against which layer (§3.1), and whether that is expressed
   as a role, a person, or a rule in the profile.
@@ -669,3 +677,98 @@ everything the kit does, which reads like an argument for building it first — 
 operation, while its §4 says to prove the overlay against greenfield first. Those are different
 goals, not a contradiction, and conceptual upstream is not build order. This amendment corrects a
 category error; it does not choose a next task.
+
+---
+
+## 11. Amendment, 2026-08-24 — accelerators carry technology evolution, and some are written by hand
+
+Operator statement, given after §10:
+
+> Accelerators can be **human-written** in some scenarios. Improvements are derived **after
+> completion of each project**, to update the accelerator. Accelerators are the **result of
+> technology evolution**, and that **guides the implementation** through the coding kit. The
+> solution overlay **references tech stacks and different accelerators**.
+
+Three of those four are already recorded and are confirmed rather than changed. The third breaks
+an assumption the record depends on, and that is the substance of this section.
+
+### 11.1 Already recorded — confirmed, not new
+
+- **Human-written accelerators are already legitimate.** `docs/DESIGN-NOTES.md`, *"Sources are
+  many; states are two"*, lists three sources and two of them are human: an accelerator supplied
+  from work delivered outside this kit, and best practice gathered from public material, analysed
+  by an agent, **then discussed with the architects who maintain accelerators**. The 2026-08-16
+  table says the same in one line — *earned across projects, **or seeded from architect input***.
+  What is missing is not permission but **a repeatable shape**:
+  `T-20260811-an-accelerator-authoring-template-and-se` (T1, open) is the template plus self-check
+  that would make two accelerators written months apart by different people interchangeable.
+- **The overlay references stacks and accelerators.** Unchanged: the overlay names which
+  accelerators apply, `project-profile.md` binds them to paths and agents, and subsequent changes
+  are recorded as ADRs.
+- **Accelerators guide implementation** — consistent with §10.4 provided one distinction holds:
+  **an accelerator guides, the overlay decides.** §10.4 removed the accelerator's power to create
+  an obligation the kit enforces; it did not remove its role in shaping how the work is done.
+  Guidance is not authority, and keeping those apart is what makes §10.4 and this statement
+  compatible rather than contradictory.
+
+### 11.2 New: the promotion ladder has rungs but no clock
+
+The ladder is expressed in counts — one occurrence, then a project overlay at ≥N within one
+project, then a shared accelerator at ≥1 in ≥2 projects. Nothing in the record says **when** it is
+walked. The operator's answer supplies that: **at the completion of each project**, improvements
+are derived and the accelerator is updated.
+
+That makes the update a **defined event with a place to live**, and the place already has a task —
+`T-20260811-a-retro-artefact-that-closes-the-kaizen-`. If the retro is where the accelerator
+delta is produced, the retro stops being a summary and becomes the mechanism's write step.
+`[judgement]` Otherwise the update has no home and happens when someone remembers.
+
+### 11.3 Where this collides with the record: recency is not recurrence
+
+`docs/DESIGN-NOTES.md`, *"Two provenance states, not three"*, is explicit:
+
+> Resist a third tier for "expert-provided". The operational question is only *has this system
+> observed it*, and an experienced architect's judgement is still a hypothesis until the findings
+> table agrees.
+
+That rule assumes **the claim does not expire**. Accelerators as *the result of technology
+evolution* are exactly the class where it does, and the assumption fails in both directions:
+
+- A **true current** claim — a framework's API changed at this version, an idiom is now deprecated,
+  a default became unsafe — **cannot be earned by findings** unless projects happen to trip over
+  it. It is correct and it sits at `[seeded]` indefinitely.
+- A **stale** claim can be `[earned]` from projects that ran before the technology moved, and be
+  **wrong now**. The accumulated evidence is precisely what makes it look trustworthy.
+
+So for this class the truth condition is **recency against the technology**, not **recurrence
+across projects**. The two-state rule is not wrong — it is scoped to claims that do not expire, and
+that scope was never stated because nothing had raised a class that does.
+
+**This is not settled here.** Three shapes are visible and the operator has not chosen between
+them:
+
+1. **A third state.** Cheapest to describe, and the thing DESIGN-NOTES explicitly resists. Listed
+   for completeness, not recommended `[judgement]`.
+2. **An `as-of` on entries whose subject moves**, so `[earned]` can *lapse* rather than needing a
+   new state. This reuses the kit's own absent-is-not-zero rule at the level of dates: an entry
+   with no `as-of` is not current, it is **undated**, and should read that way. `[judgement]`
+   Probably the cheapest that keeps two states.
+3. **Split accelerator content by whether its subject expires** — failure shapes recur, version
+   facts expire — and apply the two-state rule only to the first. Most honest, most work.
+
+**What would settle it:** one real accelerator whose subject moved between two projects that used
+it. The brownfield trial cannot produce that — it needs the *same stack twice, months apart*, which
+is the first thing the terminal goal's multiple-projects premise actually supplies. Until then this
+is reasoned, not observed.
+
+**One knock-on to note, not to act on.**
+`T-20260814-the-promotion-ladder-has-no-gate-so-an-a` was filed because an accelerator can be
+promoted on opinion. If human authorship is first-class for the evolution class, that gate needs a
+**second rule rather than a stricter one** — a hand-written entry is opinion by construction, and
+the check that catches an ungrounded promotion is not the check that keeps a version fact current.
+
+### 11.4 Status
+
+Nothing here is filed as work, and nothing is marked done — same as the rest of this document. §11.3
+is recorded as an open question with what would settle it, which is the only honest state for it
+while the kit has run one stack once.

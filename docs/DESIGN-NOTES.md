@@ -283,6 +283,13 @@ belongs outside this kit even when the knowledge belongs inside it.
 
 ### Two provenance states, not three
 
+> **Scope limit raised 2026-08-24, unresolved — see
+> `design-input/2026-08-22-auto-mode-is-a-graduation.md` §11.3.** The rule below assumes a
+> claim does not expire. Accelerators understood as the result of **technology evolution** are
+> a class where it does: a true current claim cannot be earned by recurrence, and a stale one
+> can be `[earned]` from projects that ran before the technology moved. The two states are not
+> withdrawn; what is open is whether they need an `as-of`, a content split, or nothing.
+
 Knowledge from projects delivered outside this kit enters as `[seeded]` — a hypothesis,
 honestly labelled — and promotes to `[earned]` when findings confirm it across distinct
 projects. Resist a third tier for "expert-provided". The operational question is only

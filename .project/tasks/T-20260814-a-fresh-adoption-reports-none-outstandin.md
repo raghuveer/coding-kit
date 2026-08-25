@@ -63,3 +63,14 @@ Filed 2026-08-14 from the analysis-only pass on aeon. That pass wrote nothing to
 a `--no-hardlinks` clone with its remote removed, verified by `kit-preflight.sh --isolated`
 before anything ran. See also `T-20260814-the-absent-counter-notice-fires-on-every`, found in
 the same forty lines.
+## Field evidence — highper-gateway trial, 2026-08-24 (K-3)
+
+Reproduced verbatim on a real 169-commit Rust workspace, so this is no longer argued from the
+code. `kit-status.sh` on a fresh adoption printed:
+
+> *"none outstanding (0 critical finding(s) recorded, **all marked addressed**)"*
+
+having recorded nothing at all. "All marked addressed" over an empty set is the exact sentence a
+reader takes as reassurance, and it is produced by a repository that has never had a review.
+
+See `docs/TRIALS/2026-08-24-highper-gateway.md` K-3.

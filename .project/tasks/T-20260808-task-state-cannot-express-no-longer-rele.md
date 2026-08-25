@@ -59,3 +59,15 @@ T-20260808-record-how-a-task-was-executed-so-kit-wo; this is the other half.
 
 Related: T-20260808-adoption-paths-for-an-empty-folder-and-f, which is where an adopter will
 be told to do the back-fill this vocabulary has to support.
+## Field evidence — highper-gateway trial, 2026-08-24 (K-8)
+
+**No longer a hypothesis, and it produced a wrong statement in front of the person who could
+correct it.** The subject's roadmap uses five states — `[ ] [~] [x] [d] [k]`. The kit has no
+`deferred`, so four of the five proposed cancellations were `[d]` mapped to `cancelled`.
+
+In the walkthrough the maintainer then **contradicted one of them in the same conversation**: the
+item was deferred, not abandoned. A vocabulary gap that silently converts *"do this later"* into
+*"never do this"* is now demonstrated end to end on a real backlog, with the error caught only
+because a human happened to be reading.
+
+See `docs/TRIALS/2026-08-24-highper-gateway.md` K-8 and the walkthrough section.

@@ -67,3 +67,15 @@ added* is a separate question from the tier of adding them.
 
 Interacts with `T-20260810-the-suite-that-gates-every-control-has-n`, which is the same absence
 one level in: this repository has no floor for `tests/**` either.
+## Second field confirmation — highper-gateway trial, 2026-08-24 (K-5)
+
+**Not a one-off.** `fd` found this on 2026-08-12 and it is why this task exists; it reproduced
+unchanged on a second, unrelated subject twelve days later — a 169-commit Rust workspace.
+Zero `tier.rule` lines in the shipped template, and `commands.build` / `test` / `lint` /
+`typecheck` all empty on day one.
+
+Two independent brownfield subjects, same result, so the defect is a property of the template
+rather than of either repository. Recording the second occurrence here rather than filing a
+duplicate: the 2026-08-24 trial proposed this as a new task, and it is not one.
+
+See `docs/TRIALS/2026-08-24-highper-gateway.md` K-5.

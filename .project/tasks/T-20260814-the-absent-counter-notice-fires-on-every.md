@@ -73,3 +73,14 @@ it, because every one of them read the repository the kit was built in, where
 `events.ndjson` has existed since day one. **Running it somewhere else found it in twenty
 minutes.** That is the argument for the trial chain, made by the cheapest possible version of a
 trial.
+## Field evidence — highper-gateway trial, 2026-08-24 (K-4)
+
+Reproduced on a real subject. The index had been built minutes earlier on `e4a594f`; the notice
+still claimed *"It was built before they existed"* and prescribed deleting and rebuilding — which
+cannot help, because the counters are absent for a different reason entirely: there is no event
+log yet.
+
+So the notice names a cause that is false and a remedy that cannot work, on the most common path
+there is — a fresh adoption. That is worse than silence, because the reader follows it.
+
+See `docs/TRIALS/2026-08-24-highper-gateway.md` K-4.

@@ -410,6 +410,69 @@ check $? "off by default, enforced when asked, not waived by the trivial pattern
 rm -rf "$dc"
 fi
 
+if step "the sign-off requirement has an adoption boundary"; then
+# 0.11.0 shipped git.require_signoff with no boundary and it turned every open pull request red
+# the moment it merged -- commits written before the rule existed cannot gain a trailer without
+# rewriting published history. The argument against that was already inside kit-trailers.sh,
+# under git.adopted_at, and the rule was added anyway. Nothing tested it, which is why.
+#
+# ANCESTRY CANNOT EXPRESS THIS and the fixture proves it rather than asserting it: the
+# pre-rule commit here is built on a BRANCH cut before the boundary and merged after, so it
+# is a DESCENDANT of the pre-adoption tip. An `--is-ancestor` boundary exempts nothing.
+sb="$WORK.signoff"; rm -rf "$sb"; mkdir -p "$sb"
+prof_sb() { printf -- '---\npaths.tasks:  .project/tasks\npaths.state:  .project\ngit.require_signoff: true\n%s---\n' "$1" \
+            > "$sb/.claude/project-profile.md"; }
+( cd "$sb" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  mkdir -p .claude .project/tasks
+
+  # t0 base, then an OLD commit on a side branch, then the boundary on main, then a NEW commit.
+  export GIT_AUTHOR_DATE="2026-01-01T00:00:00Z" GIT_COMMITTER_DATE="2026-01-01T00:00:00Z"
+  echo base > a.txt; git add -A; git commit -q -m "chore: base"
+  git checkout -q -b side
+  export GIT_AUTHOR_DATE="2026-01-02T00:00:00Z" GIT_COMMITTER_DATE="2026-01-02T00:00:00Z"
+  echo old > b.txt; git add -A; git commit -q -m "docs: written before the rule existed"
+  OLD=$(git rev-parse HEAD)
+  git checkout -q main
+  export GIT_AUTHOR_DATE="2026-01-03T00:00:00Z" GIT_COMMITTER_DATE="2026-01-03T00:00:00Z"
+  echo rule > c.txt; git add -A; git commit -q -m "chore: the rule lands"
+  BND=$(git rev-parse HEAD)
+  git checkout -q side
+  export GIT_AUTHOR_DATE="2026-01-04T00:00:00Z" GIT_COMMITTER_DATE="2026-01-04T00:00:00Z"
+  echo new > d.txt; git add -A; git commit -q -m "docs: written after the rule, unsigned"
+  unset GIT_AUTHOR_DATE GIT_COMMITTER_DATE
+
+  # The premise: the old commit is NOT an ancestor of the boundary. If this ever becomes false
+  # the fixture stopped testing what it claims to, so it is asserted rather than assumed.
+  git merge-base --is-ancestor "$OLD" "$BND" 2>/dev/null &&
+    { echo "  fixture broken: the old commit IS an ancestor of the boundary"; exit 1; }
+
+  t() { bash "$KIT/tooling/kit-trailers.sh" range "$1" --enforce 2>&1; }
+
+  # No boundary: BOTH unsigned commits are refused -- the 0.11.0 behaviour.
+  prof_sb ''
+  printf '%s' "$(t "$OLD..HEAD")" | grep -q 'missing  Signed-off-by' || exit 1
+  printf '%s' "$(t "main..$OLD")" | grep -q 'missing  Signed-off-by' || exit 1
+
+  # With the boundary: the pre-rule commit is exempt, the post-rule one is still refused.
+  prof_sb "git.signoff_adopted_at: $BND
+"
+  printf '%s' "$(t "main..$OLD")" | grep -q 'missing  Signed-off-by' &&
+    { echo "  pre-rule commit was refused despite the boundary"; exit 1; }
+  printf '%s' "$(t "$OLD..HEAD")" | grep -q 'missing  Signed-off-by' ||
+    { echo "  post-rule commit was exempted by the boundary"; exit 1; }
+
+  # A boundary naming no commit FAILS CLOSED and says so. Exempting everything on a typo is
+  # the quiet way a gate stops gating.
+  prof_sb "git.signoff_adopted_at: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
+"
+  printf '%s' "$(t "main..$OLD")" | grep -q 'is not a commit in this repository' || exit 1
+  printf '%s' "$(t "main..$OLD")" | grep -q 'missing  Signed-off-by' || exit 1 )
+check $? "pre-rule commits exempt, post-rule still refused, a bad boundary fails closed"
+rm -rf "$sb"
+fi
+
 if step "pre-push blocks a wrong trailer while it can still be amended"; then
 # commit-msg is skippable and absent for anyone who never ran kit-init; CI catches correctly
 # but only after the push, when a commit message can no longer be changed. This repository
@@ -3646,10 +3709,17 @@ echo "  commits: $(git rev-list --count HEAD)"
 #      The two-platform half of note 5's standard is satisfied by CI rather than locally: this
 #      is a re-pin only if ubuntu and macos both compute the same pair. If they disagree, this
 #      is a reproducibility failure and the pins below are wrong.
-EXPECT_HEAD=dcba77ab93f2f6a69b5870626d2308166eb79576
+#      Re-pinned again 2026-08-25, hours after the entry above and by the same mechanism: the
+#      sign-off adoption boundary added eleven commented lines to templates/project-profile.md,
+#      which kit-init.sh copies into the seed. PREDICTED before the run. Evidence: the two seed
+#      trees hold six files each and differ in EXACTLY ONE blob, `.claude/project-profile.md`,
+#      by exactly those eleven lines and nothing else (119 -> 130). The old-pin fixture from the
+#      previous re-pin was still on disk, so both trees were compared directly with
+#      `git ls-tree -r` rather than one being reconstructed. Two-platform agreement is CI's half.
+EXPECT_HEAD=3110463ee10853fe420b3cf23d1e53bee05e9644
 # The seed alone, so a mismatch says WHICH half moved: seed intact means this script changed,
 # seed moved means a file kit-init.sh commits did.
-EXPECT_SEED=25090f5ff393de2865e973d10d5172e04e138756
+EXPECT_SEED=75d6f75e061a6b3c4ce3896734b07f3c9a899d86
 fi
 
 if step "trailer hook" fixture; then

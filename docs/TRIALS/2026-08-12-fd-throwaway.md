@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Trial: sharkdp/fd — 2026-08-12 (throwaway)
 
 > Deliberately small and disposable. Run after three review rounds on

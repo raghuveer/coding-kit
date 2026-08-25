@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Competitive landscape — external, cited
 
 > **PARTLY SUPERSEDED ON §3, 2026-08-22.** This memo asked to be re-verified before acting on it

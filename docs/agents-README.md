@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Subagents — routing, risk-tiering, and model selection
 
 Eight agents. The harness auto-routes to them by matching your request against each agent's

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # ADR 0002: A pre-registered kill condition must have its targets read before it is registered
 
 - **Date:** 2026-08-15   **Status:** **Accepted**   **Accepted:** 2026-08-19   **Supersedes:** —   **Related:** [[0001-anchor-entry-facts-to-files]]

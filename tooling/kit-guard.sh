@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-guard.sh — PreToolUse net: the kit never writes outside the project root.
 # A net, not a security boundary: the real boundary is that scripts use paths
 # relative to the root. Parse failure allows the write and warns, because a

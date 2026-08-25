@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-preflight.sh --isolated <copy>     the subject copy has no path back to the subject
 # kit-preflight.sh --spend               spend capture is live in THIS repository
 # kit-preflight.sh --criticals           no unfixed critical is outstanding in THIS repository

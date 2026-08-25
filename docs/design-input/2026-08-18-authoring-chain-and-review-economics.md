@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # The authoring chain, when to re-enter it, and what review should cost
 
 Design input, 2026-08-18. Produced from a working session between the operator and the coding

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Measurements — greenfield run, 2026-08-01
 
 First run of the kit with the model in the loop. Recorded because the defect tasks it

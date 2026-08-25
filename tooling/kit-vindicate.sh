@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-vindicate.sh --task ID --class CLASS (--real | --false) [--note TEXT]
 #
 # Marks whether a finding was actually a defect. Without this the promotion ladder

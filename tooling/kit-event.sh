@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-event.sh <task-id> <kind> [json-payload] — append one event. Never read-modify-write.
 set -uo pipefail
 . "$(dirname "$0")/kit-lib.sh"

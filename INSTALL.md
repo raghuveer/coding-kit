@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Installation & configuration
 
 Two audiences: someone starting a project with this kit, and someone joining a project

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-index.sh — full rebuild of the derived index from text sources.
 # Idempotent: two consecutive runs produce identical output.
 # Sources of truth: tasks/*.md frontmatter, git trailers, events.ndjson.

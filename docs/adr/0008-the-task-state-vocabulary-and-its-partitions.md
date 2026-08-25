@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # ADR 0008: The task state vocabulary, and where its partitions live
 
 - **Date:** 2026-08-22   **Status:** **Accepted**   **Accepted:** 2026-08-22   **Supersedes:** —   **Related:** [[0004-where-the-plan-lives]]

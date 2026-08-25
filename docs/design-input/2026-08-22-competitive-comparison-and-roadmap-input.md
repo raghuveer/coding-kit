@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Eight kits read at source: what the comparison changes, and what it does not
 
 Design input, 2026-08-22. Produced from a working session between the operator and the coding

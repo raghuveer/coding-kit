@@ -34,6 +34,17 @@ that. It is a statement about provenance, and it costs one flag.
 `git commit -s --amend` fixes a commit you already made. If a branch is missing sign-offs
 throughout, `git rebase --signoff <base>` adds them across the range.
 
+**Commits written before this rule existed are exempt, and you do not need to rewrite them.**
+`git.signoff_adopted_at` names the commit that introduced the requirement, and anything authored
+before it passes untouched. That matters if you have a branch older than the rule: it will merge
+without a rebase.
+
+This is deliberately *not* an ancestry test. The commits needing exemption sit on branches cut
+before the rule and merged after it — descendants of the pre-adoption tip, not ancestors — so
+`git.adopted_at`, which excludes by reachability, cannot express it. The comparison is on author
+date. Shipping the requirement without this boundary turned every open pull request red on the
+day it landed, which is how a gate gets removed rather than fixed.
+
 ### What is checked, and where
 
 `tooling/kit-trailers.sh` validates it in two places — the `commit-msg` hook if you ran

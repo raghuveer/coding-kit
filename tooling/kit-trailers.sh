@@ -57,6 +57,36 @@ case "$REQUIRE_SIGNOFF" in
      REQUIRE_SIGNOFF=true ;;
 esac
 
+# The adoption boundary for the sign-off, and it is NOT git.adopted_at.
+#
+# 0.11.0 shipped require_signoff with no boundary at all, and it turned every open pull request
+# red the moment it merged: a branch cut days earlier carries commits written before the rule
+# existed, and they can never gain a trailer without rewriting published history. The argument
+# against that is already in this file, twenty lines down, under git.adopted_at -- "failing a
+# pull request for commits written before the rule existed is how a gate gets removed." The rule
+# was added in the one file that already explained why it was wrong.
+#
+# ANCESTRY CANNOT EXPRESS THIS, which is why this is a second key rather than a reuse of the
+# first. git.adopted_at excludes commits REACHABLE FROM a commit; the commits that need
+# exempting here are descendants of the pre-adoption tip -- they sit on a branch cut before the
+# rule and merged after it. Measured on this repository: 93371f3 is NOT an ancestor of the
+# pre-DCO main, and an ancestry test therefore exempts nothing.
+#
+# So the discriminator is the AUTHOR DATE, compared against the author date of the commit that
+# introduced the requirement. Both come from `git log -1 --format=%at`, so this is an integer
+# comparison and needs no date parsing -- which would otherwise have to work on BSD date too.
+SIGNOFF_ADOPT=$(kit_cfg "$PROFILE" git.signoff_adopted_at "")
+SIGNOFF_EPOCH=""
+if [ "$REQUIRE_SIGNOFF" = true ] && [ -n "$SIGNOFF_ADOPT" ]; then
+  SIGNOFF_EPOCH=$(git -C "$ROOT" log -1 --format=%at "$SIGNOFF_ADOPT" 2>/dev/null || true)
+  if [ -z "$SIGNOFF_EPOCH" ]; then
+    # Fail CLOSED and say so. A boundary that silently resolves to nothing would exempt
+    # everything on a typo, which is the quiet way a gate stops gating.
+    kit_warn "git.signoff_adopted_at '$SIGNOFF_ADOPT' is not a commit in this repository."
+    kit_warn "every commit will be required to carry a sign-off."
+  fi
+fi
+
 EXEMPT=$(kit_cfg "$PROFILE" git.trivial_pattern '^(chore|docs|style)(\(.*\))?:')
 
 # task_known <id> -- does this id name a real task? The indexer no longer invents a task row
@@ -72,7 +102,26 @@ task_known() {
 # check_msg <message> -- prints one indented line per problem, nothing when clean.
 check_msg() {
   MSG=$1
+  # The commit being checked, when there is one. EMPTY on the `message` path, because that
+  # message has no commit yet -- and a commit you are writing now is always after adoption,
+  # so an empty sha means the requirement applies. Never the other way round: defaulting an
+  # unknown commit to exempt would turn the commit-msg hook off entirely.
+  _sha=${2:-}
   case "$MSG" in Merge*|Revert*|fixup!*|squash!*) return 0 ;; esac
+
+  # Does THIS commit have to carry a sign-off? Required when the project asks for it, unless a
+  # boundary is declared and this commit was authored before it.
+  _need_signoff=0
+  if [ "$REQUIRE_SIGNOFF" = true ]; then
+    _need_signoff=1
+    if [ -n "$SIGNOFF_EPOCH" ] && [ -n "$_sha" ]; then
+      _at=$(git -C "$ROOT" log -1 --format=%at "$_sha" 2>/dev/null || true)
+      case "$_at" in
+        ''|*[!0-9]*) ;;                       # unreadable or not a number: require it
+        *) [ "$_at" -lt "$SIGNOFF_EPOCH" ] && _need_signoff=0 ;;
+      esac
+    fi
+  fi
 
   # git.trivial_pattern means trailers are not REQUIRED. It does not mean trailers are not
   # CHECKED. Returning early here let a `docs:` commit carry `Task-Id: <typo>` and `Tier: T9`
@@ -101,7 +150,7 @@ check_msg() {
   # Signed-off-by joins the stranded scan only where the DCO is in force, so a repository
   # that has not adopted it sees no new output from this validator at all.
   STRANDED_KEYS="Task-Id Tier Task-Status Via Fixes-Escape-Of"
-  [ "$REQUIRE_SIGNOFF" = true ] && STRANDED_KEYS="$STRANDED_KEYS Signed-off-by"
+  [ "$_need_signoff" = 1 ] && STRANDED_KEYS="$STRANDED_KEYS Signed-off-by"
   for k in $STRANDED_KEYS; do
     printf '%s' "$MSG" | grep -Eq "^$k:[[:space:]]*\S" || continue
     printf '%s' "$PARSED" | grep -Eq "^$k:[[:space:]]*\S" && continue
@@ -165,7 +214,7 @@ check_msg() {
   # they had the right to send the change, and a docs commit is as copyrightable as any
   # other. Exempting the trivial ones would leave exactly the commits nobody looks at
   # outside the record the DCO exists to build.
-  if [ "$REQUIRE_SIGNOFF" = true ]; then
+  if [ "$_need_signoff" = 1 ]; then
     SOB=$(printf '%s' "$PARSED" | sed -n 's/^Signed-off-by:[[:space:]]*//p')
     if [ -z "$SOB" ]; then
       is_stranded Signed-off-by ||
@@ -211,7 +260,7 @@ case "$CMD" in
     N=0; BAD=0
     for SHA in $SET; do
       N=$((N + 1))
-      OUT=$(check_msg "$(git -C "$ROOT" show -s --format=%B "$SHA")")
+      OUT=$(check_msg "$(git -C "$ROOT" show -s --format=%B "$SHA")" "$SHA")
       if [ -n "$OUT" ]; then
         BAD=$((BAD + 1))
         report "$(git -C "$ROOT" show -s --format='%h %s' "$SHA")" "$OUT" || true

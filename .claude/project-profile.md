@@ -36,6 +36,12 @@ git.trivial_pattern:      ^(chore|docs|style)(\(.*\))?:
 # forgiven by git.trivial_pattern above: that exemption is about bookkeeping, and this is
 # about who had the right to send the change.
 git.require_signoff:      true
+# The commit that introduced the requirement. Commits authored BEFORE it are exempt --
+# they were written when the rule did not exist and cannot gain a trailer without
+# rewriting published history. Not an ancestry test: the commits this exempts sit on
+# branches cut before the rule and merged after it, so they are DESCENDANTS of the
+# pre-adoption tip. See the reasoning in tooling/kit-trailers.sh.
+git.signoff_adopted_at:   e6f978744f9f634417b489b79ac77e7cf3766047
 
 # --- how the verification ladder is satisfied here. No core skill names a tool. ---
 commands.build:      # none — shell and markdown, nothing is compiled

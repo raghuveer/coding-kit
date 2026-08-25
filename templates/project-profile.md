@@ -45,6 +45,17 @@ git.trivial_pattern:      ^(chore|docs|style)(\(.*\))?:
 # first commit, because a gate is not a policy. Unlike the two keys above, this one is not
 # waived by git.trivial_pattern: a docs commit is as copyrightable as any other.
 # git.require_signoff:    false
+#
+# If you turn it ON in a repository that already has history, declare the boundary too --
+# the commit that introduced the requirement. Commits authored BEFORE it are exempt,
+# because they were written when the rule did not exist and cannot gain a trailer without
+# rewriting published history. Without this, every open pull request goes red the day you
+# enable it, and a gate that does that gets removed rather than fixed.
+#
+# It is NOT git.adopted_at and cannot reuse it: that key excludes commits REACHABLE FROM a
+# commit, while the ones needing exemption here sit on branches cut before the rule and
+# merged after it -- descendants, not ancestors. The test is the author DATE.
+# git.signoff_adopted_at: <sha of the commit that turned it on>
 
 # --- how the verification ladder is satisfied here. No core skill names a tool. ---
 commands.build:

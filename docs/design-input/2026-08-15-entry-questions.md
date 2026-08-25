@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Entry questions — 2026-08-15, self-ingest
 
 Produced by the entry mechanism reading THIS repository: `kit-entry.sh` gathered the facts,

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # commit-msg — trailer validation. A thin caller; the rules live in kit-trailers.sh.
 #
 # Do NOT symlink this. kit-init.sh generates a copy in .git/hooks with KIT_TOOLING

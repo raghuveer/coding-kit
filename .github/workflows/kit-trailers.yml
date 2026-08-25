@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # The kit's own trailer gate.
 #
 # Adapted from templates/github-trailer-gate.yml, which checks out the kit at a pinned tag.

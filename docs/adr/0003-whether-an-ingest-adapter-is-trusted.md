@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # ADR 0003: Whether an ingest adapter is trusted, and what the profile is
 
 - **Date:** 2026-08-16   **Status:** **Accepted — Option C**   **Supersedes:** —   **Related:** [[0001-anchor-entry-facts-to-files]]

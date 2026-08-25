@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-init.sh — adopt the kit in the current repository. Idempotent.
 set -euo pipefail
 ROOT=$(git rev-parse --show-toplevel) || { echo "not a git repository" >&2; exit 1; }

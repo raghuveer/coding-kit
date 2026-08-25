@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-entry.sh          turn an existing codebase into FACTS, anchored to files
 #
 # Writes three derived artefacts under `paths.state` and NOTHING else, ever:

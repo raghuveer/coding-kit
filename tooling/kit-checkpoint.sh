@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-checkpoint.sh — Stop hook. Deterministic session checkpoint.
 # This is a hook and not a skill on purpose: a checkpoint that depends on someone
 # remembering to invoke it is skipped exactly when sessions run long, which is when

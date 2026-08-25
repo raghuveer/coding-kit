@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Project profile — &lt;PROJECT&gt;
 
 The agents read this. Keep it short and true; a profile that describes aspirations rather than the

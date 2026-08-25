@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-review-record.sh --task ID|--unattributed --agent NAME --cmd '<command>'
 #                      [--prompt-file F] [--max-attempts N] [--model M] [--agent-id X]
 #
@@ -60,7 +62,7 @@ while [ $# -gt 0 ]; do
     --cmd) cmd=${2:-}; shift; shift ;;
     --prompt-file) prompt_file=${2:-}; shift; shift ;;
     --max-attempts) max=${2:-}; shift; shift ;;
-    -h|--help) sed -n '2,4p' "$0"; exit 0 ;;
+    -h|--help) sed -n '4,6p' "$0"; exit 0 ;;
     *) kit_warn "unknown argument: $1"; exit 2 ;;
   esac
 done

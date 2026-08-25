@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Retro, period one: 2026-08-17 to 2026-08-20
 
 **A hand-run instance of the artefact `T-20260811-a-retro-artefact-that-closes-the-kaizen-` is

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # coding-kit
 
 A risk-tiered review pipeline and derived project state for AI-assisted coding with
@@ -5,23 +8,43 @@ Claude Code. Stack-agnostic baseline.
 
 ## Where this came from
 
-This was **extracted from a subagent pipeline already in use on a large project**, not
-designed from scratch. The history shows the shape of that extraction:
+Four steps, in this order:
+
+1. **The subagent pipeline**, built from my own experience using Claude Code — what worked,
+   what cost more than it returned, what had to be re-derived from scratch every session.
+2. **Custom commands to manage state and context** around it. They are still in this
+   repository as [`legacy-commands/`](legacy-commands/) — tracked, unwired, kept for
+   reference.
+3. **Adopting the pipeline onto an ongoing large project**, to improve the outcome of
+   development already under way.
+4. **Productising it**, which is this kit.
+
+The order matters, because the obvious reading is the wrong one. The pipeline was not carved
+out of a codebase and generalised afterwards. It was authored, given a state-and-context
+layer, and only then taken to a project — so what the version history below shows is step 4,
+the packaging, not the origin:
 
 | | |
 |---|---|
 | `0.1` — 2026-07-26 | The agent set as copyable files: eight core agents, a core/overlay split, a PowerShell script to sync them into a project, and a profile template. A distribution mechanism for agents that already existed. |
 | `0.2.0` — 2026-07-29 | The turn from copying to a plugin, and the point at which **state and context management became the product**: derived project state, semantic task clustering, commands to skills, the checkpoint to a hook. |
 
-The reason for extracting it was to productise what was being tuned by hand — state and
-context management for quality outcomes at controlled token cost — so it could be pointed at
-other projects instead of one. Everything since 0.2.0 is that work: measuring what the
-pipeline costs, making the state derived rather than maintained, and closing the gaps that
-only appear when the same machinery meets an unfamiliar codebase.
+**Step 2 is the one that explains what this kit is for.** `resume-context`, `checkpoint` and
+`drift-check` were state and context management as rituals — rebuild context from files rather
+than from an old conversation, close a work unit, catch documentation that has drifted from the
+repository. 0.2.0 is where that concern stopped being rituals and became the product. That is
+why those three files are still tracked rather than deleted, and `docs/MIGRATION.md` maps each
+one to what replaced it.
 
-Two consequences worth stating up front. The kit has been **measured on exactly one project**,
-greenfield and single-stack (`docs/MEASUREMENTS.md`, n=1 per cell) — brownfield and polyglot
-are the untested cases, and the backlog says so. And the agents predate the kit, so the
+Everything since 0.2.0 is that work: measuring what the pipeline costs, making the state
+derived rather than maintained, and closing the gaps that only appear when the same machinery
+meets an unfamiliar codebase.
+
+Two consequences worth stating up front. **The kit** has been **measured on exactly one
+project**, greenfield and single-stack (`docs/MEASUREMENTS.md`, n=1 per cell) — brownfield and
+polyglot are the untested cases, and the backlog says so. Step 3 above is not a
+counter-example: the *pipeline* ran on a project already under way, that is not the same
+subject as the kit, and it produced no kit measurements. And the agents predate the kit, so the
 pipeline is older and better exercised than the state layer wrapped around it.
 
 ## What changed in 0.2.0
@@ -289,6 +312,7 @@ sqlite3 .project/index.db "SELECT lang, class, COUNT(*) FROM finding
 | File | What it answers |
 |---|---|
 | [`INSTALL.md`](INSTALL.md) | Installing, adopting in a new repo, joining one that already uses it |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | The licence in one paragraph, the DCO sign-off every commit needs, and what the gate checks |
 | [`SECURITY.md`](SECURITY.md) | What is trusted and what is not, the five properties enforced mechanically, the four that are convention, and what is absent |
 | [`docs/CHARTER.md`](docs/CHARTER.md) | **What it is all for** — the goal, the four artefacts and the route a requirement travels, what exists today measured rather than claimed, and the six dimensions on which this kit and any competitor should be judged |
 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | Why it is built this way — requirements, decisions with rationale, verified state, open gaps, and the constraints that must not be broken |
@@ -323,3 +347,31 @@ than procedural.
   because a guard that blocks every edit on a parse error is a guard people remove.
 - Coder and reviewer currently share a model family, so they share blind spots.
   "Independent judgment" is partly aspirational until that changes.
+
+## Licence
+
+Apache License 2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
+
+**This changed at v0.11.0.** Releases up to and including v0.10.0 were MIT. Nothing is
+withdrawn: a copy you already hold under MIT stays MIT, because a licence already granted
+cannot be revoked. The change applies from v0.11.0 onward, and it was clean to make because
+every commit to that point is single-author. Apache 2.0 is here for two things MIT lacks that
+matter for something used in client engagements — an **express patent grant** (section 3), and
+a **NOTICE** mechanism (section 4d) that travels with any redistribution.
+
+`SPDX-License-Identifier: Apache-2.0` headers are on every file that can carry one. Four
+groups deliberately have none: **JSON** files, which have no comment syntax; **markdown with
+frontmatter** — agents, skills, accelerators, and the 138 task files — where a line above the
+opening `---` would break plugin discovery and the indexer; `.claude/CLAUDE.md` and
+`templates/CLAUDE.kit.md`, which are loaded into every model session and are charged per
+request; and `.project/entry-candidates.md`, which `kit-entry.sh` rewrites.
+
+Contributions are covered by section 5 — inbound under the same terms, automatically, patent
+grant included. **There is no CLA.** What is required is a DCO `Signed-off-by:` line on every
+commit, which `git commit -s` writes and which `tooling/kit-trailers.sh` enforces in the
+`commit-msg` hook and in CI. [`CONTRIBUTING.md`](CONTRIBUTING.md) has the reasoning and the
+full DCO text. That gate is **off by default for repositories that adopt the kit** —
+`git.require_signoff` — because a contribution policy belongs to the project, not to the kit.
+
+Parts of this project were generated with Claude Code under human direction; `NOTICE` records
+it, and the commits that carry it name it in a `Co-Authored-By:` trailer.

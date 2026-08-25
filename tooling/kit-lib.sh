@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-lib.sh — shared helpers. Sourced, never executed directly.
 # Dependencies: git, sqlite3, awk, sed. Nothing else, by design.
 

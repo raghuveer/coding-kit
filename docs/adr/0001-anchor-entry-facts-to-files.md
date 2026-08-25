@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # ADR 0001: Anchor entry-mechanism facts to files, not to an aggregation unit
 
 - **Date:** 2026-08-15   **Status:** **Accepted**   **Accepted:** 2026-08-19   **Supersedes:** —   **Related:** [[0002-verify-kill-condition-targets-by-reading-them]]

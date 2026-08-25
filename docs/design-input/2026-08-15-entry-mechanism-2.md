@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 ## Problem statement
 
 The kit has no way to turn an existing codebase into a first task list. Design 1 proposed a per-directory inventory ("areas"), marker-file stack detection, per-directory churn, and a *rationale map* that classified doc-shaped files by name and path. That design was rejected twice, and a prototype implementing exactly its five inputs has since been run against three real repositories. The measurements are in `inventory-*.md` and they falsify the central invention rather than qualify it:

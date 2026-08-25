@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-finding.sh --task ID --agent NAME --json     < one reviewer JSON object   [the main door]
 # kit-finding.sh --task ID --agent NAME --class CLASS --severity SEV --summary TEXT
 #                [--lang L] [--domain D] [--pattern P] [--model M]
@@ -79,7 +81,7 @@ while [ $# -gt 0 ]; do
     # round-4 reviewer caught. Both spellings work from either position now.
     --vocab) printf 'class:    %s\nseverity: %s\n' "$CLASSES" "$SEVERITIES"; exit 0 ;;
     --contract) exec python3 "$(dirname "$0")/kit_findings.py" --contract ;;
-    -h|--help) sed -n '2,6p' "$0"; exit 0 ;;
+    -h|--help) sed -n '4,8p' "$0"; exit 0 ;;
     *) kit_warn "unknown argument: $1"; exit 2 ;;
   esac
 done

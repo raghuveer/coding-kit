@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Migration: copy-based kit -> plugin
 
 ## Commands -> skills, and what became a hook

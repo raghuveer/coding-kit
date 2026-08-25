@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-spend.sh — record what a unit of work actually cost.
 #
 # Invoked from the SubagentStop and Stop hooks with the hook JSON on stdin. Nobody types it,
@@ -53,7 +55,7 @@ while [ $# -gt 0 ]; do
     --agent)      AGENT=${2:-};      shift; shift ;;
     --agent-id)   AGENT_ID=${2:-};   shift; shift ;;
     --session)    SESSION=${2:-};    shift; shift ;;
-    -h|--help)    sed -n '2,44p' "$0"; exit 0 ;;
+    -h|--help)    sed -n '4,46p' "$0"; exit 0 ;;
     *) shift ;;
   esac
 done

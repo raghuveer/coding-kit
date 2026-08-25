@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # The plan is the one artifact nothing reviews, and auto-mode is where that bill comes due
 
 Design input, 2026-08-18. **A proposal, not a decision.** It records a gap found by three

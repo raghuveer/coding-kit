@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-task.sh --title "..." [--tier T2] [--lang go] [--epic name] [--blocked-by "T-x,T-y"]
 #
 # Creates one task file. Tasks are FILES; the index is derived from them. Nothing is
@@ -29,7 +31,7 @@ while [ $# -gt 0 ]; do
     --paths) paths=${2:-}; shift; shift ;;
     --state) state=${2:-}; shift; shift ;;
     --via)   via=${2:-}; shift; shift ;;
-    -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+    -h|--help) sed -n '4,14p' "$0"; exit 0 ;;
     *) kit_warn "unknown argument: $1"; exit 2 ;;
   esac
 done

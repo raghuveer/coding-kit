@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 """Read, validate and WRITE reviewer findings. The JSON boundary, in one place.
 
 Reviewers used to return a prose block that something -- a hook scraping a transcript, or a

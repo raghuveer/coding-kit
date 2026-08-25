@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Design notes — proposed, not built
 
 > **Status: seeded, not earned.** Nothing here is implemented. The field names, key names

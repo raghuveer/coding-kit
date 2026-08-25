@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-accel.sh resolve [--agent NAME] | propose [--min N] [--out FILE]
 #
 # Accelerators are external, shared, versioned files. Two rules:
@@ -29,7 +31,7 @@ while [ $# -gt 0 ]; do
     --agent) AGENT=${2:-}; shift; shift ;;
     --min)   MIN=${2:-2};  shift; shift ;;
     --out)   OUT=${2:-};   shift; shift ;;
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h|--help) sed -n '4,18p' "$0"; exit 0 ;;
     *) kit_warn "unknown argument: $1"; exit 2 ;;
   esac
 done

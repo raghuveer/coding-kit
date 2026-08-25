@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Experiment design: do cluster packs pay for themselves?
 
 **Status: DRAFT, PRE-REGISTRATION, UNSIGNED. Nothing has been spent and nothing runs until the

@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # The three-artifact model, accelerator distribution, and the road to unattended operation
 
 Design input, 2026-08-16. Produced from a working session between the operator and the coding

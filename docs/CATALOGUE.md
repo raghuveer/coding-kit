@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Library catalogue — proposed, not built, and not part of this kit
 
 > **Status: seeded, not earned.** Nothing here exists. The solution lists below are a

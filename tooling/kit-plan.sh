@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-plan.sh [--goal ID] [--next N] [--show] [--packs]
 #
 # Groups tasks by dependency, orders them by completion priority, and persists the
@@ -35,7 +37,7 @@ while [ $# -gt 0 ]; do
     --packs) PACKS_ONLY=1; shift ;;
     --next) NEXT=${2:-5}; shift; shift ;;
     --show) SHOW=1; shift ;;
-    -h|--help) sed -n '2,14p' "$0"; exit 0 ;;
+    -h|--help) sed -n '4,16p' "$0"; exit 0 ;;
     *) kit_warn "unknown argument: $1"; exit 2 ;;
   esac
 done

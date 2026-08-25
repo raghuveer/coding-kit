@@ -25,3 +25,10 @@ commit-msg  text eol=lf
 # interleave them into a third that neither computed. A conflict here is the correct outcome --
 # it is a disagreement about what to do next, and it belongs in front of a person.
 .project/plans/*.tsv text eol=lf
+
+# The licence files, for the same reason as *.md above: they are READ as data. validate.py
+# compares the declared SPDX identifier against a marker phrase in LICENSE, and a CRLF
+# checkout on Windows against an LF expectation is exactly the drift that pin exists to stop.
+# Neither has an extension, so nothing above matches them.
+LICENSE     text eol=lf
+NOTICE      text eol=lf

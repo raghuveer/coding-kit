@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Auto-mode is a graduation, and the interrupt budget is the constraint
 
 Design input, 2026-08-22, second of the day. Produced from a working session between the operator

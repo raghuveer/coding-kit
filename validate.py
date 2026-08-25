@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 """validate.py — structural check against documented Claude Code plugin conventions.
 
 Not a substitute for `claude plugin validate`, which runs the real schema. This checks
@@ -67,6 +69,51 @@ if os.path.isfile(mk):
         O(f"marketplace.json lists {len(d.get('plugins', []))} plugin(s)")
     except json.JSONDecodeError as e:
         E(f"marketplace.json is not valid JSON: {e}")
+
+# ---- licence: the declared identifier and the LICENSE file must agree --------
+# Two sources of truth for one fact, and until now nothing compared them. plugin.json could
+# read Apache-2.0 while LICENSE still held the MIT text, or the reverse, and every check in
+# this repository stayed green — because neither file is wrong on its own, only the pair is.
+# That is exactly how a half-finished relicence survives review. A marker phrase is enough:
+# each licence's own opening words are present in its real text and absent from the others.
+LICENCE_MARKERS = {
+    "Apache-2.0":   "Apache License",
+    "MIT":          "Permission is hereby granted, free of charge",
+    "BSD-3-Clause": "Redistribution and use in source and binary forms",
+    "GPL-3.0-only": "GNU GENERAL PUBLIC LICENSE",
+}
+lic = os.path.join(ROOT, "LICENSE")
+declared = None
+if os.path.isfile(man):
+    try:
+        declared = json.load(open(man, encoding="utf-8")).get("license")
+    except json.JSONDecodeError:
+        declared = None                 # already reported above; do not say it twice
+
+if not os.path.isfile(lic):
+    E("LICENSE missing — the manifest declares a licence with no text to point at")
+elif not declared:
+    E("plugin.json: 'license' is unset, so nothing declares what LICENSE grants")
+else:
+    ltext = open(lic, encoding="utf-8", errors="replace").read()
+    want = LICENCE_MARKERS.get(declared)
+    strays = [k for k, v in LICENCE_MARKERS.items()
+              if k != declared and v in ltext]
+    if want is None:
+        W(f"licence: plugin.json declares '{declared}', which this check knows no marker "
+          f"for — LICENSE is unverified, not verified-clean")
+    elif want not in ltext:
+        E(f"licence: plugin.json declares {declared} but LICENSE does not contain "
+          f"'{want}' — the declaration and the text disagree")
+    elif strays:
+        E(f"licence: LICENSE is declared {declared} but still carries the text of "
+          f"{', '.join(sorted(strays))} — a relicence that stopped half way")
+    elif declared == "Apache-2.0" and not os.path.isfile(os.path.join(ROOT, "NOTICE")):
+        E("licence: Apache-2.0 is declared with no NOTICE file — section 4(d) is the only "
+          "attribution this licence binds downstream to, and it binds nobody unless the "
+          "file exists at the time the copy is made")
+    else:
+        O(f"licence: plugin.json and LICENSE agree on {declared}")
 
 # ---- components must be at plugin root, not under .claude-plugin/ -------------
 for comp in ("commands", "agents", "skills", "hooks"):

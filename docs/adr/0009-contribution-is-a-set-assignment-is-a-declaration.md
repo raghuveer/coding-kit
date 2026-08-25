@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # ADR 0009: Contribution is a set, assignment is a declaration
 
 - **Date:** 2026-08-22   **Status:** **Accepted**   **Accepted:** 2026-08-22   **Supersedes:** —   **Related:** [[0004-where-the-plan-lives]], [[0008-the-task-state-vocabulary-and-its-partitions]]

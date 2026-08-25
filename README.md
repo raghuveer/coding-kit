@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # coding-kit
 
 A risk-tiered review pipeline and derived project state for AI-assisted coding with
@@ -289,6 +292,7 @@ sqlite3 .project/index.db "SELECT lang, class, COUNT(*) FROM finding
 | File | What it answers |
 |---|---|
 | [`INSTALL.md`](INSTALL.md) | Installing, adopting in a new repo, joining one that already uses it |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | The licence in one paragraph, the DCO sign-off every commit needs, and what the gate checks |
 | [`SECURITY.md`](SECURITY.md) | What is trusted and what is not, the five properties enforced mechanically, the four that are convention, and what is absent |
 | [`docs/CHARTER.md`](docs/CHARTER.md) | **What it is all for** — the goal, the four artefacts and the route a requirement travels, what exists today measured rather than claimed, and the six dimensions on which this kit and any competitor should be judged |
 | [`docs/HANDOFF.md`](docs/HANDOFF.md) | Why it is built this way — requirements, decisions with rationale, verified state, open gaps, and the constraints that must not be broken |
@@ -323,3 +327,31 @@ than procedural.
   because a guard that blocks every edit on a parse error is a guard people remove.
 - Coder and reviewer currently share a model family, so they share blind spots.
   "Independent judgment" is partly aspirational until that changes.
+
+## Licence
+
+Apache License 2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
+
+**This changed at v0.11.0.** Releases up to and including v0.10.0 were MIT. Nothing is
+withdrawn: a copy you already hold under MIT stays MIT, because a licence already granted
+cannot be revoked. The change applies from v0.11.0 onward, and it was clean to make because
+every commit to that point is single-author. Apache 2.0 is here for two things MIT lacks that
+matter for something used in client engagements — an **express patent grant** (section 3), and
+a **NOTICE** mechanism (section 4d) that travels with any redistribution.
+
+`SPDX-License-Identifier: Apache-2.0` headers are on every file that can carry one. Four
+groups deliberately have none: **JSON** files, which have no comment syntax; **markdown with
+frontmatter** — agents, skills, accelerators, and the 138 task files — where a line above the
+opening `---` would break plugin discovery and the indexer; `.claude/CLAUDE.md` and
+`templates/CLAUDE.kit.md`, which are loaded into every model session and are charged per
+request; and `.project/entry-candidates.md`, which `kit-entry.sh` rewrites.
+
+Contributions are covered by section 5 — inbound under the same terms, automatically, patent
+grant included. **There is no CLA.** What is required is a DCO `Signed-off-by:` line on every
+commit, which `git commit -s` writes and which `tooling/kit-trailers.sh` enforces in the
+`commit-msg` hook and in CI. [`CONTRIBUTING.md`](CONTRIBUTING.md) has the reasoning and the
+full DCO text. That gate is **off by default for repositories that adopt the kit** —
+`git.require_signoff` — because a contribution policy belongs to the project, not to the kit.
+
+Parts of this project were generated with Claude Code under human direction; `NOTICE` records
+it, and the commits that carry it name it in a `Co-Authored-By:` trailer.

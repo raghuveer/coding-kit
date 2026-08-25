@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # ADR 0005: Evidence for a disposition must be re-checkable
 
 - **Date:** 2026-08-21   **Status:** **REJECTED — do not implement**   **Supersedes:** —   **Related:** [[0004-where-the-plan-lives]]

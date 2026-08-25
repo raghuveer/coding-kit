@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # ADR 0006: Admissible evidence for a disposition
 
 - **Date:** 2026-08-21   **Status:** **REJECTED — do not implement**   **Supersedes:** [[0005-evidence-for-a-disposition-must-be-re-checkable]]   **Related:** [[0004-where-the-plan-lives]]

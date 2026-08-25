@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Security posture
 
 **Summary.** The kit treats **agent output as untrusted input**, never as privileged code. Five

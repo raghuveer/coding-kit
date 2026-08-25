@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-resolve.sh --finding ID --fixed [--commit SHA] [--note TEXT]   mark a finding addressed
 # kit-resolve.sh --finding ID --open  [--note TEXT]                  retract that mark
 # kit-resolve.sh --finding ID --unassessable --reason TEXT           it cannot be judged at all

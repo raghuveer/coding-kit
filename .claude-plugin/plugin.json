@@ -1,9 +1,9 @@
 {
   "name": "coding-kit",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "description": "Risk-tiered review pipeline and derived project state for AI-assisted coding. Stack-agnostic: no MCP servers, five skills, all project state in the project repo.",
   "author": { "name": "Raghuveer Dendukuri" },
   "homepage": "https://github.com/raghuveer/coding-kit",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["code-review", "subagents", "context-management", "project-state"]
 }

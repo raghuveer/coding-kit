@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Lessons
 
 What this project has learned the hard way, with the evidence attached. Each entry cost real

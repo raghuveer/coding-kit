@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
+#
 # Reference ingest adapter — reads tasks from a CSV instead of markdown files.
 #
 # Not useful in itself. It exists to be the shortest complete example of the contract in

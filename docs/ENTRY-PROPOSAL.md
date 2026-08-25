@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # The entry proposal — format, and who writes it
 
 A reference file, not an agent and not a skill. `docs/DESIGN-NOTES.md` §0: an agent is a permanent

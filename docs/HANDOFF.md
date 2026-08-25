@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Handoff brief — coding-kit v0.2.0
 
 Paste this into a Claude Code session as context. It is self-contained: requirements,

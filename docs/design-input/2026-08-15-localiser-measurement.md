@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Localiser measurement, 2026-08-15
 
 Ground truth: 12 sites nominated by a read-only agent with no sight of any scanner output.

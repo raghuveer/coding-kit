@@ -1,3 +1,5 @@
+-- SPDX-License-Identifier: Apache-2.0
+-- Copyright 2026 Raghuveer Dendukuri
 
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT);
 

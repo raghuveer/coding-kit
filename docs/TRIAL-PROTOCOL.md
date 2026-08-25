@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Trial protocol
 
 How to run the kit against a project it has never seen, so that two trials can be compared.

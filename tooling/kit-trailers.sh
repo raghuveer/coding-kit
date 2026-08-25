@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # kit-trailers.sh — the one trailer validator.
 #
 #   kit-trailers.sh message <file>       validate a prepared commit message   (commit-msg)
@@ -25,7 +27,7 @@ FORCE=""; ARG=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --enforce) FORCE=enforce; shift ;;
-    -h|--help) sed -n '2,16p' "$0"; exit 0 ;;
+    -h|--help) sed -n '4,18p' "$0"; exit 0 ;;
     *) ARG=$1; shift ;;
   esac
 done
@@ -41,6 +43,19 @@ case "$MODE" in
      MODE=enforce ;;
 esac
 [ -n "$FORCE" ] && MODE=$FORCE
+
+# DCO (Developer Certificate of Origin 1.1). Off unless a project turns it on. Which
+# contributions a project will accept, and on what assertion, is the project's call --
+# a kit that required a sign-off everywhere would be making that call for every repository
+# that adopts it, and the one thing this kit is not allowed to do is decide policy for its
+# host. This repository sets it true; see CONTRIBUTING.md for the reasoning there.
+REQUIRE_SIGNOFF=$(kit_cfg "$PROFILE" git.require_signoff false)
+case "$REQUIRE_SIGNOFF" in
+  true|false) ;;
+  *) kit_warn "git.require_signoff is '$REQUIRE_SIGNOFF' — valid values are true|false."
+     kit_warn "treating as true; correct it in .claude/project-profile.md."
+     REQUIRE_SIGNOFF=true ;;
+esac
 
 EXEMPT=$(kit_cfg "$PROFILE" git.trivial_pattern '^(chore|docs|style)(\(.*\))?:')
 
@@ -83,7 +98,11 @@ check_msg() {
   tv() { printf '%s' "$PARSED" | sed -n "s/^$1:[[:space:]]*//p" | head -1; }
 
   stranded=""
-  for k in Task-Id Tier Task-Status Via Fixes-Escape-Of; do
+  # Signed-off-by joins the stranded scan only where the DCO is in force, so a repository
+  # that has not adopted it sees no new output from this validator at all.
+  STRANDED_KEYS="Task-Id Tier Task-Status Via Fixes-Escape-Of"
+  [ "$REQUIRE_SIGNOFF" = true ] && STRANDED_KEYS="$STRANDED_KEYS Signed-off-by"
+  for k in $STRANDED_KEYS; do
     printf '%s' "$MSG" | grep -Eq "^$k:[[:space:]]*\S" || continue
     printf '%s' "$PARSED" | grep -Eq "^$k:[[:space:]]*\S" && continue
     stranded="$stranded $k"
@@ -139,6 +158,29 @@ check_msg() {
     [ -n "$v" ] || continue
     task_known "$v" || printf '  unknown  %s: %s — matches no task in %s\n' "$k" "$v" "$TASKS_DIR"
   done
+
+  # The DCO sign-off. Deliberately NOT forgiven by git.trivial_pattern, unlike Task-Id and
+  # Tier. That exemption forgives a missing task reference on a typo fix, and the cost of
+  # that is a wrong count. A sign-off is not bookkeeping: it is the contributor asserting
+  # they had the right to send the change, and a docs commit is as copyrightable as any
+  # other. Exempting the trivial ones would leave exactly the commits nobody looks at
+  # outside the record the DCO exists to build.
+  if [ "$REQUIRE_SIGNOFF" = true ]; then
+    SOB=$(printf '%s' "$PARSED" | sed -n 's/^Signed-off-by:[[:space:]]*//p')
+    if [ -z "$SOB" ]; then
+      is_stranded Signed-off-by ||
+        printf '  missing  Signed-off-by:  this project requires a DCO sign-off — commit with `git commit -s`\n'
+    else
+      # Every line, not just the first. A commit that picks up a second sign-off from a
+      # cherry-pick or a hand edit can carry one good line and one that names nobody, and
+      # a checker that stops at the first would report the whole commit clean.
+      printf '%s\n' "$SOB" | while IFS= read -r _s; do
+        [ -n "$_s" ] || continue
+        printf '%s' "$_s" | grep -Eq '^.+ <[^<>[:space:]]+@[^<>[:space:]]+>$' ||
+          printf '  invalid  Signed-off-by: %s  — expected `Name <email>`\n' "$_s"
+      done
+    fi
+  fi
 }
 
 report() {   # report <label> <failures>

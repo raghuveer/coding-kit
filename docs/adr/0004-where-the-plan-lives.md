@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # ADR 0004: Where the plan lives
 
 - **Date:** 2026-08-17   **Status:** **Accepted — Option D**   **Amended:** 2026-08-17   **Supersedes:** —   **Related:** [[0003-whether-an-ingest-adapter-is-trusted]]

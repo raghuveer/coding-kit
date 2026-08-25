@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Trial: <subject> — <date>
 
 > Copy this file to `docs/TRIALS/<date>-<subject>.md` and fill it in. Do not restructure it:

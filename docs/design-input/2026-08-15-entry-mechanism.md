@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Entry mechanism — turning an existing codebase into a candidate task list
 
 > **Superseded-by: docs/design-input/2026-08-15-entry-mechanism-2.md**

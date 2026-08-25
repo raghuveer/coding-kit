@@ -1,3 +1,6 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- Copyright 2026 Raghuveer Dendukuri -->
+
 # Versioning and release
 
 Semantic versioning, with the compatibility surface defined below — because the usual
@@ -33,7 +36,7 @@ So the test for MAJOR is: *does someone pulling this have to take an action?*
 | Bump | Covers |
 |---|---|
 | **MAJOR** | commit trailer vocabulary · `.project/` layout · `events.ndjson` record schema · `project-profile.md` frontmatter keys — anything that requires migrating committed state |
-| **MINOR** | new skills, agents, scripts, flags, tier rules, accelerators · **any `index.db` schema change** · additive `events.ndjson` fields · **repository or marketplace identity** (see below) |
+| **MINOR** | new skills, agents, scripts, flags, tier rules, accelerators · **any `index.db` schema change** · additive `events.ndjson` fields · **repository or marketplace identity** (see below) · **the licence the kit is distributed under** (see below) |
 | **PATCH** | bug fixes, documentation, warnings, performance |
 
 ### Identity changes are MINOR, and they are the only break that is not committed state
@@ -55,6 +58,31 @@ So: **MINOR, with the break called out in the release notes** — which is exact
 on 0.x" below permits. After 1.0 this deserves re-examination, because the promise 1.0 makes is
 about committed state and an identity change would then be the loudest thing in a release that
 the promise does *not* cover.
+
+### A licence change is MINOR, for the same reason and with a sharper limit
+
+Added 2026-08-25, when the kit moved from MIT to Apache 2.0 at v0.11.0. Same situation as the
+rename: the table did not cover it, and the MAJOR test read wrong at first glance.
+
+A relicence is loud. Someone redistributing the kit now has obligations they did not have —
+carry `NOTICE`, state their changes — and an organisation with a licence allowlist has to
+re-approve it. That sounds like an action a consumer must take.
+
+It is still MINOR, and the test says why: **nothing in a consumer's repository becomes wrong.**
+No committed schema moved, no record needs migrating, no `.project/` file has to be rewritten.
+Re-approving a dependency is a procurement cost, not a repair cost, and MAJOR here prices
+repair.
+
+The sharper limit, which the identity case does not have: **a licence change is not retroactive
+and cannot be.** A copy already obtained under MIT stays under MIT — a granted licence is
+irrevocable, so v0.10.0 and everything before it remain MIT permanently, whatever this file
+says. A version number can announce the terms the *next* release ships under. It cannot restate
+the terms of one already published, which is why the README states the boundary by version
+rather than saying the project "is" Apache 2.0 without qualification.
+
+So: **MINOR, with the change called out in the release notes**, exactly as for identity. And it
+was clean to make only because every commit to that point is single-author; with third-party
+contributions under the old licence it becomes a permissions exercise, not a version decision.
 
 ### Why `index.db` schema changes are only MINOR
 

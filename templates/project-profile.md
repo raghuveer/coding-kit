@@ -1,3 +1,10 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
+#
+# These two lines are here because kit-init.sh copies this file into your repository, where
+# it stops being obviously ours. They say what you received it under; they are not a claim
+# on what you write below. Delete them if you would rather not carry them -- nothing reads
+# them, and kit_cfg ignores everything before the `---`.
 ---
 # Copy to .claude/project-profile.md in the target repo. Its presence is what
 # activates the kit — without it every script exits silently and writes nothing.
@@ -30,6 +37,14 @@ git.adopted_at:
 # says so, rather than quietly downgrading a repo you believed was protected.
 git.trailer_enforcement:  warn
 git.trivial_pattern:      ^(chore|docs|style)(\(.*\))?:
+
+# Require a DCO sign-off (`Signed-off-by: Name <email>`, added by `git commit -s`) on every
+# non-merge commit. Default false -- the kit does not pick a contribution policy for you.
+# Turn it on if you want a per-commit record that the sender had the right to contribute
+# what they sent; write the policy down somewhere a contributor will read before their
+# first commit, because a gate is not a policy. Unlike the two keys above, this one is not
+# waived by git.trivial_pattern: a docs commit is as copyrightable as any other.
+# git.require_signoff:    false
 
 # --- how the verification ladder is satisfied here. No core skill names a tool. ---
 commands.build:

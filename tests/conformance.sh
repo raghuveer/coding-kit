@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2026 Raghuveer Dendukuri
 # Cross-platform conformance run.
 #
 #   KIT=/path/to/kit WORK=/path/to/empty/scratch bash tests/conformance.sh
@@ -372,6 +374,40 @@ Tier: T9
   [ -z "$(bash "$KIT/tooling/kit-trailers.sh" message ok.txt 2>&1)" ] || exit 1 )
 check $? "exempt commit: absence allowed, wrong values still reported"
 rm -rf "$tx"
+fi
+
+if step "DCO sign-off is required only where the project asks for it"; then
+# A contribution policy is the project's, not the kit's, so git.require_signoff defaults to
+# false and adopting the kit never silently starts rejecting a project's own commits. The
+# default is the half of this worth testing: a control that is on everywhere is a control
+# that gets turned off everywhere. The other half is that git.trivial_pattern does NOT waive
+# it -- that exemption is about bookkeeping, and a docs commit is as copyrightable as any
+# other, so exempting it would put the commits nobody reads outside the record.
+dc="$WORK.dco"; rm -rf "$dc"; mkdir -p "$dc"
+prof_dco() { printf -- '---\npaths.tasks:  .project/tasks\npaths.state:  .project\n%s---\n' "$1" \
+             > "$dc/.claude/project-profile.md"; }
+( cd "$dc" || exit 1
+  git init -q -b main 2>/dev/null
+  mkdir -p .claude .project/tasks
+  printf 'docs: x\n\nbody\n' > nosob.txt
+  printf 'docs: x\n\nbody\n\nSigned-off-by: A Dev <a@b.c>\n' > sob.txt
+  printf 'docs: x\n\nbody\n\nSigned-off-by: nobody\n' > badsob.txt
+  t() { bash "$KIT/tooling/kit-trailers.sh" message "$1" 2>&1; }
+
+  prof_dco ''                                   # key absent: nothing is said about sign-off
+  [ -z "$(t nosob.txt)" ] || exit 1
+
+  prof_dco 'git.require_signoff: true
+'
+  printf '%s' "$(t nosob.txt)"  | grep -q 'missing  Signed-off-by' || exit 1
+  printf '%s' "$(t badsob.txt)" | grep -q 'invalid  Signed-off-by' || exit 1
+  [ -z "$(t sob.txt)" ] || exit 1
+
+  prof_dco 'git.require_signoff: yes
+'                                               # unrecognised: fails closed and says so
+  printf '%s' "$(t nosob.txt)" | grep -q 'missing  Signed-off-by' || exit 1 )
+check $? "off by default, enforced when asked, not waived by the trivial pattern"
+rm -rf "$dc"
 fi
 
 if step "pre-push blocks a wrong trailer while it can still be amended"; then
@@ -3460,6 +3496,38 @@ if step "validate.py"; then
 check $? "validate.py exits 0"
 fi
 
+if step "the declared licence and the LICENSE file are compared"; then
+# validate.py resolves ROOT from its own location, so a copy of it in a scratch tree checks
+# that tree. Without this, the licence check would be exercised only by this repository
+# being correct -- which proves the check RUNS, and never that it can fail. Two files each
+# holding half of one fact is the shape that produced the check; nothing compared them, so
+# a relicence could move the declaration and leave the text, and stay green.
+if ! command -v python3 >/dev/null 2>&1; then
+  skip "python3 is not on PATH" "the declared licence is compared with LICENSE"
+else
+lc="$WORK.lic"; rm -rf "$lc"; mkdir -p "$lc/.claude-plugin"
+cp "$KIT/validate.py" "$lc/validate.py"
+decl() { printf '{\n  "name": "x",\n  "license": "%s"\n}\n' "$1" > "$lc/.claude-plugin/plugin.json"; }
+( cd "$lc" || exit 1
+  # Capture, then match. This file runs under `set -o pipefail` and validate.py exits 1 by
+  # design on every case below except the first two -- so `validate.py | grep -q` would carry
+  # validate.py's status past a grep that matched, and every assertion that a control FIRES
+  # would read as the assertion failing. The trap belongs to any checker tested for its
+  # non-zero exit, which is most of them.
+  v() { printf '%s' "$(python3 validate.py 2>&1)"; }
+  decl Apache-2.0; cp "$KIT/LICENSE" LICENSE; : > NOTICE
+  python3 validate.py >/dev/null 2>&1 || exit 1
+  decl MIT                                      # the declaration moved, the text did not
+  v | grep -q 'FAIL  licence' || exit 1
+  decl Apache-2.0; rm -f NOTICE                 # section 4(d) with nothing to reproduce
+  v | grep -q 'no NOTICE file' || exit 1
+  : > NOTICE; decl EUPL-1.2                     # unknown id: unverified, not verified-clean
+  v | grep -q 'warn  licence' || exit 1 )
+check $? "agreement passes, and each way of disagreeing is reported"
+rm -rf "$lc"
+fi
+fi
+
 if step "deterministic fixture" fixture; then
 rm -rf "$WORK"; mkdir -p "$WORK/src" "$WORK/lib"; cd "$WORK" || exit 1
 export GIT_AUTHOR_NAME=Fixture GIT_AUTHOR_EMAIL=fixture@example.com
@@ -3563,10 +3631,25 @@ echo "  commits: $(git rev-list --count HEAD)"
 #      kit-init.sh commits is not byte-identical here" -- and ubuntu and macos computed the SAME
 #      new pair, which is what makes this a re-pin rather than a reproducibility failure. Two
 #      platforms agreeing on a new value is evidence; one platform moving would not be.
-EXPECT_HEAD=9675ffe7c8df6db224c8b395a64c2bb90541760d
+#      Re-pinned 2026-08-25, cause named in advance: the relicence added an SPDX header and a
+#      commented `git.require_signoff` block to templates/project-profile.md, and kit-init.sh
+#      copies that template into the fixture's seed commit. Same mechanism as 2, 3 and 5, and
+#      PREDICTED before the run rather than diagnosed after it. Evidence, to the standard the
+#      entries above set:
+#        - a clean clone of `main` reproduced the OLD pins exactly on this machine (13 passed,
+#          0 failed), so the fixture is reproducible here and the move has one cause;
+#        - the two seed trees hold six files each and differ in EXACTLY ONE blob,
+#          `.claude/project-profile.md`;
+#        - that blob differs by exactly the 15 lines added to the template -- 7 of header at
+#          the top, 8 of commented key after git.trivial_pattern -- and nothing else;
+#        - `git ls-tree -r` on both seeds was compared directly, not inferred from the diff.
+#      The two-platform half of note 5's standard is satisfied by CI rather than locally: this
+#      is a re-pin only if ubuntu and macos both compute the same pair. If they disagree, this
+#      is a reproducibility failure and the pins below are wrong.
+EXPECT_HEAD=dcba77ab93f2f6a69b5870626d2308166eb79576
 # The seed alone, so a mismatch says WHICH half moved: seed intact means this script changed,
 # seed moved means a file kit-init.sh commits did.
-EXPECT_SEED=81d2ffe1f54e7b5d94fde4085234931eb539db49
+EXPECT_SEED=25090f5ff393de2865e973d10d5172e04e138756
 fi
 
 if step "trailer hook" fixture; then

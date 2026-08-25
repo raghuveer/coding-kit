@@ -87,6 +87,20 @@ already produced once for tier floors.
 - [ ] Scope stays: the kit **declares and checks** the scope. It does not perform SCA, SAST, DAST
       or VAPT, and must not grow toward doing so — the Notes below already draw that line.
 
+### Added 2026-08-25 — a fifth layer, and the invocation half
+
+- [ ] **Supply-chain integrity is a fifth delegated layer, distinct from SCA/SBOM.** The
+      delegation table in `agents/security-reviewer.md` stops at "what is in it". Signing,
+      provenance and attestation answer a different question — *is this the artefact we built* —
+      and an enterprise security team asks it immediately after SBOM. Candidate OSS, licence to
+      be verified at adoption rather than taken from here: Sigstore/cosign, SLSA, in-toto. It
+      gets a row and a cadence like the other four; the kit performs none of it.
+- [ ] The declared cadence is readable by the **invocation** half —
+      `T-20260825-a-security-rung-on-the-ladder-satisfied-`, which is blocked by this task. This
+      task declares, records and reports; that one runs the tool. Keeping them separate is
+      deliberate: a cadence with nothing invoking it is still worth having, because it makes the
+      absence visible, and that is this task's whole argument.
+
 ## Notes
 
 Confirmed with the operator 2026-08-08, whose stated position matches the agent file almost

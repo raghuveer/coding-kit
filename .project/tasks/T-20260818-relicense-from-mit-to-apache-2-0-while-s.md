@@ -62,6 +62,44 @@ sequence, recorded here so it is not lost:
 
 The commit history is clean single-author evidence, which is the one part already in good shape.
 
+### Operator determination, 2026-08-25 — this point is CLOSED
+
+The operator's position, recorded verbatim as theirs: *work done at work belongs to the
+employer; open source work done otherwise should not be an issue for the employing
+organisation.* On that basis the operator considers the question settled and the item closed.
+
+Recorded as the operator's determination. **The kit verifies nothing here and has no mechanism
+that could** — nothing in it reads employment terms, records who owns a piece of work, or checks
+the licence of an adopting project. An earlier draft of this note said "not a finding this kit
+verified", which wrongly implied such a category exists and was withdrawn.
+
+The usage this settles, stated by the operator: the kit is their personal open source work; they
+may use it to build open source solutions and equally to build work implementations at work;
+others may use it too. **Apache 2.0 already permits exactly that** — that is what a permissive
+licence is for, and no verification is involved. The kit is a tool, and using an Apache-2.0 tool
+at work raises no question about the tool: whatever is built with it belongs to whoever the
+employment terms say, and the kit's own licence is untouched either way.
+
+**And the kit has no reach-through to what anyone builds with it, by licence or by feature.**
+Apache 2.0 §2 grants rights in the Work and in Derivative Works; a project built *using* the kit
+is neither — it is output produced with a tool, as a compiled binary is not a derivative of the
+compiler. There is no copyleft here and none is wanted. The operator's framing, 2026-08-25: the
+user deploys their own tooling, supplies the thinking, validates the outcome, and owns the
+result; neither the LLMs nor the coding agents in that loop define a licence on generated code,
+and the kit — which does not even generate, only manages state and routes reviews — has less
+standing than either.
+
+**Consequence for scope, recorded because it will be proposed again:** a check on an adopting
+project's own licence declaration is NOT kit capability. It is a lint, lint is `commands.lint`,
+and that is the adopter's tooling declared by the adopter — the same boundary
+`T-20260808-make-the-security-assurance-cadence-a-po` draws for SAST and SBOM. Such a check was
+floated on 2026-08-25 and withdrawn on these grounds. The only licence opinion the kit is
+entitled to is whether its OWN two files agree with each other, which `validate.py` now holds.
+
+The three-step sequence above stays in the record as what was recommended. The agent raised the
+caveat on 2026-08-18 and again on 2026-08-25; it was considered and decided. Nothing further is
+outstanding on this task's behalf.
+
 **Known trade, accepted:** Apache 2.0 does not stop anyone else offering deployment or training
 services around this kit either. Preventing that needs a source-available licence, which
 contradicts both "usable in proprietary software" and "lets others contribute". The permissive

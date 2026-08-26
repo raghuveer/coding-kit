@@ -164,7 +164,29 @@ the indexer reads: it becomes the range `<adopted_at>..HEAD`, and unset means al
 Neither is wrong. Set it if you want the discipline metrics to mean something from day one;
 leave it unset if you want blast radius from history more than you want clean counters.
 
-**2. Expect the backlog to over-tier at first, and know why.** `touches` edges need a `Task-Id`
+**2. Check that your `.gitignore` does not already exclude `.claude`.** Many repositories treat
+`.claude` as personal scratch and ignore it — patterns like `.claude/`, `**/.claude/` or
+`*.claude` are common and entirely reasonable. The kit's profile lives at
+`.claude/project-profile.md` and is **shared**: it is what a second developer gets when they
+clone, and the kit is inert for them without it.
+
+`kit-init.sh` detects this, refuses to report success, and exits non-zero — it will not reverse
+an exclusion you chose. What it prints is the working remedy, and the shape matters:
+
+    !.claude/
+    .claude/*
+    !.claude/project-profile.md
+
+**Negating the file alone does not work.** Git cannot re-include a file whose parent directory is
+excluded, so `!.claude/project-profile.md` under a bare `.claude/` looks correct and stages
+nothing. The directory has to be re-included first, then re-excluded, then the one file admitted.
+That form keeps `settings.local.json` and everything else in `.claude` ignored, which is almost
+certainly what you wanted when you excluded it.
+
+Greenfield never hits this — an empty repository has no `.gitignore` to conflict with — which is
+why it is called out here rather than left to be discovered.
+
+**3. Expect the backlog to over-tier at first, and know why.** `touches` edges need a `Task-Id`
 trailer, so a freshly adopted repository has an empty edge table. Blast radius is unknown for
 everything, and unknown floors at T2 — so the whole backlog tiers high until trailers accumulate.
 Co-change exists precisely to fill that gap and needs no trailers, only history; but it withholds
@@ -172,14 +194,14 @@ itself entirely if the graph comes out denser than `cochange.max_degree`, report
 than reporting "everything is connected to everything" with confidence. Both behaviours are
 deliberate. Neither is a misconfiguration to hunt.
 
-**3. Bring the backlog you already have.** A roadmap document, an issue tracker, or a tree of
+**4. Bring the backlog you already have.** A roadmap document, an issue tracker, or a tree of
 analysis and task files does not need retyping into `kit-task.sh`. `ingest.tasks` in the profile
 takes an executable that emits SQL, and the kit reads your source instead of its own — see
 [docs/ADAPTERS.md](docs/ADAPTERS.md) and `templates/ingest-tasks-csv.sh`. Adapters are the
 built-for-this answer to "we already have a backlog"; the index is derived and disposable, so
 pointing it at your source loses nothing.
 
-**4. If you do NOT already have a backlog, derive one from the code.** Step 3 assumes a roadmap
+**5. If you do NOT already have a backlog, derive one from the code.** Step 4 assumes a roadmap
 or a tracker exists. On a codebase that has neither, the kit reads the tree itself:
 
     $CLAUDE_PLUGIN_ROOT/tooling/kit-entry.sh
@@ -215,7 +237,7 @@ vocabulary.
 **The `Could not determine` section is the valuable output**, not a gap to be filled in later. An
 inventory that cannot say what it failed to classify is an inventory you cannot trust.
 
-**5. Back-fill what was already finished — including work the kit did not do.** Mark completed
+**6. Back-fill what was already finished — including work the kit did not do.** Mark completed
 tasks `state: done` in their frontmatter, and add a lowercase **`via:`** key there (`kit`,
 `agent`, `manual`) on work whose provenance you know. This matters more than it looks: escape
 rate is reported over the kit-run population *and* over every task, side by side, so an
@@ -227,7 +249,7 @@ for outcomes it never touched. Provenance is set by you, never by the agent that
 > to a commit already written. This paragraph said `Via:` for three days and the indexer, which
 > reads `via`, silently recorded every back-filled task as `unknown`.
 
-**6. A `Task-Id` that matches no task file** — from a typo, or from a task you have not filed yet
+**7. A `Task-Id` that matches no task file** — from a typo, or from a task you have not filed yet
 — is **not** counted as work. It is named in the `Unresolved task ids` section of
 `STATUS.generated.md`, with the commit that introduced it, and it reconciles automatically if the
 file turns up later. On a brownfield history you may have several; they are evidence about

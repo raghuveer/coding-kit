@@ -141,6 +141,40 @@ else
     kit_warn "could not pin .project/plans/*.tsv to LF in .gitattributes"
 fi
 
+
+# ---- can the shared files actually be shared? --------------------------------------------
+#
+# This script used to print "commit .claude/project-profile.md -- the team shares them" and
+# exit 0 in a repository whose .gitignore already excluded .claude. `git add` then refused,
+# AFTER the tool had reported success. Reproduced on two unrelated brownfield subjects; the
+# second carried `.claude/`, `**/.claude/`, `.claude-*` AND `*.claude`.
+#
+# Greenfield cannot surface this -- an empty repository has no .gitignore to conflict with --
+# which is why it survived. The consequence is the one T-20260811-team-mode-bootstrap exists
+# to prevent: a second developer clones and gets no profile, so the kit is inert for them and
+# silently so.
+#
+# `git check-ignore` is the authority and is used rather than matching patterns here. Git's
+# precedence rules -- last match wins, directory excludes beat file re-includes, negation
+# ordering -- are exactly what a hand-rolled matcher gets subtly wrong, and a subtly wrong
+# matcher is how this class of bug gets a second life.
+#
+# Deliberately NOT auto-fixed. Re-including a file under an excluded directory needs the
+# directory re-included first, and the only correct idiom for that (`!.claude/`,
+# `.claude/*`, `!.claude/project-profile.md`) changes the meaning of the adopter's ignore
+# rules for a whole directory they chose to exclude. Editing .gitignore to add a derived-state
+# line is within this script's remit; silently reversing somebody's deliberate exclusion is
+# not. So: report precisely, print the remedy, and let a human apply it.
+BLOCKED=""
+for _rel in ".claude/project-profile.md" "$(kit_cfg "$ROOT/.claude/project-profile.md" paths.tasks '.project/tasks')"; do
+  [ -n "$_rel" ] || continue
+  if git -C "$ROOT" check-ignore -q "$_rel" 2>/dev/null; then
+    BLOCKED="$BLOCKED$_rel|$(git -C "$ROOT" check-ignore -v "$_rel" 2>/dev/null | head -1 | awk '{print $1}')
+"
+  fi
+done
+
+
 echo
 if [ "$ADOPTED" = 1 ]; then
   # Joining an existing project. Git does not share hooks, so this step is what a new
@@ -159,3 +193,35 @@ else
   echo "  5. copy templates/github-trailer-gate.yml to .github/workflows/ — the hook is"
   echo "     per-clone, so CI is the only trailer check that survives someone skipping it"
 fi
+
+if [ -n "$BLOCKED" ]; then
+  echo
+  echo "=============================================================================="
+  echo "ADOPTION IS INCOMPLETE: git is ignoring files the team is supposed to share."
+  echo
+  printf '%s' "$BLOCKED" | while IFS='|' read -r _p _rule; do
+    [ -n "$_p" ] || continue
+    echo "  $_p"
+    echo "      excluded by  $_rule"
+  done
+  echo
+  echo "  \`git add\` will REFUSE these, so the 'commit them, the team shares them' step"
+  echo "  below cannot be performed and a second developer would get nothing."
+  echo
+  echo "  Git cannot re-include a file whose parent DIRECTORY is excluded, so negating the"
+  echo "  file alone will look right and do nothing. The working form re-includes the"
+  echo "  directory first:"
+  echo
+  echo "      !.claude/"
+  echo "      .claude/*"
+  echo "      !.claude/project-profile.md"
+  echo
+  echo "  Add that yourself -- this script will not reverse an exclusion you chose."
+  echo "  Then re-run kit-init.sh. Verify with: git check-ignore -v .claude/project-profile.md"
+  echo "=============================================================================="
+fi
+
+# The exit status must reflect the outcome. Exiting 0 while the "commit these, the team shares
+# them" step printed above cannot be performed is precisely the defect the check exists to
+# remove -- a tool that reports success and then has its own instruction refused by git.
+[ -z "$BLOCKED" ] || exit 1

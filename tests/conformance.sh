@@ -473,6 +473,71 @@ check $? "pre-rule commits exempt, post-rule still refused, a bad boundary fails
 rm -rf "$sb"
 fi
 
+if step "kit-init refuses to claim success when the profile is ignored"; then
+# kit-init.sh printed "commit .claude/project-profile.md -- the team shares them" and exited 0
+# in a repository whose .gitignore already excluded .claude. `git add` then refused, AFTER the
+# tool had reported success. Greenfield cannot surface it: an empty repo has no .gitignore to
+# conflict with, which is why it survived to be found on two unrelated brownfield subjects.
+#
+# The fixture uses the SECOND subject's four patterns verbatim rather than a minimal `.claude/`,
+# because `*.claude` matching the directory `.claude` is the non-obvious one -- a matcher written
+# by hand would very likely miss it, and that is the reason `git check-ignore` is the authority
+# here rather than any pattern logic of the kit's own.
+ki="$WORK.ignored"; rm -rf "$ki"; mkdir -p "$ki"
+( cd "$ki" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  echo x > a.txt
+
+  # 1. A repository with NO conflicting ignore rules: adoption succeeds and the profile stages.
+  git add -A >/dev/null 2>&1; git commit -q -m "chore: seed" 2>/dev/null
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1 || { echo "  clean repo: kit-init exited non-zero"; exit 1; }
+  git add .claude/project-profile.md >/dev/null 2>&1 || { echo "  clean repo: git add refused the profile"; exit 1; }
+
+  # 2. The same repository once .claude is excluded: adoption must REFUSE to report success.
+  rm -rf .claude .project
+  printf '.claude/\n**/.claude/\n.claude-*\n*.claude\n' > .gitignore
+  git add -A >/dev/null 2>&1; git commit -q -m "chore: ignore .claude" 2>/dev/null
+  out=$(bash "$KIT/tooling/kit-init.sh" 2>&1); rc=$?
+  [ "$rc" != 0 ] || { echo "  ignored profile: kit-init exited 0 and claimed success"; exit 1; }
+  printf '%s' "$out" | grep -q 'ADOPTION IS INCOMPLETE' ||
+    { echo "  ignored profile: no diagnostic naming the problem"; exit 1; }
+  # It must name the RULE, not merely the file. "something ignores it" sends the reader hunting.
+  printf '%s' "$out" | grep -q '\.gitignore' ||
+    { echo "  ignored profile: diagnostic does not name the excluding rule"; exit 1; }
+
+  # 3. THE REMEDY IT PRINTS MUST WORK. A warning that suggests a fix which does not fix it is
+  #    worse than no warning: it spends the reader's trust and their time. Negating the file
+  #    ALONE does not work -- git cannot re-include under an excluded directory -- so this also
+  #    pins the fact that the printed form re-includes the directory first.
+  printf '\n!.claude/\n.claude/*\n!.claude/project-profile.md\n' >> .gitignore
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1 || { echo "  after the printed remedy: still non-zero"; exit 1; }
+  git add .claude/project-profile.md >/dev/null 2>&1 ||
+    { echo "  after the printed remedy: git add still refuses"; exit 1; }
+
+  # 4. And the naive form must NOT be what we recommend: prove it fails, so nobody "simplifies"
+  #    the message later into something that looks tidier and silently stops working.
+  #
+  #    THE DIRECTORY MUST EXIST for this to test anything. `git check-ignore` evaluates
+  #    `.claude/` -- a directory-only pattern -- differently when no such directory is present,
+  #    and the first draft of this step deleted it first and got the opposite answer. The
+  #    assertion caught a flaw in itself rather than in the code, which is the only reason the
+  #    naive form ended up measured instead of assumed.
+  #    AND the index must be reset, and `--no-index` used. `git check-ignore` consults the index
+  #    by DEFAULT, so a file the previous assertion just staged is reported as NOT ignored no
+  #    matter what the patterns say. That default is correct for kit-init.sh -- an already
+  #    tracked profile CAN be committed, so there is nothing to warn about -- and wrong here,
+  #    where the question is what the patterns alone do. Two different questions, one command.
+  rm -rf .project
+  git reset -q
+  rm -rf .claude && mkdir -p .claude && echo x > .claude/project-profile.md
+  printf '.claude/\n!.claude/project-profile.md\n' > .gitignore
+  git check-ignore -q --no-index .claude/project-profile.md ||
+    { echo "  negating the file alone now works -- the message can be simplified, re-check it"; exit 1; } )
+check $? "exits non-zero, names the rule, and prints a remedy that actually works"
+rm -rf "$ki"
+fi
+
 if step "pre-push blocks a wrong trailer while it can still be amended"; then
 # commit-msg is skippable and absent for anyone who never ran kit-init; CI catches correctly
 # but only after the push, when a commit message can no longer be changed. This repository

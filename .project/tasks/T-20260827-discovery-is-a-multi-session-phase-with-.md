@@ -12,9 +12,18 @@ blocked-by: T-20260814-one-entry-mechanism-brownfield-is-the-ge
 
 **This is the operator's proposal, recorded as theirs**, made on 2026-08-27 after reviewing the
 cost of the highper-gateway and aeon reconciliations. The framing below — the name *discovery
-session*, the input classes, and the convergence gate — is his. What this task adds is the
-comparison against what the kit already has, and the identification of which parts are genuinely
-absent.
+session*, the input classes, the convergence gate, and the task list as a **baseline** — is his.
+What this task adds is the comparison against what the kit already has, and the identification of
+which parts are genuinely absent.
+
+**One correction to this file's own history, recorded because the error was mine.** The first draft
+of Gap 2 asserted that `T-20260814`'s "greenfield = brownfield with an empty inventory" row was
+wrong, and attributed that correction to the operator. He had not made it, and on being shown the
+draft he rejected it: *"greenfield is brownfield with empty inventory anyway."* The row is correct.
+What I had done was collapse **code inventory** and **discovery input** into one axis and then
+mislabel the existing task as the thing at fault. Attributing a claim to the operator that he did
+not make is the more serious half of that, given the whole reason this section exists is to keep
+his determinations recorded as his rather than as something the kit derived.
 
 ## The proposal
 
@@ -71,15 +80,37 @@ a row for none of them** — see `T-20260826-a-verified-claim-about-the-tree-has
 phase that accumulates over sessions and cannot persist what it established will reproduce that
 failure every session instead of once per trial.
 
-## Gap 2 — greenfield's inventory is not empty, and the existing task says it is
+## Gap 2 — inventory and discovery input are two axes, and the kit has words for only one
 
 `T-20260814` states:
 
 > **Greenfield** | brownfield with an **empty inventory**; the overlay and the feature discussion
 > carry the whole input
 
-**That is wrong, and the correction is the operator's.** A greenfield project arrives with
-substantial input — it is simply not code:
+**The empty-inventory row is correct and stays.** Inventory means *code* inventory, and
+greenfield's is empty by definition — that is exactly what makes greenfield a starting condition
+of one mechanism rather than a separate mechanism.
+
+An earlier draft of this task claimed that row was wrong. It is not, and the claim was mine rather
+than the operator's; see *Provenance*.
+
+**What the row does not say is that an empty code inventory implies a thin input.** It does not.
+The operator's point: a dev team at a servicing company does not open a project with a paragraph.
+They arrive holding one or more substantial documents, plus project details to be discussed,
+requirements to be mapped, and dependencies to be analysed — all before a task list exists.
+
+So **inventory and discovery input are two axes, not one**:
+
+| | code inventory | discovery input |
+|---|---|---|
+| greenfield | **empty** | documents + discussion |
+| brownfield | existing tree | documents + discussion + the tree |
+| modernization | existing tree | the above, plus a source→target stack delta |
+
+Discovery input is non-empty in **all three** starting conditions. The kit has a mechanism for the
+first column (`kit-entry.sh`) and no vocabulary at all for the second. The clause in `T-20260814`
+that needs sharpening is therefore the *second* half — "the overlay and the feature discussion
+carry the whole input" — which names two carriers where a real engagement has several:
 
 | input | what it constrains |
 |---|---|
@@ -89,10 +120,16 @@ substantial input — it is simply not code:
 | documented test cases | acceptance criteria that already exist and must not be re-derived |
 | solution document, architecture diagrams, high-level approach | the target design, and the decisions already made |
 
-An entry mechanism that treats greenfield as *empty* discards all of it and asks the architect to
-re-say in conversation what a document already states. The correct statement is: **greenfield has
-an inventory of documents rather than an inventory of code, and it is analysed the same way — as
-claims to be reconciled against each other.**
+A mechanism that reads "empty inventory" as "nothing to analyse" discards all of it and asks the
+architect to re-say in conversation what a document already states. The correct statement is:
+**greenfield has an empty code inventory and a substantial discovery input, and that input is
+analysed the same way a tree is — as claims to be reconciled against each other.**
+
+The output of that analysis is a task list that is **created, reviewed and updated as a
+baseline** — the operator's word, and a more specific thing than "a candidate list a human
+confirms". A baseline is a named, frozen reference point that later work is measured *against*.
+That implies the kit must be able to say what the baseline was at confirmation time and what has
+changed since, which a one-shot candidate list cannot.
 
 Two consequences worth naming:
 
@@ -133,11 +170,17 @@ entering** that machinery, and the check it needs is one that can fail — per
 - [ ] **`kit-entry.sh`'s refusal to write tasks survives unchanged.** Discovery state is not a task
       list. If this task's implementation ends with the entry tooling writing a task file, it has
       failed regardless of its other criteria.
-- [ ] **Document inventory is a first-class input class alongside code**, with SoW / SRS / UX
-      design / test cases / solution architecture named as recognised kinds. Greenfield runs the
-      same mechanism against documents that brownfield runs against a tree.
-- [ ] **`T-20260814` is corrected**, not silently superseded: the "empty inventory" row is replaced
-      and the change is visible in the task's own history.
+- [ ] **Discovery input is a first-class axis, distinct from code inventory**, with SoW / SRS /
+      UX design / documented test cases / solution architecture named as recognised kinds. It is
+      non-empty in all three starting conditions. Greenfield runs the same mechanism against that
+      input that brownfield runs against a tree plus that input.
+- [ ] **`T-20260814`'s empty-inventory row is left intact.** Only the clause naming the carriers of
+      greenfield input is extended, and the extension is additive — if implementing this task ends
+      with greenfield reclassified as anything other than "brownfield with an empty code
+      inventory", it has broken the one-mechanism property that task exists to protect.
+- [ ] **The confirmed task list is a baseline, not a snapshot**: what was confirmed, when, and what
+      has changed against it since are all answerable. A candidate list that is confirmed and then
+      untracked does not satisfy this.
 - [ ] **Cross-document reconciliation is available before code exists** — the same claim-comparison
       job, with other documents as the reference instead of the tree.
 - [ ] **A stated policy for non-text inputs** (Figma, Photoshop, diagrams): read an export, require

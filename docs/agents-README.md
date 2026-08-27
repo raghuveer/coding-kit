@@ -9,6 +9,10 @@ Eight agents. The harness auto-routes to them by matching your request against e
 ## The pipeline
 
 ```
+  ┌─ BROWNFIELD / unfamiliar codebase: runs BEFORE any of the below ─┐
+  claim-auditor(opus)  →  [human reads the census]  →  tiering + planning
+  └──────────────────────────────────────────────────────────────────┘
+                                                                                           ↓
                          ┌─ NON-TRIVIAL design only ─┐
   researcher(opus) → approach-reviewer(opus) → [operator walkthrough] → adr-scribe(sonnet) ┐
                                                                                            ↓
@@ -21,10 +25,31 @@ Eight agents. The harness auto-routes to them by matching your request against e
                                                                                 documenter(haiku)
 ```
 
+### `claim-auditor` runs before tiering and planning, not alongside them
+
+Every other agent in this pipeline acts on work that is already scoped. `claim-auditor` is the one
+that decides **whether the scoping inputs are true.** Its subject is a claim someone already wrote
+down — a roadmap, a status page, a gate record — and its output is a census: a verdict per claim,
+with evidence, against the tree.
+
+**On an unfamiliar or long-running codebase this is the first job.** You cannot tier work you
+cannot scope, and you cannot scope from documentation nobody has checked. On the run that motivated
+the agent, **three of four candidate tasks taken straight from the roadmap were already done**, and
+the two genuinely valuable ones were invisible until the audit had run.
+
+The measured base rate across two unrelated Rust subjects six months apart: **35% and 43% of
+documented claims did not hold as written.** Planning against an unaudited document on a codebase
+like that is planning against a third of a fiction.
+
+It does **not** run on greenfield work you are authoring turn by turn, and it does not run before a
+routine fix. It runs when you are inheriting a body of claims — which includes inheriting your own,
+a year later.
+
 ## Model tiering — keeps expensive fan-out proportional to risk
 
 | Agent | Model | Runs when |
 |-------|-------|-----------|
+| claim-auditor | opus † | brownfield entry, before tiering and planning |
 | researcher | opus | non-trivial design only |
 | approach-reviewer | opus | non-trivial design only |
 | security-reviewer | opus | **high-stakes changes only** |
@@ -33,6 +58,14 @@ Eight agents. The harness auto-routes to them by matching your request against e
 | implementation-reviewer | sonnet | every change (escalate to opus for high-stakes) |
 | tester | sonnet | after review approves |
 | documenter | haiku | after tests / a feature-state change |
+
+**† `claim-auditor`'s tier is what the two measured runs used, not what they proved necessary.**
+6,547,551 BTE across 17 subagents for 303 claims; 13,853,224 across 18 for 489. That is evidence
+the tier works and none that it is required. Whether a cheaper model reaches the same verdicts is
+answerable — re-audit one unit at a lower tier and compare claim by claim against the recorded
+census — and unanswered. Per-claim cost was stable at ~35k BTE across both subjects, so the saving
+is quantifiable in advance if anyone wants to argue for it. Read the row as an assumption wearing a
+number until someone runs that experiment.
 
 **Risk tiering is defined in your `project-profile.md`** — see `templates/project-profile.md`.
 Name the tier and cite the trigger *before* spawning agents, or routine work quietly defaults to the full

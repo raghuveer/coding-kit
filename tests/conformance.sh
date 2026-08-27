@@ -173,6 +173,25 @@ done
 check $nx "every script is 100755, by CI's own selector"
 fi
 
+# Name the word the match dies on. "class list differs" alone sends the reader to compare two
+# lists by eye, and the difference that actually occurred was an invisible byte -- so the one
+# thing the message must not do is leave the reader looking at two lists that appear equal.
+#
+# DEFINED AT FILE SCOPE, not inside the step that first needed it. It used to live inside the
+# finding-vocabulary block, which works for a full run and breaks under `--only`: a filtered run
+# of any OTHER step that calls it got `first_divergence: command not found` and then printed
+# `breaks at ""`, sending the reader to look at an empty string. The check still failed, so the
+# hole was invisible until a second step used the helper -- and it could only ever surface on the
+# drift path, i.e. exactly when the diagnostic matters. A guard's error message needs the same
+# can-it-fail scrutiny as the guard.
+first_divergence() {  # <expected list> <flattened agent text>
+  _pre=""
+  for _w in $1; do
+    if [ -n "$_pre" ]; then _try="$_pre $_w"; else _try="$_w"; fi
+    case "$2" in *"$_try"*) _pre="$_try" ;; *) printf '%s' "$_w"; return ;; esac
+  done
+}
+
 if step "finding vocabulary has not drifted"; then
 # The reviewers have no Bash, so they cannot run `kit-finding.sh --vocab` and the lists are
 # inlined in their instructions. That is the only form they can use, and it is exactly the
@@ -183,16 +202,6 @@ V=$(bash "$KIT/tooling/kit-finding.sh" --vocab)
 VC=$(printf '%s' "$V" | sed -n 's/^class:[[:space:]]*//p')
 VS=$(printf '%s' "$V" | sed -n 's/^severity:[[:space:]]*//p')
 drift=0
-# Name the word the match dies on. "class list differs" alone sends the reader to compare two
-# lists by eye, and the difference that actually occurred was an invisible byte -- so the one
-# thing the message must not do is leave the reader looking at two lists that appear equal.
-first_divergence() {  # <expected list> <flattened agent text>
-  _pre=""
-  for _w in $1; do
-    if [ -n "$_pre" ]; then _try="$_pre $_w"; else _try="$_w"; fi
-    case "$2" in *"$_try"*) _pre="$_try" ;; *) printf '%s' "$_w"; return ;; esac
-  done
-}
 for a in "$KIT"/agents/*.md; do
   grep -q 'kit-finding.sh' "$a" || continue
   # CR is deleted BEFORE the newlines become spaces. Without that, a list wrapped across a
@@ -210,6 +219,46 @@ for a in "$KIT"/agents/*.md; do
   esac
 done
 check $drift "every agent's inlined vocabulary matches kit-finding.sh --vocab"
+fi
+
+if step "claim vocabulary has not drifted"; then
+# The same guard as the finding vocabulary above, for the census verdicts, and for the same
+# reason: `claim-auditor` has tools Read/Grep/Glob and no Bash, so it cannot run
+# `kit-claim.sh --vocab` and the lists are inlined in its instructions. Inlining is safe only
+# while something checks it. The finding vocabulary drifted across four locations once and the
+# agents emitted values the recorder rejected outright; nothing about that failure was specific
+# to findings.
+V=$(bash "$KIT/tooling/kit-claim.sh" --vocab)
+VV=$(printf '%s' "$V" | sed -n 's/^verdict:[[:space:]]*//p')
+VL=$(printf '%s' "$V" | sed -n 's/^location:[[:space:]]*//p')
+drift=0
+seen=0
+for a in "$KIT"/agents/*.md; do
+  grep -q 'kit-claim.sh' "$a" || continue
+  seen=$((seen + 1))
+  # CR deleted BEFORE newlines become spaces -- on a CRLF checkout a list wrapped across a line
+  # otherwise flattens to `...UNDERSTATED<CR> UNVERIFIABLE` and matches nothing, which once
+  # reported all three reviewers as drifted while every one was correct.
+  flat=$(tr -d '\r' < "$a" | tr '\n' ' ' | tr -s ' ')
+  case "$flat" in *"$VV"*) ;; *)
+    echo "  verdict list differs: $(basename "$a") — breaks at \"$(first_divergence "$VV" "$flat")\""
+    echo "    kit-claim.sh --vocab: $VV"; drift=1 ;;
+  esac
+  case "$flat" in *"$VL"*) ;; *)
+    echo "  location list differs: $(basename "$a") — breaks at \"$(first_divergence "$VL" "$flat")\""
+    echo "    kit-claim.sh --vocab: $VL"; drift=1 ;;
+  esac
+done
+# A LOOP THAT MATCHES NOTHING MUST NOT PASS. The finding-vocabulary step above has this hole:
+# rename the agent, drop the tool mention, or move the vocabulary out of the file, and its
+# `continue` skips every agent, `drift` stays 0, and the step reports green having compared
+# nothing. That is precisely a control that cannot fail. Assert the denominator instead.
+if [ "$seen" -eq 0 ]; then
+  echo "  no agent mentions kit-claim.sh — the vocabulary has no inlined copy to check"
+  echo "  (this is a FAILURE, not a pass: the guard compared nothing)"
+  drift=1
+fi
+check $drift "the claim vocabulary is inlined in $seen agent(s) and matches kit-claim.sh --vocab"
 fi
 
 if step "no agent is told to run a tool it does not have"; then

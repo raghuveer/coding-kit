@@ -4,7 +4,8 @@ title: Constructed and called but hardwired off is the blind spot reachability a
 epic: measurement
 tier: T2
 paths: tooling, agents, docs/DESIGN-NOTES.md
-state: created
+blocked_by: T-20260826-no-agent-owns-verifying-documented-claim,T-20260826-a-verified-claim-about-the-tree-has-no-a
+ created
 ---
 
 ## Intent

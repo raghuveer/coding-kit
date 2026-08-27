@@ -4,7 +4,8 @@ title: Reachability of a declared feature is mechanically checkable and is not c
 epic: measurement
 tier: T2
 paths: tooling, docs/DESIGN-NOTES.md
-state: created
+blocked_by: T-20260826-a-verified-claim-about-the-tree-has-no-a
+ created
 ---
 
 ## Intent

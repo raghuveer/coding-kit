@@ -5,7 +5,7 @@ epic: components
 tier: T2
 paths: skills, tooling, docs/DESIGN-NOTES.md, docs/ENTRY-PROPOSAL.md
 state: created
-blocked-by: T-20260814-one-entry-mechanism-brownfield-is-the-ge
+blocked_by: T-20260814-one-entry-mechanism-brownfield-is-the-ge
 ---
 
 ## Provenance

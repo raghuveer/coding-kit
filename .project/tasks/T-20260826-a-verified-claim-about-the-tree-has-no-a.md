@@ -4,6 +4,7 @@ title: A verified claim about the tree has no artefact so a census cannot be rec
 epic: reporting
 tier: T2
 paths: tooling/schema.sql, tooling/kit-finding.sh, tooling/kit-status.sh
+blocked_by: T-20260826-no-agent-owns-verifying-documented-claim
 state: created
 ---
 
@@ -55,11 +56,51 @@ make `findings-outpace-dispositions` structurally unfixable.
 
 **Do not design this before `T-20260826-no-agent-owns-verifying-documented-claim`.** That task
 decides who produces claims and in what shape; this one decides where they land. Building the
-store first risks a schema fitted to one hand-written prompt rather than to a contract.
+store first risks a schema fitted to one hand-written prompt rather than to a contract. **Recorded
+as `blocked_by:` in the frontmatter as of 2026-08-27** — it sat here as prose for a day, which is
+this task's own defect one level up: a fact written where a person will read it and no machine
+will, so `kit-plan` could not see an ordering the text asserted.
 
-**The 2026-08-26 output is the test fixture.** 303 real claims across 16 use cases, with verdicts
-and evidence, in `docs/RECONCILIATION-2026-08-26.md` in the trial copy. Any schema proposed here
-should be able to hold that document losslessly. If it cannot, it is the wrong schema — and this
-is a rare case where the requirement exists before the implementation and is already measured.
+The key is `blocked_by` with an **underscore**, though the CLI flag that writes it is
+`--blocked-by` with a hyphen. Writing the hyphen form in frontmatter is accepted silently, yields
+no edge, and `kit-index.sh` plus `kit-plan.sh` both run clean — see
+`T-20260827-an-unknown-frontmatter-key-is-discarded-`.
 
-Source: `docs/TRIALS/2026-08-26-highper-gateway-reconciliation.md`, kit defect 1.
+## CORRECTION 2026-08-27 — there is no test fixture
+
+**This section previously said:** *"The 2026-08-26 output is the test fixture. 303 real claims
+across 16 use cases, with verdicts and evidence, in `docs/RECONCILIATION-2026-08-26.md` in the
+trial copy. Any schema proposed here should be able to hold that document losslessly."*
+
+**That is false, and it was false when written.** `docs/RECONCILIATION-2026-08-26.md` is 131 lines
+holding a **16-row table of per-use-case counts**. It contains exactly one verdict token in the
+whole file. The 303 individual claims — assertion, verdict, evidence, each — are in no artefact.
+
+Verified 2026-08-27 by enumeration, not assumed:
+
+- The 2026-08-27 aeon run has the same shape: 489 claims survive as a 157-line narrative with a
+  ranked top-16, no per-claim record.
+- **All 35 subagent transcripts from both trials are gone.** The `spend` rows preserve every
+  `agent_id`; a search across all 15 project transcript directories under
+  `~/.claude/projects/` found **0 of 35** matching `agent-<id>.jsonl`. Checked the trial copies'
+  own project directories (`…tmp-aeonm-copy`, `…tmp-trial-copy`) as well as the kit's — all empty
+  of subagent transcripts.
+
+So **792 verified claims have been produced and none survives at claim granularity.** Not
+"unqueryable" — absent. Nothing can be re-checked, diffed, or attributed.
+
+**Consequences for this task, which are the reason to record the correction rather than fix the
+sentence:**
+
+1. **There is no free test data.** Any schema built here must be validated against a census that
+   does not yet exist. Manufacturing a fixture by hand risks fitting the schema to the example.
+2. **This raises the task's priority rather than lowering it.** The argument was "our best
+   artefact is unqueryable". The real argument is "our best artefact evaporates, and each new one
+   costs ~35k BTE per claim to produce" — 11.1M and 17.0M BTE spent, nothing durable retained.
+3. **The next census must be the fixture.** Build the contract and the store first, then run
+   census #3 against a real subject, and that run is both the first surviving census and the
+   validation of the schema. Running a census first spends another eight figures of BTE producing
+   a third narrative that also disappears.
+
+Source: `docs/TRIALS/2026-08-26-highper-gateway-reconciliation.md` kit defect 1;
+`docs/TRIALS/2026-08-27-aeon-reconciliation.md`.

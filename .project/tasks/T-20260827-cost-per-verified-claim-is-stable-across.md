@@ -4,7 +4,8 @@ title: Cost per verified claim is stable across subjects so a census can be quot
 epic: measurement
 tier: T2
 paths: tooling, docs/TRIAL-PROTOCOL.md
-state: created
+blocked_by: T-20260826-the-trial-environment-is-recorded-as-pro
+ created
 ---
 
 ## Intent

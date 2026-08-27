@@ -13,7 +13,22 @@ Each agent declares a model in its frontmatter:
 | Agent | `model:` | Why |
 |---|---|---|
 | `researcher`, `approach-reviewer`, `security-reviewer` | `opus` | design alternatives and adversarial reading, where a missed failure mode is expensive |
+| `claim-auditor` | `opus` | **unjustified — see below.** What two measured runs used, not what they proved necessary |
 | `coder`, `implementation-reviewer`, `tester`, `adr-scribe`, `documenter` | `sonnet` | the working tier — most of the volume |
+
+**`claim-auditor`'s tier is the one row here with no argument behind it, and it should stay
+uncomfortable until someone runs the experiment.** The two reconciliation runs that produced this
+agent's contract both used `opus`: 6,547,551 BTE across 17 subagents for 303 claims, and
+13,853,224 across 18 for 489. That is evidence the tier *works* and no evidence that it is
+*required* — nobody has audited a unit at a lower tier and compared verdicts.
+
+The experiment is well defined: re-audit one unit at `sonnet`, compare claim by claim against the
+recorded census, and count where the verdicts diverge. Divergence is a finding about one of the
+two runs, not automatically a regression. Per-claim cost was stable at ~35k BTE across two
+subjects differing 7× in crate count, so the saving is quantifiable before anyone spends anything.
+
+Until then this row is an assumption wearing a number. Every other row in this table earned its
+tier from an argument about the work; this one is inherited from what happened to be running.
 
 `documenter` was `haiku`, justified as "mechanical, high-volume, low-judgement". **The
 justification was wrong about its scope.** It writes README and topic sub-docs — audience-facing

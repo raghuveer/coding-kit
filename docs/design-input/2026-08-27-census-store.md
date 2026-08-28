@@ -39,6 +39,56 @@ already embodies: `--unassessable` and `--superseded` leave the gate and stay in
 permanently, because a mark that clears a gate without saying why is the laundering the gate exists
 to prevent.
 
+**D3 — the census is a re-runnable reference, not only a record.**
+
+Stated by the operator 2026-08-28, and it is a stronger requirement than "diff two censuses":
+
+> Findings recorded so we can use that for audit and to share feedback, that can be used for
+> improving coding kit and **to later validate coding kit recursively, against same reference**.
+> Every evaluation audit to be logged **separately** so that learnings can be tracked and a
+> **summary can be generated** whenever needed. In future, for discovery sessions and project
+> requirements gathering sessions, we can create a **summary document as an artifact** where code
+> is evaluated along with **user inputs and decisions made**.
+
+Three consequences, and revision 2 as first written supported only one of them.
+
+**1. A census is a benchmark, so the KIT's own version must be pinned.** To re-run an audit later
+and attribute a difference, three variables must be recorded, because a diff in which more than one
+moved is uninterpretable:
+
+| variable | recorded as | why |
+|---|---|---|
+| the subject tree | `subject_sha`, `subject_dirty` | the code may have changed |
+| the auditor | `auditor_model` | model nondeterminism and tier changes |
+| **the kit** | **`kit_sha`, `kit_version`** | **the thing being validated recursively** |
+
+Revision 2 recorded the first two and **not the third** — which would have made the recursive
+validation D3 asks for impossible, since a changed verdict could not be attributed to the kit
+improvement it was meant to measure. `kit_sha` and `kit_version` are added to the manifest.
+
+**A diff must refuse to be read as a kit result when more than one variable moved.** The census
+diff reports which of the three differ between the two runs, and says plainly that a diff with two
+or more moving is not attributable. That is a control that can fail, not a caveat in prose.
+
+**2. Separate logging per audit is already the structure, and is now also a requirement.**
+`.project/census/<census_id>/` per evaluation was chosen for `census_id` reasons; D3 makes it
+load-bearing for a second reason — learnings tracked per audit rather than pooled.
+
+**3. Summary generation is a named downstream consumer.** Not built by this task, but the schema
+must not preclude it. Two shapes are wanted and they are different:
+
+- a **census summary** — per subject, per audit: verdict counts, drift fractions, dispositions,
+  and what changed since the previous census of the same subject.
+- a **discovery-session summary document** — the artefact of
+  `T-20260827-discovery-is-a-multi-session-phase-with-`, combining code evaluation with **user
+  inputs and decisions made**. That means dispositions and their reasons are not incidental
+  metadata; they are **content of the eventual document**, and must be retrievable with their
+  claim, their author and their date.
+
+The store's obligation is therefore to keep a claim, its verdict, its evidence, its disposition and
+that disposition's reason **retrievable together**, and to keep the raw artefact that carries the
+auditor's narrative. It is not to generate either summary.
+
 ## The problem, measured
 
 **792 verified claims across two runs; none survives at claim granularity.** highper-gateway's 303
@@ -144,7 +194,10 @@ Because the census lives in the kit repo (D1) while describing another tree, **e
 its subject**. The manifest records, per census:
 
 `subject_repo` · `subject_remote` · `subject_sha` · `subject_dirty` · `source_document` ·
-`audited_at` · `recorded_at` · `auditor_model`
+`audited_at` · `recorded_at` · `auditor_model` · **`kit_sha`** · **`kit_version`**
+
+`kit_sha` and `kit_version` are per D3: without them a re-run cannot be attributed to the kit
+change it exists to measure.
 
 `subject_sha` and `subject_dirty` are captured **by the operator from the subject tree** and
 written into the manifest — not `git rev-parse HEAD` in the kit, which would record the kit's own

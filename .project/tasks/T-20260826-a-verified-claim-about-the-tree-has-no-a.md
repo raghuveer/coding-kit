@@ -8,6 +8,67 @@ blocked_by: T-20260826-no-agent-owns-verifying-documented-claim
 state: created
 ---
 
+## SPLIT 2026-08-28 — this is now Task A of three
+
+Two approach reviews returned REVISE (17 findings, then 22). The second recommended splitting, and
+the operator accepted. **This task is now Task A: the store — artefact capture, derivation, and
+AC5 reporting.**
+
+| | task | carries |
+|---|---|---|
+| **A** | **this** | D1, artefact capture, derivation, AC5 |
+| B | `T-20260828-claim-dispositions-so-feedback-on-a-cens` | D2 — dispositions, the fifth vocabulary, the ADR 0006 conversation |
+| C | `T-20260828-census-diff-and-the-attribution-control-` | AC6 diff, D3 attribution, variance measurement |
+
+The reviewer's argument, which is the point of splitting: landing all three together risks **AC6 —
+the criterion this task's own text calls the whole point — being the part that gets cut** when the
+rest runs long. AC4 and AC6 move to B and C respectively; AC1, AC2, AC3, AC5 and AC7 stay here.
+
+## Why this line of work exists — the operator's framing, recorded as his
+
+Stated 2026-08-28, and it is the standard the whole census effort is held to:
+
+> The goal is to document, so we can do next-level deeper analysis to create tasks with
+> dependencies with complete picture, so we move forward while we will have **findings as data
+> points reference w.r.t. created tasks**. These are required for coding kit's developers. For
+> those coding kit users who are application developers... who choose this coding kit as a means to
+> streamline Agentic AI-assisted application development and maintenance to cater their short-term
+> to long-term strategic business needs. The findings and tasks, if we maintain, will help anybody
+> who chooses to go the extra mile to contribute or improve — **irrespective of whether they share
+> improvements back or not**.
+>
+> First success is encouraging but predictable; **deterministic, quantifiable and qualitative
+> outcomes from coding kit is necessary** for me as its developer, when taking it to its tech-savvy
+> application developer community who are aspiring to use GenAI adoption for their software
+> development work.
+
+Two consequences that bear directly on this task's design, rather than being background:
+
+1. **Findings must be traceable to the tasks they produced**, in both directions. That is why the
+   split lists inherited findings by id rather than re-narrating them, and why a disposition (task
+   B) is content rather than metadata.
+2. **"Deterministic and quantifiable" is an acceptance standard, not an aspiration.** It is why
+   AC5 demands a fraction with its denominator rather than an adjective, and why task C's
+   attribution control must refuse rather than annotate.
+
+## Findings on this task that belong to A
+
+39 findings are recorded here across two reviews. B and C list the ones they inherit; the rest are
+A's, and the six criticals below block implementation:
+
+| id | what |
+|---|---|
+| `…:962` | `census_id` undefined — answered in revision 2, verify it survives |
+| `…:269` | **`claim_key` is still undefined** — suffix, `id_ambiguous` and ordinal all proposed, none designated. Task C is entirely downstream of this |
+| `…:65e` | `normalise` is said to run at index time, but `kit-index.sh` contains **zero** `python3` and is awk |
+| `…:5c1` | `census_id` and `--unit` become path components with **no refusal rule** — `kit-plan.sh:108-129` records a T3 review finding `../../docs` in a committed file, and the fix chosen there was to refuse, not slug |
+| `…:627` | `validate.py:193-209` walks the whole tree and fails on `/Users/` or `/home/` in any `.json`. A verbatim foreign-subject artefact turns `commands.test` **permanently red with no legal repair** |
+| `…:e02` | **AC5's numerator contradicts its own worked example** — "other than CONFIRMED" is 237/489 (48%), not the 173/489 (35%) printed beside it. Correct wording: *neither CONFIRMED nor UNVERIFIABLE* |
+
+Majors owned here include the CRLF byte-for-byte claim (`…:501`), the `census_id` refuse-vs-write
+contradiction that makes step 1 unimplementable as written (`…:281`), the manifest timing horn
+(`…:7e4`), and the missing retry loop (`…:926`).
+
 ## Intent
 
 Measured on 2026-08-26 during the highper-gateway reconciliation: **303 claims were verified

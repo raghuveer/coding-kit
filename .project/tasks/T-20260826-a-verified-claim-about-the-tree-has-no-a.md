@@ -2,8 +2,8 @@
 id: T-20260826-a-verified-claim-about-the-tree-has-no-a
 title: A verified claim about the tree has no artefact so a census cannot be recorded
 epic: reporting
-tier: T2
-paths: tooling/schema.sql, tooling/kit-finding.sh, tooling/kit-status.sh
+tier: T3
+paths: tooling/schema.sql, tooling/kit-index.sh, tooling/kit-claim.sh, tooling/kit_claims.py, tooling/kit-status.sh
 blocked_by: T-20260826-no-agent-owns-verifying-documented-claim
 state: created
 ---

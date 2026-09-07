@@ -153,12 +153,26 @@ must carry it as a recorded field set by the operator — the same standing as `
 also refuses to infer. A census whose purpose is unset must be refused rather than defaulted, since
 defaulting either way silently misfiles it.
 
-**The fourth row is an open gap, named rather than resolved.** A non-adopted repository audited for
-its own sake has no `.project/` to write to and no evaluation purpose to justify the kit repo. The
-draft's mechanical rule accidentally covered it by sending it to the kit repo; D4 correctly declines
-to, and leaves it unhandled. The likely answer is that this case must adopt the kit first — a census
-is kit state, and the kit does not create state in a repository that did not opt in — but that is
-the agent's reading, not the operator's decision, and it is recorded here as open.
+**The fourth row, decided by the operator 2026-09-07.** A non-adopted repository audited for its
+own sake has no `.project/` to write to and no evaluation purpose to justify the kit repo. The
+draft's mechanical rule covered it **by accident**, sending it to the kit repo; D4 correctly
+declines to, which is what made the gap visible.
+
+> In "a non-adopted repo audited for its own sake" scenario, the subject must adopt the kit first
+> and census to be write in subject repo as kit state.
+
+So the fourth row is **not a fifth storage location**: it resolves into the second by requiring
+adoption first, after which the census lands in the subject's own `.project/census/` like any
+other kit state. This is the rule the kit already enforces everywhere else — `kit_active()` is
+`[ -f "$(kit_profile "$1")" ]`, and the kit does not create state in a repository that did not opt
+in. A census is kit state and gets no exemption.
+
+The **mechanism** is filed as `T-20260907-a-census-on-a-subject-that-has-not-adopt` (T2, blocked by
+this task's store), because a rule with no mechanism is a convention. The failure it guards is not
+a crash but intake choosing a plausible directory and succeeding, and the trap it must avoid is
+being written as a bare `kit_active` guard — that would refuse the **first** row, which is
+legitimately non-adopted and must still record. Keying on purpose rather than adoption is exactly
+why D4 is worded as it is.
 
 **What this does not change.** The F6/F7 machinery stands unaltered — `subject_repo`,
 `subject_remote`, `subject_sha`, `subject_dirty`, `kit_sha`, `kit_version`, and the control that a

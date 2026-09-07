@@ -16,7 +16,7 @@ rather than solved, that is said, because the difference matters to whoever read
 
 **D1 — the census is recorded IN THE KIT REPO.**
 
-> **Bounded by D4 below (draft, 2026-09-07).** This sentence reads as a universal rule; the
+> **Bounded by D4 below (2026-09-07).** This sentence reads as a universal rule; the
 > rationale under it only ever covered the candidate case. D4 is the scoping rule. Not rewritten
 > here, because a decision is corrected in front of the reader rather than edited out of sight.
 
@@ -94,13 +94,11 @@ that disposition's reason **retrievable together**, and to keep the raw artefact
 auditor's narrative. It is not to generate either summary.
 
 **D4 — a census is PROJECT-SCOPED by default. The kit repo is the fallback for a subject that
-has not adopted the kit.**
+is being used to evaluate the kit.**
 
-> **DRAFT, 2026-09-07 — written by the agent for the operator to correct, and NOT yet confirmed
-> as his words.** D1-D3 are his. This one was raised by him as a question and is drafted from his
-> answer; until he edits or confirms it, read it as a proposal in his direction, not as a decision.
-> The precedent for this caution is `3d91d05`, where a correction was attributed to him that he
-> had not made, and had to be withdrawn.
+Stated by the operator 2026-09-07, in his words above the agent's draft, which keyed the
+fallback on adoption rather than on purpose. The correction is recorded in §"what his wording
+changes" below rather than absorbed silently.
 
 Raised on reading a summary that stated the census is stored in the kit repo as settled general
 design:
@@ -111,10 +109,10 @@ design:
 
 **The rule:**
 
-| Case | Has the subject adopted the kit? | The census lives in | Why |
+| Case | Is the subject being used to evaluate the kit? | The census lives in | Why |
 |---|---|---|---|
-| **Normal use** — a team audits its own project | yes | the **subject's** `.project/census/`, tracked there | the same scope as every other artefact the kit produces |
-| **Candidate evaluation** — the kit is the thing under test | no | the **kit** repo, marked foreign | D1's rationale; the subject has no `.project/` to write to |
+| **Normal use** — a team audits its own project | no | the **subject's** `.project/census/`, tracked there | the same scope as every other artefact the kit produces |
+| **Candidate evaluation** — the kit is the thing under test | yes | the **kit** repo, marked foreign | the audit's output is the kit's development record, not the subject's |
 
 **This bounds D1 rather than contradicting it.** D1's rationale was always the candidate case and
 never claimed to be more: highper-gateway and aeon were evaluated *to validate the kit*, so what
@@ -131,12 +129,36 @@ in. A census in the kit repo would be **the only artefact that breaks that scope
 that makes it untenable is not hypothetical: an adopter auditing a client codebase would have that
 client's claims land in a repository belonging to someone else.
 
-**What selects the branch is mechanical, not a judgement call.** `kit_active` against the subject
-already answers it. That is also the true reading of the review's own evidence — *"highper-gateway
-has no `project-profile.md`, so intake would refuse outright"* is not an argument for kit-repo
-storage as a general rule. It is the observation that the candidate case is special **precisely
-because the subject never adopted the kit**, which is what makes it the fallback rather than the
-default.
+**What his wording changes, and it is not cosmetic.** The agent's draft made the fallback trigger
+on **adoption** — `kit_active` against the subject, a mechanical test needing no declaration. The
+operator's wording triggers it on **purpose**: *a subject that is being used to evaluate the kit*.
+These are different rules and they disagree on real cases:
+
+| subject | adopted the kit? | being used to evaluate the kit? | draft said | **D4 says** |
+|---|---|---|---|---|
+| highper-gateway, aeon | no | yes | kit repo | **kit repo** |
+| an adopter auditing its own project | yes | no | subject repo | **subject repo** |
+| a repository that adopted the kit and is then used as an evaluation subject | yes | yes | subject repo | **kit repo** |
+| a non-adopted repository audited for its own sake | no | no | kit repo | **neither — see below** |
+
+The operator's rule is the correct one, and the third row is why: **adoption does not tell you whose
+question the audit answers.** A repository can run the kit on itself and later be used as an
+evaluation candidate; the claims produced by the second activity belong to the kit's development
+record no matter how well instrumented the subject is. Purpose is the load-bearing fact and
+adoption was only ever a proxy for it that happened to hold for the two subjects to hand.
+
+**The cost of the correct rule, stated rather than hidden.** Purpose is **declared, not derived**.
+Nothing in the tree can compute "is this subject being used to evaluate the kit", so the manifest
+must carry it as a recorded field set by the operator — the same standing as `Via:`, which the kit
+also refuses to infer. A census whose purpose is unset must be refused rather than defaulted, since
+defaulting either way silently misfiles it.
+
+**The fourth row is an open gap, named rather than resolved.** A non-adopted repository audited for
+its own sake has no `.project/` to write to and no evaluation purpose to justify the kit repo. The
+draft's mechanical rule accidentally covered it by sending it to the kit repo; D4 correctly declines
+to, and leaves it unhandled. The likely answer is that this case must adopt the kit first — a census
+is kit state, and the kit does not create state in a repository that did not opt in — but that is
+the agent's reading, not the operator's decision, and it is recorded here as open.
 
 **What this does not change.** The F6/F7 machinery stands unaltered — `subject_repo`,
 `subject_remote`, `subject_sha`, `subject_dirty`, `kit_sha`, `kit_version`, and the control that a

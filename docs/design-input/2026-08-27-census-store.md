@@ -12,9 +12,13 @@
 `2026-08-27-census-store-review.md`. This revision answers them. Where a finding is dissolved
 rather than solved, that is said, because the difference matters to whoever reads this next.
 
-## Two decisions made by the operator, recorded as his
+## Four decisions made by the operator, recorded as his
 
 **D1 — the census is recorded IN THE KIT REPO.**
+
+> **Bounded by D4 below (draft, 2026-09-07).** This sentence reads as a universal rule; the
+> rationale under it only ever covered the candidate case. D4 is the scoping rule. Not rewritten
+> here, because a decision is corrected in front of the reader rather than edited out of sight.
 
 The rationale is his and is not a storage convenience. highper-gateway and aeon were used as
 **brownfield project candidates**, evaluated to validate the kit's strengths and to identify
@@ -88,6 +92,64 @@ must not preclude it. Two shapes are wanted and they are different:
 The store's obligation is therefore to keep a claim, its verdict, its evidence, its disposition and
 that disposition's reason **retrievable together**, and to keep the raw artefact that carries the
 auditor's narrative. It is not to generate either summary.
+
+**D4 — a census is PROJECT-SCOPED by default. The kit repo is the fallback for a subject that
+has not adopted the kit.**
+
+> **DRAFT, 2026-09-07 — written by the agent for the operator to correct, and NOT yet confirmed
+> as his words.** D1-D3 are his. This one was raised by him as a question and is drafted from his
+> answer; until he edits or confirms it, read it as a proposal in his direction, not as a decision.
+> The precedent for this caution is `3d91d05`, where a correction was attributed to him that he
+> had not made, and had to be withdrawn.
+
+Raised on reading a summary that stated the census is stored in the kit repo as settled general
+design:
+
+> Do you mean in project scope or coding-kit repo? The claims about the project, to be stored in
+> project's scope right? [...] We are using highper-gateway and aeon as evaluation candidates of
+> this coding-kit's capabilities.
+
+**The rule:**
+
+| Case | Has the subject adopted the kit? | The census lives in | Why |
+|---|---|---|---|
+| **Normal use** — a team audits its own project | yes | the **subject's** `.project/census/`, tracked there | the same scope as every other artefact the kit produces |
+| **Candidate evaluation** — the kit is the thing under test | no | the **kit** repo, marked foreign | D1's rationale; the subject has no `.project/` to write to |
+
+**This bounds D1 rather than contradicting it.** D1's rationale was always the candidate case and
+never claimed to be more: highper-gateway and aeon were evaluated *to validate the kit*, so what
+those audits produced is the kit's own development record. What the design did was state that
+conclusion as a universal rule — *"the census is recorded IN THE KIT REPO"* — without noticing the
+rationale underneath it only reached one case. The second approach review caught this and it is
+still an open critical: *"design never says which repo stores a census."*
+
+**Why project scope is the default and not the exception.** Every artefact the kit produces is
+project-scoped: tasks, findings, events and spend all live in the adopting repository's
+`.project/`. `kit_active()` is `[ -f "$(kit_profile "$1")" ]` and every script refuses when it is
+false, on the stated principle that the kit does not create state in a repository that did not opt
+in. A census in the kit repo would be **the only artefact that breaks that scope**, and the case
+that makes it untenable is not hypothetical: an adopter auditing a client codebase would have that
+client's claims land in a repository belonging to someone else.
+
+**What selects the branch is mechanical, not a judgement call.** `kit_active` against the subject
+already answers it. That is also the true reading of the review's own evidence — *"highper-gateway
+has no `project-profile.md`, so intake would refuse outright"* is not an argument for kit-repo
+storage as a general rule. It is the observation that the candidate case is special **precisely
+because the subject never adopted the kit**, which is what makes it the fallback rather than the
+default.
+
+**What this does not change.** The F6/F7 machinery stands unaltered — `subject_repo`,
+`subject_remote`, `subject_sha`, `subject_dirty`, `kit_sha`, `kit_version`, and the control that a
+foreign census must never leak into an unqualified total. It simply becomes the apparatus of the
+**fallback** case rather than of every case. D3's three-variable attribution rule is untouched: a
+census is a re-runnable reference wherever it is stored.
+
+**What it re-opens, and must be restated rather than assumed.** F6/F7 currently says *"a census
+whose `subject_repo` is the kit itself is the only one that may appear unqualified."* Under D4 the
+normal case is a census stored in the subject's own repository describing that same repository,
+which is equally unqualified **there**. The rule generalises to: **a census may appear in an
+unqualified total only when its `subject_repo` is the repository storing it.** The conformance step
+F6/F7 demands must test that form, or it will fail every correctly-scoped adopter census.
 
 ## The problem, measured
 

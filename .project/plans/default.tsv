@@ -3,9 +3,9 @@
 #version	1
 #goal	default
 #created	2026-08-17T02:49:19Z
-#tasks_digest	2029041314-9359
+#tasks_digest	2145949169-9476
 #columns	goal_id	task_id	layer	rank	score	cluster
-default	T-20260826-no-agent-owns-verifying-documented-claim	0	1	20.000	3
+default	T-20260826-no-agent-owns-verifying-documented-claim	0	1	23.000	3
 default	T-20260808-make-the-security-assurance-cadence-a-po	0	2	8.000	3
 default	T-20260811-a-scope-challenge-gate-before-the-adr-at	0	3	2.000	3
 default	T-20260811-run-the-review-chain-automatically-gate-	0	4	2.000	3
@@ -120,13 +120,14 @@ default	T-20260815-security-md-claims-allowedtools-enforces	0	112	2.000	11
 default	T-20260825-nothing-verifies-help-output-so-insertin	0	113	2.000	14
 default	T-20260825-two-migration-md-mapping-rows-record-cap	0	114	2.000	15
 default	T-20260812-the-profile-template-ships-no-tier-floor	0	115	1.000	6
-default	T-20260826-a-verified-claim-about-the-tree-has-no-a	1	1	18.000	5
+default	T-20260826-a-verified-claim-about-the-tree-has-no-a	1	1	21.000	5
 default	T-20260825-a-security-rung-on-the-ladder-satisfied-	1	2	3.000	2
 default	T-20260907-an-opt-in-adapter-for-structural-edges-s	1	3	3.000	2
 default	T-20260827-cost-per-verified-claim-is-stable-across	1	4	2.000	2
 default	T-20260819-researcher-carries-no-security-baseline-	1	5	2.000	3
 default	T-20260828-census-diff-and-the-attribution-control-	2	1	3.000	5
 default	T-20260828-claim-dispositions-so-feedback-on-a-cens	2	2	3.000	5
-default	T-20260827-a-feature-declared-but-enabled-by-no-bui	2	3	2.000	2
-default	T-20260827-constructed-and-called-but-hardwired-off	2	4	2.000	2
-default	T-20260826-reachability-of-a-declared-feature-is-me	2	5	1.000	2
+default	T-20260907-a-census-on-a-subject-that-has-not-adopt	2	3	2.000	5
+default	T-20260827-a-feature-declared-but-enabled-by-no-bui	2	4	2.000	2
+default	T-20260827-constructed-and-called-but-hardwired-off	2	5	2.000	2
+default	T-20260826-reachability-of-a-declared-feature-is-me	2	6	1.000	2

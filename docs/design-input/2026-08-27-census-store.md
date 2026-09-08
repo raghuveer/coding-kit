@@ -331,6 +331,35 @@ file cannot be moved by anything.
 It is defined **once, in `kit_claims.py`, and applied only at index time** — never in awk, never
 in the committed artefact.
 
+### F1b — `census_id` and `--unit` are refused, not rewritten, and the precedent is not enough
+
+Closes `5c1284da`. Both become **path components** (`.project/census/<census_id>/<unit>.json`) and,
+under D5, **committed identity** — a disposition references the observation by them. So a bad value
+is not a bad directory name; it is a forged anchor that outlives the run.
+
+**The rule.** `census_id` and `--unit` are each refused unless they match `[A-Za-z0-9._-]+`, **and**
+are refused outright when the whole value is `.` or `..`. Refused, never rewritten — for the reason
+`kit-plan.sh:121-122` already gives about goal ids: *"a silently rewritten goal id is a second name
+for the operator's goal"*, and a second name for a census is worse, because D5 makes it identity.
+
+**Why the precedent is adopted and then tightened.** `kit-plan.sh:123-129` is the right shape and
+its charset **includes the dot**, so `.` and `..` pass it. Verified 2026-09-08 by running the
+`case` pattern alone against a table of inputs: `..` → ACCEPTED, `.` → ACCEPTED, `a..b` → ACCEPTED,
+`bad/name` → REFUSED, `''` → REFUSED.
+
+**What that costs `kit-plan.sh` today: nothing, and that was tested rather than assumed.** A
+throwaway repo was adopted, seeded and planned with `--goal ..`. `.project/` survived intact, no
+pack escaped into it, and no plan row was written. The reason is not the guard — it is that
+`rm -rf` refuses a path ending in `..` on its own (*"refusing to remove '.' or '..' directory:
+skipping"*, exit 0). **The earlier reading of this as a destructive defect in `kit-plan.sh` is
+withdrawn; it was checked before being filed and it does not hold.**
+
+**Why the census store cannot rely on that.** `rm` protects a deletion. This store's exposure is a
+**write** and a **record**: `mkdir -p .project/census/../` resolves to `.project/`, an artefact
+written there lands beside `events.ndjson` rather than under a census, and D5 then commits `.` or
+`..` as the observation reference of every disposition made against it. Nothing in `rm` reaches
+any of that, which is why the rule is stated here rather than inherited.
+
 ### F2 — the rationale, corrected
 
 Revision 1 argued the pair key was needed because *"findings use `INSERT OR REPLACE` on a content
@@ -372,10 +401,25 @@ that can fail, not a convention.
 Reported as **two fractions, both with explicit denominators, never as an adjective**:
 
 ```
-drift        173/489   (35%)   verdicts other than CONFIRMED, over all claims
+drift        173/489   (35%)   claims that DO NOT HOLD, over all claims
 drift-judged 173/425   (41%)   the same numerator, over claims that could be judged
 unverifiable  64/489   (13%)   reported alongside, never folded into either
 ```
+
+**"Claims that do not hold" means every verdict except `CONFIRMED` and except `UNVERIFIABLE`.** A
+claim nobody could check is not a claim that is wrong, and folding it into drift would be the same
+error the third row exists to prevent.
+
+> **CORRECTED 2026-09-08, closing `e02d6b62`.** The first row previously read *"verdicts other than
+> CONFIRMED, over all claims"*. That label is wrong and its own numbers say so: `UNVERIFIABLE` is a
+> verdict other than `CONFIRMED`, so the labelled quantity is 173 + 64 = **237 of 489 (48%)**, not
+> the 173 (35%) printed beside it. The arithmetic that shows which half was wrong: 489 − 64 = 425,
+> the denominator of row 2, so **173 is the judged-only numerator** — correct for row 2 and paired
+> in row 1 with an all-claims denominator under a label that describes a third quantity entirely.
+> **The numbers were right and the label was wrong**, which is why this is a relabel rather than a
+> recount. Corrected in place with the old wording quoted, because a section whose entire purpose
+> is to stop a denominator being picked silently must not have its own denominator error edited out
+> of sight.
 
 The reviewer was right that this is genuinely ambiguous and that the AC exists to force the choice.
 Both are printed because they answer different questions — how much of the document is wrong, and

@@ -3696,11 +3696,16 @@ cc="$WORK.census"; rm -rf "$cc"; mkdir -p "$cc"
   bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1 || { echo "  kit-init failed in the fixture"; exit 1; }
 
   PAY='{"source":"d.md","subject":"U","narrative":"n","claims":[]}'
-  # Capture then match: this file runs under `set -o pipefail`, so piping a command that exits
-  # non-zero BY DESIGN into grep would carry its status past a grep that matched, and every
-  # assertion that a guard FIRES would read as the assertion failing.
+  # NO PIPE ANYWHERE IN AN ASSERTION, and the first version of this step got it wrong on the one
+  # platform it was not developed on. `cap ... | grep -q` passed on Linux and Windows and FAILED on
+  # macOS: grep -q exits on its first match, printf then takes EPIPE, and under `set -o pipefail`
+  # the pipeline reports printf's failure rather than grep's success -- so a diagnostic that WAS
+  # present read as missing. The licence step below records the same trap in the other direction.
+  # Capture into a variable and match with `case`, which involves no second process at all.
   cap() { printf '%s' "$(printf '%s' "$PAY" | bash "$KIT/tooling/kit-claim.sh" "$@" 2>&1)"; }
-  want() { _m=$1; shift; cap "$@" | grep -q -- "$_m" || { echo "  missing diagnostic: $_m"; return 1; }; }
+  want() { _m=$1; shift; _out=$(cap "$@")
+           case "$_out" in *"$_m"*) return 0 ;; esac
+           echo "  missing diagnostic: $_m"; return 1; }
 
   want 'no manifest at' --census c1 --unit u1 --json || exit 1
   [ -e .project/census/c1/u1.json ] && { echo "  wrote an artefact with no manifest"; exit 1; }
@@ -3724,11 +3729,13 @@ cc="$WORK.census"; rm -rf "$cc"; mkdir -p "$cc"
   want "may not be '.' or '..'" --census c1 --unit .. --json || exit 1
   want "may not be '.' or '..'" --census c1 --unit . --json || exit 1
 
-  printf '%s' "$(printf '' | bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json 2>&1)" |
-    grep -q 'empty reply on stdin' || { echo "  an empty reply was not refused by name"; exit 1; }
+  _out=$(printf '' | bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json 2>&1)
+  case "$_out" in *'empty reply on stdin'*) ;;
+    *) echo "  an empty reply was not refused by name"; exit 1 ;; esac
   [ -e .project/census/c1/u1.json ] && { echo "  wrote an artefact for an empty reply"; exit 1; }
 
-  cap --census c1 --unit u1 --json | grep -q 'captured' || { echo "  refused a valid capture"; exit 1; }
+  _out=$(cap --census c1 --unit u1 --json)
+  case "$_out" in *captured*) ;; *) echo "  refused a valid capture"; exit 1 ;; esac
   printf '%s\n' "$PAY" > expected.json
   cmp -s expected.json .project/census/c1/u1.json || { echo "  artefact is not verbatim"; exit 1; }
 

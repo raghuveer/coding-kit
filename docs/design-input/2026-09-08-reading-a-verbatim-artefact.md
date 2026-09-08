@@ -80,10 +80,25 @@ sqlite3 :memory: "SELECT key, json_extract(value,'$.verdict') FROM
   CLI, so this holds — but it is a constraint on how the reader may be invoked, and it should be
   stated rather than discovered.
 
-**UNMEASURED, and this is what would decide B:** the sqlite3 version on `ubuntu-latest` and
-`macos-latest`, and whether JSON1 is present in both. If either CI platform is below 3.38 or built
-without it, B is either dead or needs a fallback — and a fallback is option A wearing a different
-hat. **Nobody should choose B on the strength of one machine's sqlite3.**
+**MEASURED 2026-09-08, and this is what decided it.** A temporary probe step ran on both CI
+platforms against a real committed artefact:
+
+| platform | sqlite3 | `json_extract` + `readfile` | `json_each` ordinals |
+|---|---|---|---|
+| `ubuntu-latest` | **3.45.1** | ok — `UC3 TLS ACME mTLS OCSP CRL` | ok — `0 | OVERSTATED`, `1 | STALE-CITATION` |
+| `macos-latest` | **3.50.6** | ok — same string | ok — same rows |
+| this machine (Windows) | 3.53.4 | ok | ok |
+
+All three are above 3.38, all carry JSON1, all parse the same artefact to the same values. **The
+portability objection to B is answered for CI.** The probe was closed unmerged rather than kept: a
+permanent probe is noise in a suite whose point is that a green means something.
+
+**What this does NOT establish, and B still owes:** an ADOPTER's sqlite3. The kit runs wherever it
+is installed, and a long-term-support distribution can ship 3.34 or older, where JSON1 is optional
+at compile time. So B still needs the version gate — `kit-plan.sh:479-485` is the shape, at a 3.38
+floor rather than 3.25 — and it needs a stated answer for what an adopter below that floor gets.
+That answer is the same undecided question option A carries about a missing `python3`, which is
+worth noticing before B is chosen for avoiding it.
 
 ### C — intake writes a flat sidecar; the artefact stays verbatim
 

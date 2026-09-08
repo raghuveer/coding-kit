@@ -163,5 +163,27 @@ sentence:**
    validation of the schema. Running a census first spends another eight figures of BTE producing
    a third narrative that also disappears.
 
+**The mechanism, named 2026-09-08 because it is the thing a store prevents.** The output was not
+lost to a crash or a bad schema. It was *delivered into an isolated working copy that had no
+remote* — `docs/TRIALS/2026-08-26-highper-gateway-reconciliation.md:240`: *"Delivered as
+`docs/RECONCILIATION-2026-08-26.md` in the copy, never applied, copy has no remote."* Nothing was
+deleted; the artefact was simply written somewhere nothing would ever fetch from. That is the
+failure this store exists to make impossible, and it is worth stating as a mechanism rather than as
+a quantity of lost claims.
+
+## UPDATE 2026-09-08 — per-claim rows now survive, for the first time
+
+Point 1 above ("there is no free test data") is now **nearly** true rather than absolutely true.
+`docs/EXPERIMENTS/2026-09-07-claim-auditor-tier/` commits both arms of a two-model experiment as raw
+JSON: **44 per-claim rows** (24 + 20) against a real subject at a pinned sha, each with `claim`,
+`source_loc`, `verdict`, `location`, `evidence` and `note` — produced by the shipped contract rather
+than a hand-written prompt.
+
+They are **candidate input to this store and deliberately not a precedent for its schema.** They sit
+outside `.project/census/` for exactly the reason point 1 gives: fitting a schema to whatever one
+run happened to emit is the mistake, and this task's ten open criticals are what decides the shape.
+What changes is that a schema proposed here can now be **tried against 44 real rows** before census
+#3 is spent, which point 3's sequencing did not have available when it was written.
+
 Source: `docs/TRIALS/2026-08-26-highper-gateway-reconciliation.md` kit defect 1;
 `docs/TRIALS/2026-08-27-aeon-reconciliation.md`.

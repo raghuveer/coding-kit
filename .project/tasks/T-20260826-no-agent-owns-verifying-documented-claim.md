@@ -57,11 +57,30 @@ Three instructions were load-bearing and would be lost if this stays ad hoc:
       prose to parse. Every defect in the old harvester came from parsing.
 - [ ] `docs/agents-README.md` places it in the pipeline and says explicitly that on brownfield it
       runs BEFORE tiering and planning.
-- [ ] The model tier is justified against measurement, not assumed. The 2026-08-26 run cost
-      **6,547,551 BTE across 17 subagents** for 303 claims; whether a cheaper model reaches the
-      same verdicts is answerable and unanswered.
-- [ ] It is demonstrated on the 2026-08-26 corpus and its verdicts compared against that run.
-      Divergence is a finding about one of the two, not automatically a regression.
+- [ ] The model tier is justified against measurement, not assumed — and this is **the same
+      experiment as the criterion below, not a second piece of work**. The 2026-08-26 run cost
+      **6,547,551 BTE across 17 subagents** for 303 claims, which is what the tier *costs* and not
+      what it *proves*.
+- [ ] **AMENDED 2026-09-08 — the original is kept immediately below rather than overwritten,
+      because why it failed is the point.** The contract is demonstrated by auditing one unit
+      **twice at two model tiers** — same subject at a pinned `subject_sha` with a clean tree, the
+      shipped contract as the instrument, byte-identical prompts — and the two arms compared
+      **claim by claim against each other**. One variable moves. Divergence is a finding about the
+      contract or about the tier, not automatically a regression.
+    - Comparison against the 2026-08-26 and 2026-08-27 runs is admissible **only** against what
+      survives them: the aggregate per-use-case counts and the ~ten narrated exemplars. **The
+      per-claim verdicts of both runs do not exist** — not unqueryable, absent — and are not an
+      admissible baseline.
+    - Any such comparison is a **sanity check and never proof**. Those runs used a hand-written
+      prompt; comparing one to a run of the shipped contract moves the model *and* the instrument,
+      and a diff in which more than one variable moved is uninterpretable under D3's attribution
+      rule.
+- [ ] ~~**WITHDRAWN 2026-09-08.** It is demonstrated on the 2026-08-26 corpus and its verdicts
+      compared against that run. Divergence is a finding about one of the two, not automatically a
+      regression.~~ Unmeetable by anyone, at any cost, for two independent reasons: the corpus was
+      delivered into an isolated copy with no remote and does not exist at claim granularity, and
+      the comparison it asks for would move two variables even if it did. Filed and reproduced as
+      `T-20260907-ac7-names-a-corpus-that-no-longer-exists`.
 
 ## Notes
 
@@ -79,5 +98,35 @@ exist and its output is a map. Merging them would give one agent two subjects, w
 **Sequencing:** this decides the contract, `T-20260826-a-verified-claim...` decides the store.
 Design this one first; building the store against a hand-written prompt would fit the schema to an
 accident.
+
+## The AC6 / AC7 amendment, 2026-09-08
+
+**Amended on the operator's instruction**, on the reasoning filed in
+`T-20260907-ac7-names-a-corpus-that-no-longer-exists` and reproduced there before filing.
+
+**What was wrong with AC7:** it named a baseline that had already evaporated when it was written.
+792 verified claims across the 2026-08-26 and 2026-08-27 runs, roughly 6.5M and 13.9M BTE, were
+delivered into isolated copies with **no remote** and survive nowhere at claim granularity; all 35
+subagent transcripts are gone too. The criterion could not be met by anyone at any cost, and no
+amount of care in running it would have fixed that.
+
+**Why AC6 and AC7 became one criterion.** They were asking for the same run. AC6 wanted a tier
+comparison; AC7 wanted a demonstration against a baseline. A two-arm run of the shipped contract on
+one pinned subject is both — and it is the only shape in which exactly one variable moves.
+
+**Status of the amended criterion — a recommendation, not a mark.** The experiment at
+`docs/EXPERIMENTS/2026-09-07-claim-auditor-tier/` appears to satisfy it: pinned subject
+(`05c56eb`, clean tree, zero commits since the original audit), shipped contract, byte-identical
+prompts, `opus` against `sonnet`, both arms' raw JSON committed, compared claim by claim. The
+historical figures are used there as a sanity check and explicitly not as proof. **The box is left
+unticked deliberately** — per the working agreement the close is the operator's, and two contract
+defects the experiment exposed are still open:
+`T-20260908-a-cited-range-that-still-contains-its-su` and
+`T-20260908-the-contract-requires-a-production-calle`. Neither blocks this criterion; both change
+what a future census means.
+
+**What did NOT change:** the withdrawn text stays visible above. ADRs 0005 and 0006 are kept
+unedited here for the same reason — the record should show what was wrong, not only what replaced
+it.
 
 Source: `docs/TRIALS/2026-08-26-highper-gateway-reconciliation.md`, kit defect 2.

@@ -104,3 +104,19 @@ attribution; the 2026-08-25 session-filed defects set the same precedent.
 Tier declared T2, not classified. The fix is one criterion's wording, which reads T1, but choosing
 what the criterion should measure instead is a judgement about the experiment's validity. Run
 `tier-classify` rather than trusting this line.
+
+## Outcome 2026-09-08 — amended on the operator's instruction
+
+AC7 was **withdrawn and replaced** in `T-20260826-no-agent-owns-verifying-documented-claim`, and
+AC6 was rewritten so the two read as one experiment. The withdrawn text is kept visible above the
+replacement rather than overwritten, and the reason is recorded in that task's new
+*"The AC6 / AC7 amendment"* section.
+
+On this task's own four criteria: the first three were done by that amendment. The fourth — the
+data-loss instance referenced from the census store task — was **already largely there**: the
+`CORRECTION 2026-08-27` section of `T-20260826-a-verified-claim-about-the-tree-has-no-a` records
+792 claims absent and 35 transcripts gone. What it did not name was the *mechanism*, so that was
+added: the audit was delivered into an isolated copy with no remote, and nothing was ever deleted.
+
+**Not marked done here** — per the working agreement that is the operator's, and this is a
+close-recommendation.

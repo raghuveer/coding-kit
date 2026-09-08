@@ -59,13 +59,19 @@ a year later.
 | tester | sonnet | after review approves |
 | documenter | haiku | after tests / a feature-state change |
 
-**† `claim-auditor`'s tier is what the two measured runs used, not what they proved necessary.**
-6,547,551 BTE across 17 subagents for 303 claims; 13,853,224 across 18 for 489. That is evidence
-the tier works and none that it is required. Whether a cheaper model reaches the same verdicts is
-answerable — re-audit one unit at a lower tier and compare claim by claim against the recorded
-census — and unanswered. Per-claim cost was stable at ~35k BTE across both subjects, so the saving
-is quantifiable in advance if anyone wants to argue for it. Read the row as an assumption wearing a
-number until someone runs that experiment.
+**† `claim-auditor`'s tier was measured on 2026-09-07, not assumed.** One unit, one subject at a
+pinned sha, the shipped contract, byte-identical prompts, `opus` against `sonnet`. **The cheap arm
+returned zero `OVERSTATED` verdicts where the expensive arm returned five**, on a subject whose
+recorded dominant failure mode is overstatement — and on under 4% less token volume, so it did the
+same work and concluded differently. `docs/EXPERIMENTS/2026-09-07-claim-auditor-tier/`, with both
+arms' raw JSON committed.
+
+Read that as a **floor, not a law**: a real subject exists where the cheap tier loses the finding
+that made the audit worth running. Nothing follows about a subject whose failure mode is drift.
+Per-claim cost was stable at ~35k BTE across the two earlier subjects, so the saving from a lower
+tier stays quantifiable in advance for anyone who wants to argue the case on a different failure
+mode. `docs/MODELS.md` carries the full result and the one cheaper alternative that was proposed
+and withdrawn.
 
 **Risk tiering is defined in your `project-profile.md`** — see `templates/project-profile.md`.
 Name the tier and cite the trigger *before* spawning agents, or routine work quietly defaults to the full

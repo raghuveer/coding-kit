@@ -3,9 +3,9 @@
 #version	1
 #goal	default
 #created	2026-08-17T02:49:19Z
-#tasks_digest	4231324548-9751
+#tasks_digest	1126301845-9751
 #columns	goal_id	task_id	layer	rank	score	cluster
-default	T-20260826-a-verified-claim-about-the-tree-has-no-a	0	1	20.000	2
+default	T-20260826-a-verified-claim-about-the-tree-has-no-a	0	1	21.000	2
 default	T-20260808-co-change-has-no-eval-harness-so-its-sco	0	2	6.000	2
 default	T-20260826-the-trial-environment-is-recorded-as-pro	0	3	6.000	2
 default	T-20260731-component-model-for-polyglot-and-moderni	0	4	3.000	2

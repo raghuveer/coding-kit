@@ -5,6 +5,43 @@
 
 > # ⚠ WITHDRAWN 2026-09-08. The premise below is false. Do not cost from this document.
 >
+> **Superseded-by: docs/design-input/2026-08-27-census-store.md**
+>
+> Ten critical findings were anchored here. Each was classified by three readers -- the author and
+> two independent verifiers who could not see each other or the author's split. **Both verifiers
+> returned the same result: eight die with this document, two transfer.** The author had called
+> nine/one and was overruled on `0cb26a61`; the reason is recorded below because the correction is
+> more useful than the count.
+>
+> **The two that transfer were RE-FILED against the surviving design before any mark was made**,
+> because `--by` names one target and cannot carry a per-finding destination:
+>
+> | original | re-filed as | the live defect |
+> |---|---|---|
+> | `edf8adcc` | `e71bd25e` | step 2 specifies no per-artefact isolation while F12 guarantees committed artefacts may be malformed -- and F12 is now executing code at `tooling/kit-claim.sh:212-226` |
+> | `cb39b589` | `6a07968d` | the claims-as-events route is excluded on a ~270KB sizing argument that D5 concedes at `:239-244` with ~200KB of disposition text |
+>
+> **The eight that die** attack this document's own reasoning and have no carrier elsewhere: the
+> false `jf()` premise, the inverted `T-20260808` citation (filed twice, by both reviewers), the
+> "gates everything else" framing (also filed twice), the CI-measurement self-contradiction,
+> option B's "one language rather than two", and `readfile()` returning NULL. Neither `readfile`
+> nor `json_each` nor `sqlite3` appears anywhere in the surviving design, whose derive path is
+> `kit_claims.py`.
+>
+> **Why the author's `0cb26a61` call was wrong, recorded because the mistake generalises.** It was
+> kept alive by reading it as *"derivation must distinguish an absent artefact from an empty one"*
+> -- a broader claim than the finding makes. A finding is superseded on its own text, not on a
+> generalisation constructed from it, and constructing one to keep it alive is the same move that
+> produced five wrong premises in a single day. **If that broader question matters, it needs filing
+> on its own evidence; no finding currently holds it.**
+>
+> **One number in this file was wrong and is corrected here rather than left disagreeing with
+> itself.** Finding `7a26f0d9` reported arm-sonnet at `103/114`; the banner below reports
+> `116/116`. Recounted definitively on 2026-09-09 over every field actually present in each claim:
+> **arm-opus 142/143, arm-sonnet 116/116, total 258/259.** The banner is right, the finding's
+> sonnet figure is wrong on both numerator and denominator -- and its conclusion, that the premise
+> was false, stands regardless, which is why this document is withdrawn.
+>
 > Two `approach-reviewer` passes, run in parallel with no sight of each other, both returned
 > **REJECT** — 40 findings, 10 critical. Both replies are committed beside this file as
 > `2026-09-08-parser-question-review-a.json` and `-b.json`. Read those, not this.

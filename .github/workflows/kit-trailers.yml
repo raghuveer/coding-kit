@@ -99,5 +99,12 @@ jobs:
           else
             sqlite3 --version || brew install sqlite
           fi
+      - name: PROBE - sqlite3 version and JSON1 against a real artefact
+        run: |
+          echo "sqlite3: $(sqlite3 --version)"
+          echo "-- json_extract + readfile on a committed artefact:"
+          sqlite3 :memory: "SELECT json_extract(readfile('docs/EXPERIMENTS/2026-09-07-claim-auditor-tier/arm-opus.json'), '\$.subject');"             && echo "JSON1_EXTRACT=ok" || echo "JSON1_EXTRACT=FAIL"
+          echo "-- json_each ordinals:"
+          sqlite3 -separator ' | ' :memory: "SELECT key, json_extract(value,'\$.verdict') FROM json_each(json_extract(readfile('docs/EXPERIMENTS/2026-09-07-claim-auditor-tier/arm-opus.json'),'\$.claims')) LIMIT 3;"             && echo "JSON1_EACH=ok" || echo "JSON1_EACH=FAIL"
       - name: Conformance
         run: KIT="$PWD" WORK="${RUNNER_TEMP}/fixture" bash tests/conformance.sh

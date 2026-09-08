@@ -26,6 +26,21 @@ commit-msg  text eol=lf
 # it is a disagreement about what to do next, and it belongs in front of a person.
 .project/plans/*.tsv text eol=lf
 
+# JSON, for the same reason as *.md and the plan: it is READ as data, and it is about to be
+# HASHED. validate.py parses plugin.json and marketplace.json; the census store D5 records
+# dispositions that reference an artefact by its hash, and the auditor artefacts under
+# docs/EXPERIMENTS/ are already committed verbatim for exactly that purpose.
+#
+# The failure this closes is not hypothetical and not about the repository copy. Every tracked
+# .json was already `i/lf` -- correct in the index -- and `w/crlf` in the working tree, because
+# core.autocrlf=true converts on checkout for any file no attribute covers. So the git blob hash
+# was stable while a hash of the file ON DISK differed between a Windows and a Linux checkout,
+# and a disposition recorded on one platform would read as stale on the other. Found by an
+# approach review on 2026-09-08 and then demonstrated by this repository on itself: `git add` of
+# the two review artefacts warned "LF will be replaced by CRLF the next time Git touches it" in
+# the same commit that recorded the finding predicting it.
+*.json      text eol=lf
+
 # The licence files, for the same reason as *.md above: they are READ as data. validate.py
 # compares the declared SPDX identifier against a marker phrase in LICENSE, and a CRLF
 # checkout on Windows against an LF expectation is exactly the drift that pin exists to stop.

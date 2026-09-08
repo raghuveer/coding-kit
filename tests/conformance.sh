@@ -3673,6 +3673,56 @@ if step "validate.py"; then
 check $? "validate.py exits 0"
 fi
 
+if step "a verbatim artefact may cite a foreign home path, and nothing else may"; then
+# `627b9764`: validate.py walks the whole tree and fails on /home/ or /Users/ in any .json.
+# A census artefact is an auditor's reply about ANOTHER repository and legitimately cites that
+# repository's evidence paths, so a single foreign census would have turned `commands.test`
+# permanently red. Reproduced 2026-09-09 with a realistic artefact before the exemption existed.
+#
+# THE EXEMPTION IS THE RISK, NOT THE CHECK. Weakening this check is how a real baked path gets
+# through -- validate.py's own comment records a previous narrowing that silently discarded
+# a real developer path. So this step asserts the exemption is narrow on BOTH axes it claims:
+# a .sh in the very same directory still fails, and the same .json one directory up still fails.
+# A step that only proved the artefact passes would be a check that cannot fail.
+if ! command -v python3 >/dev/null 2>&1; then
+  skip "python3 is not on PATH" "the verbatim-artefact exemption is narrow"
+else
+va="$WORK.artefact"; rm -rf "$va"; mkdir -p "$va/docs/EXPERIMENTS/c1" "$va/.claude-plugin"
+cp "$KIT/validate.py" "$va/validate.py"
+printf '{
+  "name": "x",
+  "license": "Apache-2.0"
+}
+' > "$va/.claude-plugin/plugin.json"
+cp "$KIT/LICENSE" "$va/LICENSE"; : > "$va/NOTICE"
+# THE FIXTURE CANNOT BE A LITERAL HERE. This file is a .sh, so validate.py scans it -- writing
+# the payload out in full would make the suite fail its own check, which it did on the first
+# attempt. `/home/alice` alone does not match (the regex needs a further `/`), so the path is
+# assembled at runtime and no matching literal exists in the file.
+PAY_DIR="/home/alice"
+PAY='{"evidence":"'"$PAY_DIR"'/subject/src/tls.rs:88"}'
+( cd "$va" || exit 1
+  # Capture then match, for the reason the licence step below records: this file runs under
+  # `set -o pipefail`, so a pipe would carry validate.py's own non-zero status past the grep.
+  v() { printf '%s' "$(python3 validate.py 2>&1)"; }
+  printf '%s' "$PAY" > docs/EXPERIMENTS/c1/unit.json          # the exempt case
+  v | grep -q 'absolute path baked in' && { echo "  artefact .json was still refused"; exit 1; }
+  printf '%s' "$PAY" > docs/EXPERIMENTS/c1/unit.sh            # same dir, executable
+  v | grep -q 'absolute path baked in' || { echo "  a .sh in an artefact dir was exempted"; exit 1; }
+  rm -f docs/EXPERIMENTS/c1/unit.sh
+  printf '%s' "$PAY" > docs/outside.json                      # .json, outside the roots
+  v | grep -q 'absolute path baked in' || { echo "  a .json outside the roots was exempted"; exit 1; }
+  rm -f docs/outside.json
+  # And the second declared root behaves the same as the first.
+  mkdir -p .project/census/c1
+  printf '%s' "$PAY" > .project/census/c1/unit.json
+  v | grep -q 'absolute path baked in' && { echo "  census artefact was refused"; exit 1; }
+  exit 0 )
+check $? "an artefact .json is exempt; a .sh beside it and a .json outside the roots are not"
+rm -rf "$va"
+fi
+fi
+
 if step "the declared licence and the LICENSE file are compared"; then
 # validate.py resolves ROOT from its own location, so a copy of it in a scratch tree checks
 # that tree. Without this, the licence check would be exercised only by this repository

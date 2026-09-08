@@ -190,6 +190,18 @@ if os.path.isfile(hp):
         E(f"hooks.json is not valid JSON: {e}")
 
 # ---- absolute paths would break on every other machine -----------------------
+# EXCEPT in a verbatim artefact, which is RECORDED rather than USED. An auditor's reply about
+# another repository legitimately cites that repository's paths -- `/home/alice/subject/src/x.rs`
+# is the evidence, and refusing it would make `commands.test` permanently red for any census
+# whose subject lives under a home directory. Reproduced 2026-09-09 with a realistic artefact
+# before this exemption was written; recorded as `627b9764`.
+#
+# NARROW ON TWO AXES, because the comment below records what happens when this check is weakened
+# by narrowing: only `.json`, and only under a declared artefact root. Any `.sh` or `.md`
+# anywhere, and any `.json` outside these roots, is still checked -- so a baked path in anything
+# the kit EXECUTES, or that a reader FOLLOWS, still fails.
+ARTEFACT_ROOTS = (os.path.join(".project", "census"), os.path.join("docs", "EXPERIMENTS"))
+
 for dp, _, fs in os.walk(ROOT):
     # Split on the platform separator. "/.git" never matches on Windows, where os.walk
     # yields backslashes, so .git was being walked in full on every Windows run.
@@ -199,6 +211,9 @@ for dp, _, fs in os.walk(ROOT):
         if not f.endswith((".sh", ".json", ".md")) or f == "validate.py":
             continue
         p = os.path.join(dp, f)
+        rel = os.path.relpath(p, ROOT)
+        if rel.endswith(".json") and rel.startswith(ARTEFACT_ROOTS):
+            continue
         try:
             t = open(p, encoding="utf-8", errors="replace").read()
         except OSError:

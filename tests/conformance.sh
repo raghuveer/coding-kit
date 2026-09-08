@@ -4333,6 +4333,44 @@ printf '%s\n' "$FILLED" | grep -qx plan_item && printf '%s\n' "$FILLED" | grep -
 check $? "and specifically goal and plan_item, which the rebuild used to drop"
 fi
 
+if step "every tracked JSON is LF in the index and resolves to the eol attribute"; then
+# `.gitattributes` pinned *.sh, *.py, *.sql, *.md, the log, the plan and the licences -- and
+# NOT *.json. With core.autocrlf=true every tracked .json was `i/lf w/crlf`: correct in the
+# repository and CRLF on disk. The git blob hash therefore stayed stable while a hash of the
+# FILE differed between a Windows and a Linux checkout, so a census disposition that
+# references an artefact by an on-disk hash would be recorded on one platform and read as
+# stale on the other -- D5's provenance half, defeated by a checkout setting.
+#
+# Found by an approach review on 2026-09-08 and demonstrated the same hour by this repository
+# on itself: `git add` warned "LF will be replaced by CRLF the next time Git touches it" on the
+# two review artefacts, in the very commit that recorded the finding predicting it.
+#
+# THE DENOMINATOR IS ASSERTED. A pattern that matched no file would leave the flag at 0 and
+# report green having compared nothing -- the same hole the finding-vocabulary step above
+# closes with its own `seen -eq 0` check.
+jbad=0; jn=0
+git -C "$KIT" ls-files --eol '*.json' > "$WORK.jsoneol" 2>/dev/null
+while IFS= read -r ln; do
+  [ -n "$ln" ] || continue
+  jn=$((jn + 1))
+  case "$ln" in
+    i/lf*) ;;
+    *) echo "  index copy is not LF: $ln"; jbad=1 ;;
+  esac
+  case "$ln" in
+    *"attr/text eol=lf"*) ;;
+    *) echo "  no eol=lf attribute resolves here: $ln"; jbad=1 ;;
+  esac
+done < "$WORK.jsoneol"
+if [ "$jn" -eq 0 ]; then
+  echo "  no tracked .json matched -- the guard compared nothing"
+  echo "  (this is a FAILURE, not a pass: an empty denominator is not a clean result)"
+  jbad=1
+fi
+rm -f "$WORK.jsoneol"
+check $jbad "all $jn tracked .json are LF in the index and resolve to eol=lf"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

@@ -3673,6 +3673,74 @@ if step "validate.py"; then
 check $? "validate.py exits 0"
 fi
 
+if step "census capture refuses what it cannot verify, and writes the rest verbatim"; then
+# Step 1 of the census store: `kit-claim.sh --census ID --unit NAME --json`. The store's own
+# sequence says of it "Durability is complete at this step and nothing is locked in", so this
+# tests durability and refusal and nothing about identity or derivation.
+#
+# EVERY REFUSAL IS MATCHED ON ITS OWN DIAGNOSTIC, NOT ON A NON-ZERO EXIT. The first version of
+# this step asserted only that capture failed, and BOTH mutations of the code passed it: delete
+# the `.`/`..` guard and `..` is still refused one step later by the absent-manifest check;
+# delete the absent-manifest refusal and it is still refused by the manifest reader. A test that
+# accepts any refusal cannot tell a guard that fires from a guard that has been removed, which is
+# the control-that-cannot-fail shape this suite exists to refuse. Matching the message is what
+# makes each assertion name the guard it is testing.
+#
+# Two assertions are not refusals, and they are the ones the design turns on: the artefact is
+# byte-identical to what was sent, and a MALFORMED reply is still captured. F12 -- "The raw reply
+# is saved BEFORE validation, so a unit that fails validation still has its data."
+cc="$WORK.census"; rm -rf "$cc"; mkdir -p "$cc"
+( cd "$cc" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1 || { echo "  kit-init failed in the fixture"; exit 1; }
+
+  PAY='{"source":"d.md","subject":"U","narrative":"n","claims":[]}'
+  # Capture then match: this file runs under `set -o pipefail`, so piping a command that exits
+  # non-zero BY DESIGN into grep would carry its status past a grep that matched, and every
+  # assertion that a guard FIRES would read as the assertion failing.
+  cap() { printf '%s' "$(printf '%s' "$PAY" | bash "$KIT/tooling/kit-claim.sh" "$@" 2>&1)"; }
+  want() { _m=$1; shift; cap "$@" | grep -q -- "$_m" || { echo "  missing diagnostic: $_m"; return 1; }; }
+
+  want 'no manifest at' --census c1 --unit u1 --json || exit 1
+  [ -e .project/census/c1/u1.json ] && { echo "  wrote an artefact with no manifest"; exit 1; }
+
+  mkdir -p .project/census/c1
+  printf '%s' '{"units":["u1"]}' > .project/census/c1/manifest.json
+  want "no non-empty 'purpose'" --census c1 --unit u1 --json || exit 1
+  printf '%s' '{"purpose":"   ","units":["u1"]}' > .project/census/c1/manifest.json
+  want "no non-empty 'purpose'" --census c1 --unit u1 --json || exit 1
+  printf '%s' '{"purpose":"evaluation"}' > .project/census/c1/manifest.json
+  want "no 'units' array" --census c1 --unit u1 --json || exit 1
+
+  printf '%s' '{"purpose":"evaluation","units":["u1"]}' > .project/census/c1/manifest.json
+  want 'is not declared in' --census c1 --unit u2 --json || exit 1
+
+  # F1b, and the two axes are asserted SEPARATELY because the charset alone admits `.` and `..`
+  # -- kit-plan.sh's own pattern does -- and either resolves the census directory to its parent.
+  want 'must contain only letters' --census 'c/1' --unit u1 --json || exit 1
+  want 'must contain only letters' --census c1 --unit 'u 1' --json || exit 1
+  want "may not be '.' or '..'" --census .. --unit u1 --json || exit 1
+  want "may not be '.' or '..'" --census c1 --unit .. --json || exit 1
+  want "may not be '.' or '..'" --census c1 --unit . --json || exit 1
+
+  printf '%s' "$(printf '' | bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json 2>&1)" |
+    grep -q 'empty reply on stdin' || { echo "  an empty reply was not refused by name"; exit 1; }
+  [ -e .project/census/c1/u1.json ] && { echo "  wrote an artefact for an empty reply"; exit 1; }
+
+  cap --census c1 --unit u1 --json | grep -q 'captured' || { echo "  refused a valid capture"; exit 1; }
+  printf '%s\n' "$PAY" > expected.json
+  cmp -s expected.json .project/census/c1/u1.json || { echo "  artefact is not verbatim"; exit 1; }
+
+  printf 'not json at all' | bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json >/dev/null 2>&1 ||
+    { echo "  refused a malformed reply, losing its data"; exit 1; }
+  grep -q 'not json at all' .project/census/c1/u1.json ||
+    { echo "  malformed reply was not captured verbatim"; exit 1; }
+  exit 0 )
+check $? "each capture guard is asserted by its own diagnostic, and a valid reply lands verbatim"
+rm -rf "$cc"
+fi
+
 if step "a verbatim artefact may cite a foreign home path, and nothing else may"; then
 # `627b9764`: validate.py walks the whole tree and fails on /home/ or /Users/ in any .json.
 # A census artefact is an auditor's reply about ANOTHER repository and legitimately cites that

@@ -19,6 +19,21 @@
 > anchoring model) rather than withdrawn with this document. `--superseded` takes no `--note`,
 > so that distinction is recorded here and cannot be read off the mark.
 >
+> **The four transfers were superseded here too, on 2026-09-08, AFTER their re-filed copies
+> existed and not before.** The mark on each records only that this document was withdrawn;
+> where the defect went is recorded here, because `--by` consults one marker and cannot carry
+> four destinations:
+>
+> | original | re-filed against the successor as | the live defect |
+> |---|---|---|
+> | `08150f05` | `3e76f904` | `source_document` vs the artefact's per-unit `source` |
+> | `271a743b` | `e1c2ce2b` | the occurrence suffix is positional |
+> | `59eab1a3` | `cd31c6bf` | no JSON parser on the derive path |
+> | `38f178a2` | `322f03aa` | D5 commits an artefact hash and names no mechanism |
+>
+> Two were compound; only the live half travelled. `59eab1a3`'s option-table half and
+> `38f178a2`'s CRLF half (fixed in `ad68aad`) did not.
+>
 > Two `approach-reviewer` passes, run in parallel with no sight of each other, returned **REJECT**
 > and **REVISE** — 37 findings, 9 critical. Both replies are committed verbatim beside this file as
 > `2026-09-08-claim-identity-review-a.json` and `-b.json`; read those, not this.

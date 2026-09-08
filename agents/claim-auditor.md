@@ -1,6 +1,6 @@
 ---
 name: claim-auditor
-description: Use FIRST on an unfamiliar or long-running codebase, BEFORE tiering, planning or scoping any work. Takes a document that makes claims about the code — roadmap, README, status page, gate record, design doc — and returns a verdict per claim against the tree, with evidence. Its subject is a claim that already exists, not a change and not a decision. Read-only by design. Runs on the expensive tier; see the model note in its instructions, which is honest that the tier is unmeasured.
+description: Use FIRST on an unfamiliar or long-running codebase, BEFORE tiering, planning or scoping any work. Takes a document that makes claims about the code — roadmap, README, status page, gate record, design doc — and returns a verdict per claim against the tree, with evidence. Its subject is a claim that already exists, not a change and not a decision. Read-only by design. Runs on the expensive tier, measured 2026-09-07 rather than assumed; see the model note in its instructions.
 model: opus
 tools: Read, Grep, Glob
 ---
@@ -163,14 +163,22 @@ State in your narrative **what you did not check** — units skipped, claims you
 for, questions you left open. An unstated gap reads as a pass, and a census that silently covered
 less than it appears to is worse than a smaller one that says so.
 
-## A note on the model tier, stated honestly
+## A note on the model tier, measured
 
-This agent is set to the expensive tier because that is what the two measured runs used —
-**6,547,551 BTE across 17 subagents for 303 claims**, and **13,853,224 across 18 for 489**. That is
-evidence the tier *works*, and no evidence at all that it is *necessary*.
+This agent is set to the expensive tier and **that has been tested rather than assumed**, on
+2026-09-07: one unit, one subject, one variable — `opus` against `sonnet`, same contract, same
+tree, byte-identical prompt. `docs/EXPERIMENTS/2026-09-07-claim-auditor-tier/`.
 
-**Whether a cheaper model reaches the same verdicts is answerable and unanswered.** The experiment
-is well-defined: re-audit one unit at a lower tier and compare verdicts claim by claim against the
-recorded census. Until someone runs it, this line is an assumption wearing a number, and it should
-be read that way. Per-claim cost was stable at ~35k BTE across both subjects, so the saving is
-quantifiable in advance if anyone wants to argue for it.
+**The cheap arm returned zero `OVERSTATED` verdicts where the expensive arm returned five**, on a
+subject whose recorded dominant failure mode is overstatement. Token volume differed by under 4%,
+so it did not do less work — it did the same work and concluded differently. The difference was
+one scoping decision: whether to leave the assigned unit and look for production callers in the
+shipped code path.
+
+Read that as a **floor, not a law**. It establishes that a real subject exists where the cheap tier
+loses the finding that made the audit worth running; it does not establish that the tier is
+required where the failure mode is drift rather than unreachability. The burden now sits with
+whoever wants to lower it.
+
+Per-claim cost was stable at ~35k BTE across the two earlier subjects, so the saving from a lower
+tier remains quantifiable in advance if anyone wants to argue the case on a different failure mode.

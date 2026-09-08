@@ -13,22 +13,52 @@ Each agent declares a model in its frontmatter:
 | Agent | `model:` | Why |
 |---|---|---|
 | `researcher`, `approach-reviewer`, `security-reviewer` | `opus` | design alternatives and adversarial reading, where a missed failure mode is expensive |
-| `claim-auditor` | `opus` | **unjustified — see below.** What two measured runs used, not what they proved necessary |
+| `claim-auditor` | `opus` | **measured 2026-09-07 — see below.** The cheap tier returned zero `OVERSTATED` on a subject whose dominant failure mode is overstatement |
 | `coder`, `implementation-reviewer`, `tester`, `adr-scribe`, `documenter` | `sonnet` | the working tier — most of the volume |
 
-**`claim-auditor`'s tier is the one row here with no argument behind it, and it should stay
-uncomfortable until someone runs the experiment.** The two reconciliation runs that produced this
-agent's contract both used `opus`: 6,547,551 BTE across 17 subagents for 303 claims, and
-13,853,224 across 18 for 489. That is evidence the tier *works* and no evidence that it is
-*required* — nobody has audited a unit at a lower tier and compared verdicts.
+**`claim-auditor`'s tier was the one row here with no argument behind it. The experiment has now
+been run and the tier holds** — `docs/EXPERIMENTS/2026-09-07-claim-auditor-tier/`, with both arms'
+raw JSON committed beside the write-up.
 
-The experiment is well defined: re-audit one unit at `sonnet`, compare claim by claim against the
-recorded census, and count where the verdicts diverge. Divergence is a finding about one of the
-two runs, not automatically a regression. Per-claim cost was stable at ~35k BTE across two
-subjects differing 7× in crate count, so the saving is quantifiable before anyone spends anything.
+One variable moved. Held constant: the subject (`highper-gateway` at `05c56eb`, working tree
+clean, zero commits since it was first audited), the unit, the shipped contract, and a
+byte-identical prompt. Varied: `opus` against `sonnet`.
 
-Until then this row is an assumption wearing a number. Every other row in this table earned its
-tier from an argument about the work; this one is inherited from what happened to be running.
+| | opus | sonnet |
+|---|---|---|
+| claims returned | 24 | 20 |
+| tokens | 134,687 | 129,738 |
+| **`OVERSTATED`** | **5 (21%)** | **0 (0%)** |
+
+**Token volume differed by under 4%, so the cheap arm did not do less work** — it did the same
+amount and reached different conclusions. `OVERSTATED` is the verdict that makes a planner skip
+work that was never done, and the 2026-08-26 trial recorded overstatement as this subject's
+dominant failure mode: twelve of sixteen use cases contain a subsystem that compiles, is tested,
+and is never called. The cheap arm returned an audit in which that category does not appear at all.
+
+**The result is a floor, not a law.** There exists a real subject where the cheap tier loses the
+finding that made the audit worth running. It does not follow that the tier is required where the
+failure mode is drift rather than unreachability — this is one unit, one subject, one language.
+What has changed is where the burden sits: it is now on whoever wants to lower the tier.
+
+**One cheaper alternative was proposed and withdrawn on inspection. Do not re-derive it.** The
+write-up suggested the gap might close by requiring the reachability check in the contract, since
+the opus arm performed it "unprompted". It is not unprompted — `agents/claim-auditor.md` asks
+*"Does it have a production caller?"* first of three, in bold, with evidence. The real defect is
+that the same contract also says *"audit the unit you were assigned and no other"*, and nothing
+resolves the two; filed as `T-20260908-the-contract-requires-a-production-calle`. Resolving that
+contradiction may narrow the gap between tiers. Stating a requirement that is already stated will
+not.
+
+**One row of that experiment is not quotable yet.** Its stale-citation rates (17% against 40%)
+mix a real difference with an under-specified definition — see
+`T-20260908-a-cited-range-that-still-contains-its-su`, which accounts for about half the gap on
+that row. The `OVERSTATED` result above does not depend on it.
+
+The two reconciliation runs that produced this agent's contract also used `opus` — 6,547,551 BTE
+across 17 subagents for 303 claims, and 13,853,224 across 18 for 489 — but that was only ever
+evidence the tier *works*. The experiment above is the evidence that it is *required*, and it is
+the only row in this table whose argument is a measurement rather than a judgement about the work.
 
 `documenter` was `haiku`, justified as "mechanical, high-volume, low-judgement". **The
 justification was wrong about its scope.** It writes README and topic sub-docs — audience-facing

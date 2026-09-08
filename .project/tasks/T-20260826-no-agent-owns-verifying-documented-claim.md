@@ -4,7 +4,7 @@ title: No agent owns verifying documented claims against the tree
 epic: agent-contracts
 tier: T2
 paths: agents, docs/agents-README.md, templates/project-profile.md
-state: created
+state: completed
 ---
 
 ## Intent

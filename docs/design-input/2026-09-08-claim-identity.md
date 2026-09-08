@@ -3,6 +3,28 @@
 
 # Design input — what identifies a claim, who computes it, and when
 
+> # ⚠ REJECTED 2026-09-08. Do not build from this document.
+>
+> Two `approach-reviewer` passes, run in parallel with no sight of each other, returned **REJECT**
+> and **REVISE** — 37 findings, 9 critical. Both replies are committed verbatim beside this file as
+> `2026-09-08-claim-identity-review-a.json` and `-b.json`; read those, not this.
+>
+> **The diagnosis below does not hold**, and everything after it rests on the diagnosis. Both
+> reviewers refuted it independently and by different routes: a hash over *raw* claim text is
+> content-derived yet immune to `normalise` being redefined, so one value can serve both jobs; and
+> the "no single value works" argument is circular, true only under an unstated premise — *re-keying
+> must stay free* — which this document then sells as the payoff of the split it justifies.
+>
+> **Kept unedited, deliberately**, exactly as ADRs 0005 and 0006 are: the record should show what
+> was wrong, not only what replaced it. Three things have moved on since, all in
+> `2026-08-27-census-store.md`: **D5** decides what a disposition attaches to, **F1b** states the
+> refusal rule this file defers as "a separate question", and **F1c** defines `unit` — which this
+> file uses in *both* its identifiers and never defines, the first thing both reviewers named.
+>
+> Two statements below are now simply false of the tree and are not corrected in place: *"three of
+> the ten open criticals"* (the count has moved twice since), and *"the label on the first row is
+> wrong"* in §"What this does not settle" (it was relabelled, and the finding is marked fixed).
+
 **Task:** `T-20260826-a-verified-claim-about-the-tree-has-no-a`
 **Tier:** T3 — inherited from that task's `tier.rule: tooling/kit-index.sh T3` trigger.
 **Answers three of the ten open criticals on that task.** It does not revise the census store

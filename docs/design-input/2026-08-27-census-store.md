@@ -221,12 +221,20 @@ identical, or they differ, and here is how.* `normalise` then affects suggestion
 never what a committed record reaches — which answers `b032ddaf` properly, rather than by the
 claim-identity input's assertion that nothing committed names the key.
 
-**What it does NOT settle, listed so nothing is assumed.** `unit` is still undefined and is a
-component of every identity proposed so far. `source_document` (manifest, per-census) still
-conflicts with the artefact's own per-unit `source`. The derive path still has no JSON parser for a
-verbatim pretty-printed artefact, which is forced by this document's own §"raw artefact first"
-choice and not by any normaliser. The occurrence suffix is still positional. `5c1284da`'s refusal
-rule is still a precondition rather than a follow-on.
+**What it does NOT settle, listed so nothing is assumed.** ~~`unit` is still undefined and is a
+component of every identity proposed so far.~~ **Superseded the same day by F1c below, which
+defines it.** `source_document` (manifest, per-census) still conflicts with the artefact's own
+per-unit `source`. The derive path still has no JSON parser for a verbatim pretty-printed artefact,
+which is forced by this document's own §"raw artefact first" choice and not by any normaliser. The
+occurrence suffix is still positional. ~~`5c1284da`'s refusal rule is still a precondition rather
+than a follow-on.~~ **Superseded the same day by F1b below, which states the rule.**
+
+> **Both strikethroughs were written hours before the sections that closed them, and neither was
+> revisited when they landed.** Two independent validators, given only the finding text and the
+> tree, each reported the same thing: within one file, `:224` said `unit` was undefined and `:356`
+> defined it, ~130 lines apart, with nothing linking them. That is the defect this document files
+> against other people's work — two artefacts carrying one fact with nothing comparing them —
+> committed by the author of the rule. Corrected in front of the reader rather than edited out.
 
 **And it introduces one cost that must be named rather than discovered.** A self-describing
 disposition is larger than a pointer: at ~489 claims a census, dispositions carrying claim text plus
@@ -252,7 +260,7 @@ reviewer's **F14** identified the alternative it never costed, and D1/D2 indepen
 
 ```
 .project/census/<census_id>/
-    manifest.json          subject repo, subject SHA, dirty flag, document, operator, dates
+    manifest.json          subject repo/SHA/dirty, document, operator, dates, units, purpose
     <unit>.json            the auditor's reply, VERBATIM — narrative and claims, unmodified
     ...                    one per audited unit
                                     │
@@ -433,7 +441,17 @@ Because the census lives in the kit repo (D1) while describing another tree, **e
 its subject**. The manifest records, per census:
 
 `subject_repo` · `subject_remote` · `subject_sha` · `subject_dirty` · `source_document` ·
-`audited_at` · `recorded_at` · `auditor_model` · **`kit_sha`** · **`kit_version`**
+`audited_at` · `recorded_at` · `auditor_model` · **`kit_sha`** · **`kit_version`** ·
+**`units`** · **`purpose`**
+
+**`units` and `purpose` were both required by decisions above and missing from this list.**
+`units` is the declaration F1c defines — the manifest is named as `unit`'s home, so a manifest
+schema that does not list it points into a container whose specified fields exclude the thing it
+holds. `purpose` is D4's: the census's storage location keys on *whether the subject is being used
+to evaluate the kit*, which "nothing in the tree can compute", so it must be a recorded field —
+and D4 says a census whose purpose is unset is **refused rather than defaulted**. Both gaps were
+found by two independent validators reading this document against its own decisions, neither by
+the author of either decision.
 
 `kit_sha` and `kit_version` are per D3: without them a re-run cannot be attributed to the kit
 change it exists to measure.

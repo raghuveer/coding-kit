@@ -253,7 +253,7 @@ reviewer's **F14** identified the alternative it never costed, and D1/D2 indepen
 ```
 .project/census/<census_id>/
     manifest.json          subject repo, subject SHA, dirty flag, document, operator, dates
-    <subject>.json         the auditor's reply, VERBATIM — narrative and claims, unmodified
+    <unit>.json            the auditor's reply, VERBATIM — narrative and claims, unmodified
     ...                    one per audited unit
                                     │
                                     ▼  derived, disposable, rebuildable
@@ -330,6 +330,60 @@ file cannot be moved by anything.
 `normalise` is specified as: lowercase, collapse internal whitespace, strip trailing punctuation.
 It is defined **once, in `kit_claims.py`, and applied only at index time** — never in awk, never
 in the committed artefact.
+
+### F1c — `unit`, and the scope it is defined in
+
+Closes the approach review's first required change: *"`unit` is a component of both identifiers and
+is defined nowhere."* True, and worse than it sounds — `agents/claim-auditor.md` emits `source`,
+`subject`, `narrative`, `claims` and **no `unit` at all**, verified against both committed artefacts.
+
+**The scope question decides the answer, so it comes first.** There are four places `unit` could be
+defined and they are not interchangeable:
+
+| scope | supplied by | cost | detects a mislabelled artefact? |
+|---|---|---|---|
+| the auditor contract, as a new required output field | the agent | changes a shipped contract, and the 44 existing rows have no such field — an agent cannot backfill an artefact it already returned | yes |
+| **the census manifest, declared before any audit runs** | **the operator** | **none to the contract, and it works retroactively because the operator writes the manifest** | **yes, by comparison** |
+| the intake CLI alone — `kit-claim.sh --unit` | the operator, at capture | none | **no** — nothing binds the label to what was audited |
+| derived from the artefact filename | nobody | none | no, and circular: the filename comes from `--unit` |
+
+**The contract has already answered it.** `agents/claim-auditor.md:158` reads *"Audit the unit you
+were assigned and no other"*, and `:53` *"Read the assigned unit"*. **A unit is an INPUT to an
+audit, not a discovery of one.** Something must therefore assign it before the agent runs, and the
+only thing that exists at that moment is the manifest. Defining `unit` in the contract's output
+would be recording the assignment in the one place that cannot make it.
+
+**The definition.** `unit` is a **slug declared in the census manifest** before any audit runs, and
+refused under F1b's rule. `kit-claim.sh --unit` must name a unit the manifest already declares; an
+undeclared unit is **refused rather than created**, for the reason an undeclared `census_id`
+collision is refused rather than merged — intake choosing a plausible name and succeeding is the
+failure mode, not intake crashing.
+
+**`subject` is not the unit, and is more useful for not being it.** The auditor's `subject` is the
+agent's own label for what it *understood* it was auditing. Stored beside the declared `unit`, a
+divergence between them is **observable** — that is the scope-discipline breach of `:158` becoming
+a reportable fact instead of a hope. Collapsing the two would spend the only independent signal
+there is on saving one field.
+
+**Measured, with its limits stated.** Both arms of the 2026-09-07 experiment returned
+`subject = "UC3 TLS ACME mTLS OCSP CRL"` — byte-identical across two independent runs, which is a
+point in favour of it being stable. It is **n=2, one day, one prompt, one document**, so it is not
+evidence that it is stable enough to be identity. And it contains spaces, so under F1b it could
+never have been a path component at all.
+
+**A contradiction inside this document, introduced by F1b and fixed here.** The artefact tree above
+named the file `<subject>.json` while F1b requires `<unit>` to match `[A-Za-z0-9._-]+`, which
+`"UC3 TLS ACME mTLS OCSP CRL"` fails. The tree now reads `<unit>.json`. The old form is recorded
+here rather than silently corrected.
+
+**What this unblocks immediately.** Review A's migration finding was that the first data this design
+would meet — the 44 rows under `docs/EXPERIMENTS/2026-09-07-claim-auditor-tier/` — cannot supply a
+component of either identifier. Under this definition they can: a manifest naming their unit is
+written by the operator, with **no contract change and no edit to the artefacts**.
+
+**Still open, and not settled here:** `source_document` (a manifest, per-census field) against the
+artefact's own per-unit `source`. Same class of question, different field; it is not folded in
+silently.
 
 ### F1b — `census_id` and `--unit` are refused, not rewritten, and the precedent is not enough
 

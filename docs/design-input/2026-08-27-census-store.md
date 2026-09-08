@@ -187,6 +187,54 @@ which is equally unqualified **there**. The rule generalises to: **a census may 
 unqualified total only when its `subject_repo` is the repository storing it.** The conformance step
 F6/F7 demands must test that form, or it will fail every correctly-scoped adopter census.
 
+**D5 — a disposition attaches to the CLAIM and references the OBSERVATION it was made against.**
+
+Stated by the operator 2026-09-08, answering the question two independent approach reviewers
+converged on as the one that decides the store's identity design:
+
+> attaching to the claim while referencing to specific observation, adds context to future
+> readers (human or model both)
+
+**This is a third answer, and neither of the two the reviews framed.** Census-local dispositions
+were rejected because a re-run re-opens all ~489 judgements and D2's history resets on each use.
+Claim-attached-only was rejected by review A, which showed it must join old claim to new on
+`claim_key`, making what a committed record *reaches* depend on `normalise` — `b032ddaf` verbatim.
+D5 takes the first half of the second and repairs it with provenance.
+
+**The mechanism this selects is `the disposition embeds its subject`** — review A's alternative,
+which the 2026-09-08 claim-identity design input never considered. The disposition event carries:
+
+| carries | for | so that |
+|---|---|---|
+| the claim it judges, **as text or content hash at judgement time** | attachment | the record is self-describing and needs no live pointer to be readable |
+| `census_id`, `unit`, ordinal, and the artefact's hash | reference | a future reader knows exactly what was in front of the person who judged |
+| the disposition and its required reason | the judgement itself | unchanged from D2 |
+
+**Why the reference half is not decoration.** The operator names *"future readers (human or model
+both)"*, and for a model it is load-bearing: a disposition without its subject recorded is a verdict
+whose evidence must be re-derived from a tree that has moved. With the subject carried, a later
+reader compares what was judged against what is there now and sees the difference itself.
+
+**What this settles.** Carrying a disposition forward stops being a silent join and becomes a
+**reported comparison**: *this was judged against this text; the current census says this; they are
+identical, or they differ, and here is how.* `normalise` then affects suggestion and display and
+never what a committed record reaches — which answers `b032ddaf` properly, rather than by the
+claim-identity input's assertion that nothing committed names the key.
+
+**What it does NOT settle, listed so nothing is assumed.** `unit` is still undefined and is a
+component of every identity proposed so far. `source_document` (manifest, per-census) still
+conflicts with the artefact's own per-unit `source`. The derive path still has no JSON parser for a
+verbatim pretty-printed artefact, which is forced by this document's own §"raw artefact first"
+choice and not by any normaliser. The occurrence suffix is still positional. `5c1284da`'s refusal
+rule is still a precondition rather than a follow-on.
+
+**And it introduces one cost that must be named rather than discovered.** A self-describing
+disposition is larger than a pointer: at ~489 claims a census, dispositions carrying claim text plus
+a reason add on the order of 200KB to `events.ndjson` per fully-dispositioned census — the same
+order as F13's concern, which the raw-artefact architecture was chosen to avoid. Carrying a content
+hash instead of the text bounds it, at the cost of the reader no longer seeing the subject without
+resolving something. **That trade is not decided here.**
+
 ## The problem, measured
 
 **792 verified claims across two runs; none survives at claim granularity.** highper-gateway's 303
@@ -222,7 +270,7 @@ exactly as `ADR 0004` requires of every derived thing in this repository.
 
 | review finding | status under revision 2 |
 |---|---|
-| **F4** `normalise` unspecified; writer-or-indexer unstated | **Dissolved.** The committed artefact carries only the auditor's raw fields. `claim_key` is computed **at index time**, so re-keying stays free forever. There is nothing to freeze. |
+| **F4** `normalise` unspecified; writer-or-indexer unstated | **Dissolved.** The committed artefact carries only the auditor's raw fields. `claim_key` is computed **at index time**, so re-keying stays free forever. There is nothing to freeze. <br><br> **⚠ Bounded by D5 (2026-09-08). "Re-keying stays free forever" is not established, and "computed at index time" has no mechanism.** Review A: free re-keying is true of the bytes on disk and false of which claims a committed record *reaches*, once a disposition must carry forward. Review B: `65e3d2a2` is open — `kit-index.sh` has zero python invocations and `kit_claims.py` does not exist. Under D5 a disposition carries its own subject, so this row's conclusion is reached by a different route than its argument. Not rewritten, per this document's own convention. |
 | **F5** sequence inverted — step 2 decides what step 1 froze | **Dissolved.** Step 1 freezes nothing. The variance measurement can now run before, during or after without penalty. |
 | **F11** torn writes: 15KB–270KB batch, no lock, concurrent `spend` appenders | **Dissolved.** A unit is one file written once, not an append to a log shared with 18 subagents' `spend` hooks. There is no interleaving to protect against. |
 | **F13** one census adds ~270KB to a 237KB log the awk hot loop re-hashes every run | **Dissolved for the log.** Artefacts are separate files; `events.ndjson` does not grow per claim. The derived-table build cost remains and is budgeted below. |
@@ -250,6 +298,16 @@ Consequences, stated:
 - `census_id` uniqueness is a directory-creation collision. Refuse, do not merge.
 
 ### F3 — collision, now handled by adopting the whole precedent
+
+> **⚠ Bounded by D5 (2026-09-08). Read this section as OPEN, not as settled.** `26925ff4` records
+> that suffix, `id_ambiguous` and ordinal are all proposed here and none designated. The attempt to
+> designate one — `docs/design-input/2026-09-08-claim-identity.md` — was **REJECTED** by two
+> independent approach reviewers; both replies are committed beside it. Three things they establish
+> that bear directly on the text below: the **occurrence suffix is itself positional**, so an
+> ordinal-free key is not position-free; `kit-index.sh:865-904`'s argument that the suffix is safe
+> rests on the log being **append-only**, which census artefacts are not; and `unit` — a component
+> of every key proposed so far — **is not a field the auditor emits**. Not rewritten, for the
+> reason D1 is not rewritten: a design is corrected in front of the reader.
 
 `claim_key = hash(subject_repo, source, subject, normalise(claim_text))` still collides when a
 document repeats wording across units — which `claim-auditor.md:140` actively encourages by

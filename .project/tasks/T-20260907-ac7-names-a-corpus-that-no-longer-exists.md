@@ -5,7 +5,7 @@ epic: agent-contracts
 tier: T2
 lang: bash
 paths: .project/tasks/T-20260826-no-agent-owns-verifying-documented-claim.md, docs/TRIALS/2026-08-26-highper-gateway-reconciliation.md, docs/MODELS.md
-state: created
+state: completed
 ---
 
 ## Intent

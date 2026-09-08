@@ -5,6 +5,20 @@
 
 > # ⚠ REJECTED 2026-09-08. Do not build from this document.
 >
+> **Superseded-by: docs/design-input/2026-08-27-census-store.md**
+>
+> That is where D5, F1b and F1c now carry this question. The nine critical findings against
+> this document were each classified by three independent verifiers, run in parallel with no
+> sight of each other; all three returned the same split. **Four named defects that are still
+> live against the successor and were re-filed there before any mark was made** — the
+> `source_document`/`source` conflict, the positional occurrence suffix, the missing JSON
+> parser on the derive path, and the unnamed artefact-hash mechanism. **Five are superseded
+> here.** Of those five, only two — the circular diagnosis and the unestablished diagnosis —
+> died in the strict sense of attacking an argument that exists nowhere else; the other three
+> were ANSWERED by the successor (F1c defines `unit`; D5 settles carry-forward and the
+> anchoring model) rather than withdrawn with this document. `--superseded` takes no `--note`,
+> so that distinction is recorded here and cannot be read off the mark.
+>
 > Two `approach-reviewer` passes, run in parallel with no sight of each other, returned **REJECT**
 > and **REVISE** — 37 findings, 9 critical. Both replies are committed verbatim beside this file as
 > `2026-09-08-claim-identity-review-a.json` and `-b.json`; read those, not this.

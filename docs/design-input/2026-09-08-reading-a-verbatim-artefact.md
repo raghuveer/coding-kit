@@ -3,6 +3,52 @@
 
 # Design question — how the derive path reads a verbatim artefact
 
+> # ⚠ WITHDRAWN 2026-09-08. The premise below is false. Do not cost from this document.
+>
+> Two `approach-reviewer` passes, run in parallel with no sight of each other, both returned
+> **REJECT** — 40 findings, 10 critical. Both replies are committed beside this file as
+> `2026-09-08-parser-question-review-a.json` and `-b.json`. Read those, not this.
+>
+> **The load-bearing sentence is false, and it sits under a heading that says "verified".** This
+> document asserts *"No claim in them is reachable by `jf()`"*. One reviewer emulated `jf()`
+> against both committed artefacts and recovered most of them; the author then re-ran it
+> independently and got:
+>
+> ```
+> arm-opus.json    142/143 claim field values byte-exact
+> arm-sonnet.json  116/116
+> claim 44/44 · source_loc 44/44 · verdict 44/44 · location 44/44
+> ```
+>
+> **258 of 259 field values recover byte-exact through the reader this document says reaches none
+> of them**, and every field the contract marks REQUIRED comes back at 100%. The artefacts are
+> pretty-printed one field per line and `jf()` is a per-line function. The real gap is **record
+> assembly and ordinals**, not parsing — a smaller and different problem, and one the option table
+> never costs because the premise said there was nothing there.
+>
+> **Everything downstream is therefore costed against a problem that is not the problem.** Four
+> other defects, each verified: the prior art cited as supporting option B (`T-20260808`) in fact
+> **forbids** it — its acceptance criterion bars *"string interpolation of user-authored text"*
+> into SQL and its scope excludes *"agent transcripts"* by name; the measurement is reported as
+> decisive in one section and as unrun in another, 43 lines apart; all three measured data points
+> are 3.45+ while the floor proposed is 3.38, and `readfile()` returns a BLOB whose JSON handling
+> changed **at 3.45**; and the claim that this question *"gates everything else"* was never checked
+> against the task's other open criticals — `627b9764` is **upstream** of the artefact format
+> itself.
+>
+> **Two options were missing and both reviewers found them independently:** claims emitted as
+> sanitised single-line events through the existing `kit_findings.py` writer and `jf()` reader,
+> and the documented `ingest.extra` **adapter seam**, which is language-agnostic and means A-vs-B
+> was never the real fork. `jq` is never named. Neither is *defer*.
+>
+> **The honest disposition of `cd31c6bf` is DEFERRED TO STEP 2**, which both reviewers reached
+> separately: revision 2's step 1 is a T2 commit that *"locks nothing"*, so nothing here gates it.
+> The question is real and premature.
+>
+> **Kept unedited below**, as ADRs 0005 and 0006 are, and as the rejected claim-identity input is:
+> the record should show what was wrong, not only what replaced it.
+
+
 **Task:** `T-20260826-a-verified-claim-about-the-tree-has-no-a`
 **Tier:** T3 — inherited from that task's `tier.rule: tooling/kit-index.sh T3` trigger.
 **Status: a QUESTION with costed options, not a proposal.** Two design inputs from this author were

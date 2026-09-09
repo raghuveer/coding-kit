@@ -1,0 +1,14 @@
+{
+  "auditor_model": "claude-opus-5",
+  "kit_sha": "be2a27d1e9e39a1c023d6d7d3c96cdc472008329",
+  "kit_version": "0.11.0",
+  "purpose": "self-audit: do the kit invariants in HANDOFF section 11 hold in the tree",
+  "recorded_at": "2026-09-09T19:33:57Z",
+  "source_document": "docs/HANDOFF.md",
+  "subject_dirty": 0,
+  "subject_repo": "raghuveer/coding-kit",
+  "subject_sha": "be2a27d1e9e39a1c023d6d7d3c96cdc472008329",
+  "units": [
+    "section-11-constraints"
+  ]
+}

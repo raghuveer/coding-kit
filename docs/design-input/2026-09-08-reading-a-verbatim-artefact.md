@@ -17,11 +17,17 @@
 >
 > | original | re-filed as | now anchored to |
 > |---|---|---|
-> | `1790d5bc` | `45a3bc6c` | the design -- `T-20260809` wants one JSON reader; `kit_manifest.py` is the second, `kit_claims.py` would be a third |
-> | `fb143cb9` | `59d1c2d5` | the design -- step 2 never chooses between the `ingest.extra` seam and hard-wiring |
+> | `1790d5bc` | `59d1c2d5` | the design -- `T-20260809` wants one JSON reader; `kit_manifest.py` is the second, `kit_claims.py` would be a third |
+> | `fb143cb9` | `45a3bc6c` | the design -- step 2 never chooses between the `ingest.extra` seam and hard-wiring |
 > | `9f3de1c7` | `6bb8375a` | `tooling/kit-claim.sh` -- python3's status recorded three ways that disagree |
 > | `8ce0de2c` | `7c03eb01` | `tooling/kit-index.sh` -- the WATCH list has no census entry |
 > | `bf606056` | `597df030` | `tooling/kit-index.sh` -- the dot-command defence covers adapter output only |
+>
+> **Two rows of this table were CROSSED when first written and are corrected here.** The copies
+> were always right; the ids pointing at them were swapped, which is the half a future reader
+> follows. Caught by comparing each original against its copy verbatim before marking rather
+> than trusting the table -- the third time in this session that comparison has caught
+> something the author had already written down as fact.
 >
 > **All five became live because the tree moved under them.** `kit_manifest.py` turned the
 > one-reader rule from a hypothetical into a present violation; artefact capture turned the

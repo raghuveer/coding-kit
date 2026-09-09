@@ -104,35 +104,50 @@ distance.** Non-functional criteria are project content, not kit capability.
 
 ## 4. What exists today — measured, not claimed
 
-Facts, so that any comparison starts from what is built rather than what is designed. Measured
-2026-08-24 after a full index rebuild; `STATUS.generated.md` regenerates all of it.
+Facts, so that any comparison starts from what is built rather than what is designed.
+
+> **THE NUMBERS ARE NOT TYPED HERE ANY MORE. Run `bash tooling/kit-charter.sh`.**
+>
+> This section used to carry them, measured on 2026-08-24, under a heading promising they were
+> measured rather than claimed. By 2026-09-09 **six of them were wrong**: 138 tasks against 169,
+> 442 findings against 621, a criticals gate of *"0 actionable"* against **12**, 8 agents against
+> 9, 19 tooling scripts against 20, and a 58-step conformance suite against 67. Every one was
+> already computed by something that ships — `validate.py` prints two of them on every run, and
+> `tests/conformance.sh` derives its own step count *from itself* precisely because *"a second
+> copy is a copy that drifts, and this repository has already paid for that once."*
+>
+> A check comparing typed to computed was considered and rejected: it would go red the moment
+> anyone filed a task, which is a gate a correct action breaks. **A figure that is never typed
+> cannot drift**, so the figures left below are the ones that are not counts.
 
 **Shipped and exercised**
 
-- Plugin at **v0.11.0** — the authoritative value is `.claude-plugin/plugin.json`, and this line
-  ages with it. 8 agents, 5 skills, 4 hooks, 19 tooling scripts, distributed as a plugin with
-  a marketplace entry.
+- Distributed as a **plugin with a marketplace entry** — agents, skills, hooks and tooling
+  scripts. Version and counts: `kit-charter.sh`.
 - **Derived state**: task files and git trailers are the truth, SQLite is a rebuildable index,
   `STATUS.generated.md` is output. Nothing that matters lives only in the database.
 - **Risk-tiered review** (T0–T3) with tier floors by path, a trailer gate enforced in CI, and a
   findings record with dispositions that cannot be set by assertion alone.
 - **CI**: three jobs producing **four required checks** — `trailers`, `structure`, and `conformance`
-  across a `[ubuntu-latest, macos-latest]` matrix — over a **58-step conformance suite**.
-- **The record itself**: 138 tasks (88 created, 13 in progress, 37 completed), 442 findings
-  (42 critical, 262 major, 142 minor, 36 nit), 8 ADRs — **two of which are rejected and deliberately
-  kept unedited**, so the record shows what was wrong.
-- **Criticals gate: 0 actionable.** Of 42 criticals, 20 addressed and 22 excluded — 9 unassessable
-  and 13 superseded. Those 22 are **not fixes** and are carried as standing blind spots.
+  across a `[ubuntu-latest, macos-latest]` matrix. Step count: `kit-charter.sh`.
+- **The record itself**: tasks, findings and ADRs — counted by `kit-charter.sh`. What matters here
+  and is not a count: **some ADRs are rejected and deliberately kept unedited**, so the record shows
+  what was wrong rather than only what was decided.
+- **The criticals gate** is `bash tooling/kit-preflight.sh --criticals`, and its breakdown is in
+  `kit-charter.sh`. The standing point, which is not a number: findings excluded as *unassessable*
+  or *superseded* are **not fixes** and are carried as blind spots. Do not read the gate off
+  `kit-resolve.sh --list --unfixed` — it filters on `fixed_at` alone and counts both exclusions
+  too, which over-reported this gate by 41 on 2026-09-09.
 - **One complete brownfield trial** (`TRIALS/2026-08-12-fd-throwaway.md`, sharkdp/fd, Rust, 2005
-  commits) and one cost experiment (`EXPERIMENTS/2026-08-17-cluster-pack-roi.md`).
+  commits). Trial and experiment counts: `kit-charter.sh`.
 
 **Instrumented but without readings**
 
-- **Escape rate is `0 / 0 via:kit` in every tier** — an absent denominator, not a clean result.
-  Nothing writes `Via:` automatically; a model proposes it and a human confirms it.
-- **Spend**: 10,488k billable-equivalent recorded across **2 tasks**, and **5 subagent runs recorded
-  nothing at all**. Per-agent spend works only when the kit is loaded as a plugin, which is not how
-  the kit itself is developed.
+- **Escape rate has an absent denominator, not a clean result.** Nothing writes `Via:`
+  automatically; a model proposes it and a human confirms it. The figure: `kit-status.sh`.
+- **Spend**: recorded on a handful of tasks only, and per-agent spend works **only when the kit is
+  loaded as a plugin**, which is not how the kit itself is developed. Rows, tasks and subagent
+  count: `kit-charter.sh`.
 - **Measured on one project**, greenfield and single-stack (`MEASUREMENTS.md`, n=1 per cell).
 
 **Designed, with a task, not built**

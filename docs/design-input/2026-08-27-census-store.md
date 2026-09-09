@@ -3,6 +3,31 @@
 
 # Design input — the census store
 
+> **THE DERIVATION HALF IS SUPERSEDED, 2026-09-09. Step 1 stands.**
+>
+> Superseded-by: docs/adr/0011-claims-are-recorded-in-artefacts-not-the-index.md
+>
+> **Scope, stated precisely, because a marker on a whole file is read as a verdict on all of it.**
+> What is superseded is this document's step 2 -- deriving claims into `index.db`, the `claim` and
+> `census` tables, `normalise` at index time, and the ingestion path that needs a JSON parser
+> inside `kit-index.sh`. **Step 1 is NOT superseded**: `kit-claim.sh` and `kit_manifest.py` are
+> shipped, carry 52 conformance references, and captured this repository's first census on
+> 2026-09-09.
+>
+> **Why.** Validating that census against this document's own contract took about twenty lines of
+> Python over a committed JSON file -- 9 claims, 0 violations, no index and no `awk`. The kit's
+> standing rule is that text is truth and the index is a disposable cache; claims in committed
+> artefacts are already text.
+>
+> **What this marker does NOT carry.** Claim identity, the occurrence suffix, and the
+> `source_document`/`source` split are not superseded -- they move to the artefact format and come
+> due at the second census. Nor are the four rationale findings against this document. ADR 0011
+> names each one.
+>
+> Kept unedited below, on the same grounds as ADR 0005, ADR 0006 and ADR 0010: the review is the
+> value, and a design deleted from the tree takes its findings with it.
+
+
 **Task:** `T-20260826-a-verified-claim-about-the-tree-has-no-a`
 **Tier:** T3 — trigger `tier.rule: tooling/kit-index.sh T3`.
 **Blocked-by, satisfied:** the `claim-auditor` contract, merged in PR #27 (`38e648c`).

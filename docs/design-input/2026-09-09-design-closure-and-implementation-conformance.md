@@ -3,10 +3,34 @@
 
 # Design input — when a design-stage finding closes, and what the implementation still owes
 
-**Tier:** T3 — it changes what `fixed_at` means for 282 of 621 findings and adds a gate.
-**Status:** design input. Nothing here is implemented. No finding is marked by this document.
-**Settles:** the precedent-setting question left open on 2026-09-08 by two validators splitting
-PARTLY/ADDRESSED on `5c1284da` and `4d5170af`, recorded in `2026-08-27-census-store.md` §F1b.
+**Tier:** T3 — it changes what `fixed_at` means and proposes a new surface.
+**Status:** design input, **revision 2**. Nothing here is implemented. No finding is marked by this
+document.
+
+> **Revision 1 was REJECTED on the day it was written by two `approach-reviewer` runs launched
+> concurrently and blind to each other — both REJECT.** Revision 1 promised in §4 that every number
+> would name its command, cited ADR 0005 and ADR 0006 as worked examples of a load-bearing claim
+> that was confident, checkable and false, and then made four of its own. They are listed here
+> rather than edited out of sight, because that is the same standard those two ADRs are held to.
+>
+> 1. **§8 proposed marking `4d5170af` fixed. It is not in the gate.** It was marked
+>    `--superseded --by docs/design-input/2026-08-27-census-store.md` on 2026-09-08T17:09:05Z. The
+>    gate moves 12 → **11**, not 12 → 10. Verified: `SELECT COUNT(*) … AND id LIKE '%4d5170af%'`
+>    over the gate's own predicate returns **0**.
+> 2. **§2 said §F1b records a validator split on both findings.** `grep -c 4d5170af
+>    docs/design-input/2026-08-27-census-store.md` returns **0**. F1b names `5c1284da` only;
+>    `4d5170af` is anchored in `docs/design-input/2026-09-08-claim-identity.md`, which is REJECTED.
+> 3. **§5.1 said blob-SHA pinning was "an option neither ADR considered".** ADR 0006 §A2 considers
+>    it by name and calls it *"the strongest alternative"*. It is answered in §5.1 below instead of
+>    being claimed as new.
+> 4. **§5.1 said the pin "needs no normalisation".** It receives normalisation silently; §5.1.
+>
+> **One reviewer claim is REFUTED and is not carried into this revision:** reviewer B recorded that
+> `5c1284da` and `4d5170af` are *both* in the 12. The query above says otherwise, and reviewer A
+> independently said otherwise. The blind pair disagreed and the tree settled it.
+
+**Settles:** the precedent-setting question left open on 2026-09-08, recorded in
+`2026-08-27-census-store.md` §F1b as a validator split on `5c1284da`.
 
 ## 1. The operator's ruling, 2026-09-09, recorded as his
 
@@ -27,16 +51,35 @@ design is fixed, or only when something enforces it?"* — presented these as on
 answers. The ruling says they are two questions with one answer each, and the second question was
 never a property of the finding at all.
 
-## 2. What it settles
+**What the ruling is, grammatically, and revision 1 got this wrong in §5.3.** It defines a
+*predicate* — when the application may be called correctly implemented. It does not impose a
+*schedule*. A predicate supports a report that says *"18 designs closed, 0 asserted implemented"*.
+Turning it into a repo-wide stop with no scope and no deadline manufactures a failing gate out of
+honouring sentence 1, which is the opposite of what sentence 1 does. §5.3 is rewritten accordingly.
 
-`5c1284da` (census_id/unit refusal rule) and `4d5170af` (`unit` defined nowhere) are both anchored
-in a design document, and both had their design fixed — F1b states the refusal rule, F1c defines
-`unit` as a manifest-declared slug. **Under the ruling they close.** The proposed marks are in §8;
-they are not run here, per `.claude/CLAUDE.md` — an agent proposes a mark and stops.
+## 2. What it settles, and what it does not
 
-The unanimity rule that left them unmarked did its job: it did not guess, and the guess would have
-been right for the wrong reason. What closed them is a ruling about vocabulary, not a second
-reading of the evidence.
+**`5c1284da` closes.** It is anchored in a design document, F1b states the refusal rule it asks
+for, and under the ruling that is closure. The proposed mark is in §8 — proposed, not run, per
+`.claude/CLAUDE.md`.
+
+**`4d5170af` is not reopened by this document.** It was superseded on 2026-09-08 by
+`census-store.md`, and its anchor document is REJECTED. Whether a ruling can reopen a finding
+already marked `--superseded` is a much larger question — it would change the meaning of that verb
+across **32** superseded criticals — and it is not asked here.
+
+**Running the §8 mark requires amending F1b in the same commit.** `census-store.md:397-403` says,
+in the tree, today:
+
+> *"States the rule `5c1284da` asks for. **It does not close it, and the difference is the point.**
+> The finding remains OPEN in the index as of 2026-09-09, deliberately … A design does not get to
+> mark its own findings."*
+
+That paragraph landed at 08:36 today in `f7c06a2`, *"fix: the design claimed a closure the record
+never showed"*. The ruling overrides its reasoning — a design still does not get to mark its own
+findings, but the operator does. What it does not do on its own is update the file a future reader
+opens. Leaving the record saying *closed* and the design saying *deliberately open* is the exact
+disagreement `--superseded` requires a tree marker to prevent.
 
 ## 3. What the ruling does NOT do, and this is the load-bearing half
 
@@ -44,19 +87,19 @@ It does not say the implementation is correct. It says the opposite: correctness
 implementation is a **separate assertion**, made later, about a different subject, and it is
 unavailable until the design has been implemented contextually.
 
-**Today the kit cannot express that assertion, cannot withhold it, and does not notice its
-absence.** `fixed_at` clears the criticals gate and nothing downstream distinguishes a finding
-closed by editing a design document from one closed by editing code. So the moment sentence 1 is
-honoured, sentence 2 becomes silently unenforceable — the record shows a closed finding and says
-nothing about an application that may implement none of it.
+**Today the kit cannot express that assertion as a disposition, and does not notice its absence
+there.** `fixed_at` clears the criticals gate and nothing in the finding record distinguishes a
+finding closed by editing a design document from one closed by editing code.
+
+**But the kit is not silent about it**, and revision 1 implied it was. See §5.4: the task record
+already carries "the design is fixed and the application owes an implementation of it", and is
+carrying it for this very population right now. What §4 measured is narrower than what it claimed.
 
 ## 4. Measured on this repository, 2026-09-09, commands named
 
-Both ADR 0005 and ADR 0006 were rejected on load-bearing claims that were confident, checkable and
-false. Every number here names the command that produced it, against `.project/index.db` rebuilt by
-`bash tooling/kit-index.sh --if-stale` at `e42067c`.
-
-**The ruling governs 45% of the finding record.**
+Against `.project/index.db` rebuilt by `bash tooling/kit-index.sh --if-stale` at `e42067c`. Both
+reviewers re-ran every query in this section independently and both reproduced them exactly; the
+numbers below are the part of revision 1 that survived.
 
 ```sql
 -- sqlite3 .project/index.db
@@ -75,131 +118,203 @@ SELECT CASE WHEN file_path LIKE 'docs/adr/%' THEN 'docs/adr'
 | docs/adr | 56 |
 | docs/other | 50 |
 
-282 of 621 are anchored in a document. Not all of those are design-stage — `docs/other` includes
-`TRIAL-PROTOCOL.md` and `ENTRY-PROPOSAL.md` — which is exactly why §6 refuses to infer the stage
-from the path.
+**282 of 621 findings are anchored in a document.** Revision 1 bolded this as *"the ruling governs
+45% of the finding record"*, and that is not what the query returns — `docs/other` includes
+`TRIAL-PROTOCOL.md` and `ENTRY-PROPOSAL.md`, which §6 itself names as not-designs, and §6 forbids
+inferring stage from a path at all. **The governed population is unknown, and today it is zero: no
+existing mark declares a stage.** 282 is the upper bound on how much of the record the question
+could reach, and nothing more.
 
-**The whole current criticals gate is design-stage.** All **12** actionable criticals
-(`bash tooling/kit-preflight.sh --criticals`, exit 1) are anchored in one file,
-`docs/design-input/2026-08-27-census-store.md`. So this ruling is not a future-facing nicety: it
-governs every open critical in the repository today.
+**The whole current criticals gate is design-anchored.** All **12** actionable criticals
+(`bash tooling/kit-preflight.sh --criticals`, exit 1) sit in `docs/design-input/2026-08-27-census-store.md`.
 
-**The ruling is already the de facto practice, applied 16 times, and the conformance half was never
-recorded once.**
+**Closure-by-editing-a-document is already the practice, applied 16 times.**
 
 ```sql
 SELECT id, file_path, COALESCE(fixed_commit,'(no commit)'), fixed_note
   FROM finding WHERE fixed_at IS NOT NULL AND file_path LIKE 'docs/%';
 ```
 
-16 rows. Their own `fixed_note`s say what closed them, and in every case it is an edit to a
-document: *"Option D added to the Options section and chosen"*, *"revision 2 F1 defines census_id as
-the operator-allocated..."*, *"design 2 line 100 now reads 'no ranking, no cap...'"*. **Four of the
-sixteen carry no `fixed_commit` at all** — the ADR 0004 group. So the migration population is not
-hypothetical and its evidence is uneven; §7 costs it.
+16 rows, whose own `fixed_note`s say an edit to a document closed them — *"Option D added to the
+Options section and chosen"*, *"revision 2 F1 defines census_id as…"*. **Four carry no
+`fixed_commit`.** Five of the sixteen are in `TRIAL-PROTOCOL.md` and `ENTRY-PROPOSAL.md`, so this
+population is *document-anchored*, not *design-stage*: it is what a path rule would catch, which is
+why §6 refuses one, and why the migration in §7 cannot be sized from this number alone.
 
 ## 5. The mechanism
 
-Three parts. Each is stated so it can fail; a part that cannot fail is not proposed.
-
 **5.1 — closure records its stage, and the stage is declared, not sniffed.**
-
-`kit-resolve.sh --finding ID --fixed` gains a qualifier for a closure that is a design fix:
 
 ```
 kit-resolve.sh --finding ID --fixed --design <path> [--commit SHA] [--note TEXT]
 ```
 
-It writes the existing `finding-fixed` event with two added fields, `stage:"design"` and
-`design_blob`, where `design_blob` is `git hash-object <path>` **at the time of the mark**. The
-finding closes exactly as today — `fixed_at` is set, the criticals gate clears. Sentence 1 is
-honoured without exception or delay.
+Writes the existing `finding-fixed` event with `stage:"design"` and `design_blob`
+(`git hash-object <path>` at mark time). The finding closes exactly as today; sentence 1 is
+honoured without delay.
 
-Blob SHA rather than a commit or a line range, for the reason ADR 0005's rejection banner named as
-an option neither ADR considered: it is **content-addressed, rename-immune, and needs no
-normalisation**. `kit-accel.sh:186` is the kit's existing precedent for `git hash-object` (there `--stdin`,
-over a salted origin URL).
+**ADR 0006 §A2 already considered this and rejected it. Quoted, and answered:**
 
-**5.2 — a design closure mints an obligation.**
+> *"**A2 — pin evidence by git blob or tree SHA.** Not rejected on merit and worth naming
+> precisely, because it is the strongest alternative. Content-addressed, rename-immune, one batched
+> spawn to verify. It loses to the chosen option on one point only: a blob SHA pins the *bytes*, so
+> any edit to the subject — a typo fix, a reflow — invalidates the evidence and lapses the
+> exclusion."*
 
-The obligation is `(design path, design_blob, finding id)`. It is **not** a fifth disposition on the
-finding; the finding is closed. It is a row about the *application*, which is what sentence 2 is
-about. It is discharged by:
+Revision 1 took that sentence, unquoted, and sold it as the feature that makes the mechanism a
+control. **A2's objection stands and is not answered by relabelling it.** A file-level pin on a
+document that took 10 commits in 12 days is stale as a steady state, and "stale" would then mean
+"someone reflowed a paragraph". Two ways out, and this document does not choose between them:
+
+- **pin a section** — a heading anchor plus the blob of that section's bytes, so staleness means
+  *the part I certified against changed*; or
+- **accept the false-positive rate** and state it as a cost, on A2's own terms.
+
+**"Needs no normalisation" was false.** `git hash-object <path>` applies the attributes-driven
+clean filter. Demonstrated on this tree: `.gitattributes` hashes `ff32dea1…` with filters and
+`d9df030d…` with `--no-filters`. It is stable here only because `.gitattributes:15` pins
+`*.md text eol=lf` and `core.autocrlf=true`. §6 then widens the path space to *"anywhere"*, which is
+exactly where neither guarantee holds. **This is open critical `38f178a2` on the census store,
+one document over** — *"`core.autocrlf=true` with no `.gitattributes` rule for `.json` makes an
+on-disk hash platform-dependent"*. Any pin proposed here inherits it: the design glob needs a
+`text eol=lf` rule, or the mechanism is platform-dependent by construction.
+
+**5.2 — a design closure mints an obligation, and the discharge carries its own pin.**
 
 ```
-kit-resolve.sh --finding ID --conformant --commit SHA --note TEXT
+kit-resolve.sh --finding ID --conformant --design <path> --commit SHA --note TEXT
 ```
 
-asserting that the commit implements that design, contextually. Same rule as every other mark: **an
-agent proposes it and stops.**
+Revision 1 gave the discharge no blob, and §5.3 then read *"the `design_blob` the discharge was
+made against"* — a value nothing wrote. **Both reviewers found this independently**, and it is the
+defect that would have made the mechanism fire on correct work: the normal sequence is close at
+design stage → revise the design → implement the revision → certify, which §4's own history shows
+this repository doing, and against a closure-time pin every such certificate is stale at birth. The
+discharge re-pins. What re-opens an obligation is then a real question and is answered in §5.3.
 
-**5.3 — the gate, and the two ways it fails.**
+**5.3 — a REPORT, not a stop.**
 
-`kit-preflight.sh --conformance` — exit 0 when every design closure has a live discharge; exit 1
-otherwise, naming them. It fails on two distinct conditions, and the second is the one that makes
-this a control rather than a checkbox:
+`kit-preflight.sh --conformance` — **exit 0 either way**, printing the count and the rows. Revision
+1 chose exit 1 and that contradicts this repository's own recorded rule, at
+`tooling/kit-preflight.sh:78`:
 
-1. **Undischarged** — a design closure with no `--conformant` mark. The implementation has not been
-   asserted to match, so it is not correct. This is sentence 2 stated as a command.
-2. **Stale** — `git hash-object <path>` today differs from the `design_blob` the discharge was made
-   against. **The design moved after the implementation was certified against it**, so the
-   certificate is about a document that no longer exists and the obligation re-opens.
+> *"Exit 0 either way, deliberately: a standing blind spot is not a stop, it is something the report
+> must carry. Returning non-zero would make it a gate, and **a gate nobody can ever satisfy is the
+> failure the unassessable route was built to remove.**"*
 
-Condition 2 is checkable, cheap, and would fire on real history:
-**10 commits** have touched `docs/design-input/2026-08-27-census-store.md` since its first fix mark
-(`63ae8668`, 2026-08-27) — `git log --oneline --since=2026-08-27 -- <path> | wc -l`. Every certificate
-made against an earlier revision of it would be stale today.
+With 16 existing closures carrying no pin and four carrying no commit, an exit-1 gate is red on the
+day it ships for a reason nobody has decided. It reports two conditions:
+
+1. **Undischarged** — a design closure with no `--conformant` mark. **This is bookkeeping and the
+   document says so**: `--conformant` is a human assertion, §9.3 leaves its evidence standard
+   undecided, and until that is decided the condition detects that nobody typed a sentence, not
+   that an implementation diverges. Revision 1's §5 promised "a part that cannot fail is not
+   proposed" and then proposed this; it is kept only because a count of unasserted designs is worth
+   printing, and it is labelled for what it is.
+2. **Stale** — `git hash-object <path>` today differs from the discharge's pin.
+
+**An unhashable design denies.** A missing or unreadable path is reported as *undischarged*, never
+skipped — the `--superseded` precedent, where absence is refused outright *because deleting the
+evidence must not be the cheapest way out of the gate*.
+
+**5.4 — the alternative that already ships, and the fork it forces**
+
+Reviewer B named it and it is the strongest objection in either review: **"the design is fixed and
+the application owes an implementation of it" is what an open task with acceptance criteria already
+is.** Verified — `T-20260826-a-verified-claim-about-the-tree-has-no-a` is `state: created` with an
+`## Acceptance criteria` section, and it is the task all 12 open criticals are anchored on.
+`6aafecf` (*"tasks: split the census store into three after a second review returned REVISE"*) is
+this operator recording exactly that fact in exactly that mechanism.
+
+So §4's *"the conformance half was never recorded once"* is too strong. What is true is narrower:
+**it was never recorded as a finding disposition.** A second ledger keyed on
+`(design, blob, finding)`, with nothing reconciling it against the task that carries the same
+obligation, is two records of one fact that can disagree — which is a shape this repository files
+against itself elsewhere.
+
+**This is a fork the operator has to settle, and everything downstream depends on it — see §9.1.**
 
 ## 6. Two things deliberately refused
 
-**Not a fifth disposition verb.** `fixed_at`, `unassessable_at`, `superseded_at` and `vindicated`
-each exist because no neighbour could carry the fact — the schema comments argue each case. A
-`design_closed_at` column would be a *fifth* answer to *"was this finding addressed"*, and under the
-ruling there is no fifth answer: it was addressed. The new fact is about the application, and the
-application is a different subject, so it gets its own table rather than a column on `finding`.
+**Not a fifth disposition verb on the finding.** Under the ruling there is no fifth answer to *"was
+this finding addressed"* — it was addressed. The new fact is about the application, so it does not
+become a column on `finding`.
 
 **The stage is never inferred from the path.** `docs/TRIAL-PROTOCOL.md` and `docs/ENTRY-PROPOSAL.md`
-are documents and not designs; a repository adopting this kit may put its designs anywhere. A rule
-that reads `docs/%` would be right here and wrong in the first adopting repo, and wrong silently.
-The marker declares the stage; the blob pin is what makes the declaration checkable afterwards.
+are documents and not designs — 5 of §4's 16 are exactly those — and an adopting repository may put
+designs anywhere. A `docs/%` rule would be right here and silently wrong in the first adopting repo.
+Both reviewers tested this refusal and neither broke it; it is the one part of revision 1 that
+survives unchanged.
 
-## 7. What it costs, and what is not yet costed
+## 7. What it costs, and what is not costed
 
-- **One `git hash-object` per mark** at mark time, and one per design closure at gate time. On this
-  machine's ~1000ms process spawns, a gate over the 16 existing design closures is ~16s — the same
-  order as `kit-preflight.sh --isolated`, and run on demand rather than on every index rebuild.
-  This is an estimate from the recorded spawn cost, **not a measurement**; measuring it is an
-  acceptance criterion, not a claim made here.
-- **A new table and a new event kind** — the indexer already ingests four disposition kinds; a
-  fifth follows the same shape at `tooling/kit-index.sh:947-970`.
-- **Not costed: the migration.** The 16 existing design closures predate the `--design` flag and
-  have no blob pin; four have no commit either. Whether they are back-filled, grandfathered, or
-  left to fail the gate loudly is an open question, not a detail — §4's evidence is uneven, and
-  back-filling a pin from today's tree would certify a design revision nobody reviewed.
+- **Hashing.** One `git hash-object` per mark, and one per obligation at report time.
+  `git hash-object` accepts multiple paths in one invocation, so the report is **one batched
+  spawn**, which is also what ADR 0006 §A2 says. Revision 1 costed 16 sequential spawns and got the
+  spawn figure from nowhere.
+- **The spawn figure, and a disagreement inside this repository.** `docs/TRIAL-PROTOCOL.md:255`
+  measures **1,015 ms per process creation on this machine**, with the PowerShell benchmark printed
+  beside it and Defender ruled out at 1,016 ms vs 1,015 ms. `docs/ADAPTERS.md:75` states **~0.2s on
+  Windows**. Both are stated as fact, they differ 5×, and nothing reconciles them. Reviewer B read
+  the second and called the first unsourced; the first names its command. **The disagreement is
+  itself worth filing** and is not resolved here. Batched, the report is one spawn either way, so
+  the choice does not change this design.
+- **The indexer shape, which revision 1 got wrong in kind.** *"A fifth follows the same shape at
+  `kit-index.sh:947-970`"* is false: those four are deferred **UPDATE**s on `finding`, keyed by
+  finding id, released at `END` behind an orphan check (`:992`) and a collision check (`:990`). An
+  obligation is an **INSERT** into a new table with a composite key, and inherits neither guard. An
+  orphan or id-ambiguous design closure would mint an obligation naming a finding that does not
+  exist. **The guards have to be written, not inherited.**
+- **`kit-event.sh:25-41` reserves acted-on kinds** so the generic recorder cannot mint them, and
+  `tests/conformance.sh:1090` derives that list from the indexer. A new acted-on kind that is not
+  reserved ships a writable discharge and a red suite.
+- **Retraction is unspecified and must not be.** `kit-index.sh:946-949` already accepts `"fixed":0` to
+  reopen a finding; nothing retires the obligation its earlier closure minted, leaving a
+  permanently undischargeable row. Re-marking with a different `--design` mints a second obligation
+  without retiring the first.
+- **Observability.** An obligation count needs a `kit-status.sh` line. `kit-preflight.sh:112-118`:
+  *"Adding an exclusion to the gate without adding the report that exposes it is how a gate quietly
+  stops meaning what its reader thinks it means."*
+- **Not costed: the migration** of the existing document-anchored closures. §4 shows the population
+  is uneven and not all of it is design-stage. Back-filling a pin from today's tree would certify a
+  revision nobody reviewed.
 
-## 8. Proposed marks — for the operator, not to be run by an agent
+## 8. The proposed mark — for the operator, not to be run by an agent
 
-Under §2, and only if the ruling is accepted as written:
+One mark, not two. It takes the criticals gate **12 → 11** (verified by running the gate's own
+predicate with this id excluded). Per §2 it should land in the same commit as the F1b amendment.
 
 ```sh
 bash tooling/kit-resolve.sh --finding '2026-08-28T02:07:03Z:5c1284da' --fixed \
-  --note 'F1b states the refusal rule: census_id and unit match the allowed charset, and . and .. are refused outright. Closed at design stage per the 2026-09-09 ruling; implementation conformance is a separate assertion.'
-
-bash tooling/kit-resolve.sh --finding '2026-09-08T03:46:46Z:4d5170af' --fixed \
-  --note 'F1c defines unit as a manifest-declared slug. Closed at design stage per the 2026-09-09 ruling; implementation conformance is a separate assertion.'
+  --note 'F1b states the refusal rule. Closed at design stage per the 2026-09-09 ruling; implementation conformance is a separate assertion about the application.'
 ```
 
-Both would take the criticals gate from 12 to 10. **Neither carries a `--design` pin, because the
-flag does not exist yet** — which is the first thing the migration question in §7 has to answer, and
-the reason these two are proposed rather than run.
+It carries no `--design` pin, because the flag does not exist and §9 has not been settled.
 
-## 9. Open, and not folded in silently
+## 9. Open — the operator's, and ordered
 
-1. **Migration of the 16.** §7. Needs the operator, because grandfathering is a decision about the
-   honesty of the record rather than a technical choice.
-2. **Who may discharge an obligation.** `--fixed` is human-gated by convention. `--conformant` is a
-   stronger claim — that an application implements a design — and the convention may not be enough.
-3. **What "contextually" admits as evidence.** The ruling's word. A conformance check that reads the
-   design and the diff is an agent judgement; a check that runs the verify-ladder is deterministic
-   and covers less. This document does not decide it, and ADR 0005 and 0006 are both worked examples
-   of what deciding it too fast costs.
+1. **Second ledger, or the task record?** §5.4. If the task record carries the obligation, most of
+   §5 dissolves and what remains is a report over task state. If a ledger is wanted, it needs a
+   reconciliation rule against the task. **Nothing else should be built until this is answered.**
+2. **Does the ruling reopen findings already marked `--superseded`?** §2. It would change that
+   verb's meaning across 32 superseded criticals and belongs in its own document.
+3. **File-level pin or section-level?** §5.1, on ADR 0006 §A2's terms.
+4. **What does "contextually" admit as evidence?** The ruling's word. An agent reading design
+   against diff is judgement; the verify-ladder is deterministic and covers less. Until this is
+   answered, condition 1 of the report is bookkeeping — which the document now says out loud rather
+   than claiming otherwise.
+5. **Who may discharge?** `--fixed` is human-gated by convention; `--conformant` is the stronger
+   claim and the convention may not be enough.
+
+## 10. Acceptance criteria, if this is built
+
+Written here because revision 1 offered one criterion and it was a cost measurement, against
+`docs/adr/0008-…md:287`'s rule — *"a conformance case that fails on the pre-change tree"*.
+
+1. A conformance case that **fails on the pre-change tree**: seed a design closure, discharge it,
+   edit the design, and assert the report says *stale* rather than *clear*.
+2. A case asserting a missing design path reports **undischarged**, not skipped.
+3. A case asserting a `"fixed":0` reopen retires the obligation.
+4. A case asserting an orphan or id-ambiguous finding id mints **no** obligation.
+5. The report's spawn count is measured, not estimated, and recorded beside
+   `TRIAL-PROTOCOL.md:255`.

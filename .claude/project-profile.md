@@ -74,7 +74,8 @@ tier.rule: hooks/** T2
 # (central config, main(), a barrel export) and does not link tasks — without that, one
 # shared file fuses the whole backlog into a single cluster. Raise it if your clusters
 # come out too fragmented; lower it if everything lands in cluster 1.
-cluster.hub_cap: 5
+cluster.hub_cap: 3
+cluster.min_shared: 3
 
 # --- co-change: files that historically change together, from raw history -------
 # touches edges need a Task-Id, so a repo adopted brownfield has none and blast radius is

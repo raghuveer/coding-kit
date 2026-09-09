@@ -94,9 +94,15 @@ printf '%s\n' "$STATES" | awk -v taskdir="$TASK_DIR" -v mode="$MODE" '
       id = f; sub(/\.md$/, "", id)
       ids[++n] = id
       path = taskdir "/" f
-      insec = 0; met = 0; open = 0; other = 0; out = 0; seen = 0
+      insec = 0; met = 0; open = 0; other = 0; out = 0; seen = 0; fstate = ""
       while ((getline line < path) > 0) {
         sub(/\r$/, "", line)
+        # The state declared in the file, taken in this pass. It used to be a `sed` and an `awk` per file in
+        # a shell loop below -- 338 spawns at ~1015 ms each on this machine, which timed out at
+        # two minutes. The header three lines above says not to do that; it was done anyway.
+        if (fstate == "" && line ~ /^state:[ \t]*[^ \t]/) {
+          fstate = line; sub(/^state:[ \t]*/, "", fstate); sub(/[ \t].*$/, "", fstate)
+        }
         if (line ~ /^## +Acceptance criteria[ ]*$/) { insec = 1; seen = 1; continue }
         isbox = (line ~ /^- \[.\]/)
         if (isbox) tall++
@@ -109,6 +115,14 @@ printf '%s\n' "$STATES" | awk -v taskdir="$TASK_DIR" -v mode="$MODE" '
         else other++
       }
       close(path)
+      # Legacy spellings resolve on read, exactly as kit-index.sh does; nothing is rewritten.
+      c = fstate
+      if (c == "open") c = "created"
+      else if (c == "done") c = "completed"
+      else if (c == "progress" || c == "started" || c == "unblocked") c = "in-progress"
+      else if (c == "blocked") c = "on-hold"
+      if (fstate == "") nostate++
+      else if ((id in st) && st[id] != c) disagree++
       hassec[id] = seen; M[id] = met; O[id] = open; X[id] = other; OUT[id] = out
       tm += met; to += open; tx += other; tout += out
       if (!seen) nosec++
@@ -158,26 +172,10 @@ printf '%s\n' "$STATES" | awk -v taskdir="$TASK_DIR" -v mode="$MODE" '
     printf "  accounted (met+open+other+out) %d\n", tm + to + tx + tout
     printf "  boxes found in files           %d", tall
     if (tm + to + tx + tout != tall) printf "   MISMATCH -- the parser dropped %d", tall - (tm + to + tx + tout)
-    printf "\n" 
+    printf "\n"
+    printf "  file/index state differs %d   (index wins; see this script'"'"'s header)\n", disagree
+    printf "  files with no state key  %d\n", nostate 
   }
 '
 
-# The state disagreement, printed rather than reconciled. See the header.
-if [ -n "$STATES" ]; then
-  dis=0; nost=0
-  for f in "$TASK_DIR"/*.md; do
-    [ -f "$f" ] || continue
-    id=$(basename "$f" .md)
-    fs=$(sed -n 's/^state:[[:space:]]*\([^[:space:]]*\).*/\1/p' "$f" | head -1 | tr -d '\r')
-    if [ -z "$fs" ]; then nost=$((nost + 1)); continue; fi
-    case "$fs" in
-      open) fs=created ;; done) fs=completed ;;
-      progress|started|unblocked) fs=in-progress ;; blocked) fs=on-hold ;;
-    esac
-    is=$(printf '%s\n' "$STATES" | awk -F'\t' -v i="$id" '$1==i {print $2}')
-    [ -n "$is" ] && [ "$is" != "$fs" ] && dis=$((dis + 1))
-  done
-  printf '  file/index state differs %d   (index wins; see this script'"'"'s header)\n' "$dis"
-  printf '  files with no state key  %d\n' "$nost"
-fi
 exit 0

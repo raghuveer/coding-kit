@@ -4,8 +4,17 @@
 # Design input — when a design-stage finding closes, and what the implementation still owes
 
 **Tier:** T3 — it changes what `fixed_at` means and proposes a new surface.
-**Status:** design input, **revision 2**. Nothing here is implemented. No finding is marked by this
+**Status:** design input, **revision 3**. Nothing here is implemented. No finding is marked by this
 document.
+
+> **DECIDED BY THE OPERATOR, 2026-09-09 — the fork in revision 2 §9.1 is closed.**
+>
+> > *"use the task record, no second ledger."*
+>
+> So there is no obligation table, no `--conformant` verb and no `(design, blob, finding)` key.
+> Revision 2's §5.1-§5.3 are **withdrawn**; they are summarised in §5.0 rather than deleted,
+> because two reviews were spent on them and the reasons they failed are what shaped this
+> revision. §5 is rewritten around the task record.
 
 > **Revision 1 was REJECTED on the day it was written by two `approach-reviewer` runs launched
 > concurrently and blind to each other — both REJECT.** Revision 1 promised in §4 that every number
@@ -141,98 +150,98 @@ Options section and chosen"*, *"revision 2 F1 defines census_id as…"*. **Four 
 population is *document-anchored*, not *design-stage*: it is what a path rule would catch, which is
 why §6 refuses one, and why the migration in §7 cannot be sized from this number alone.
 
-## 5. The mechanism
+## 5. The mechanism - the task record, and one state
 
-**5.1 — closure records its stage, and the stage is declared, not sniffed.**
+**5.0 - what is withdrawn, and what survived from it**
 
-```
-kit-resolve.sh --finding ID --fixed --design <path> [--commit SHA] [--note TEXT]
-```
+Revision 2 proposed a separate obligation ledger: a design closure pinned by `git hash-object`, a
+`--conformant` discharge, and a `kit-preflight.sh --conformance` report. **Withdrawn by the
+operator's decision above.** Three things it taught survive into §5.2, and they are why this
+revision does not simply repeat the same shape one layer up:
 
-Writes the existing `finding-fixed` event with `stage:"design"` and `design_blob`
-(`git hash-object <path>` at mark time). The finding closes exactly as today; sentence 1 is
-honoured without delay.
+- **A mark a human types is not a check.** Both reviewers rejected `--conformant` as an unchecked
+  assertion whose evidence standard was left undecided. A task *state* set by hand is the same
+  thing wearing a different hat, and §5.2 exists so this revision does not reproduce it.
+- **A stop nobody can satisfy is the failure to avoid** - `tooling/kit-preflight.sh:78`.
+- **The normalisation problem is real** and lands on any content-addressed evidence this design
+  might later add. Open critical `38f178a2` is the same hazard, one document over.
 
-**ADR 0006 §A2 already considered this and rejected it. Quoted, and answered:**
+**5.1 - the state, and it costs one line**
 
-> *"**A2 — pin evidence by git blob or tree SHA.** Not rejected on merit and worth naming
-> precisely, because it is the strongest alternative. Content-addressed, rename-immune, one batched
-> spawn to verify. It loses to the chosen option on one point only: a blob SHA pins the *bytes*, so
-> any edit to the subject — a typo fix, a reflow — invalidates the evidence and lapses the
-> exclusion."*
+The operator's question - *"when we can create a task with acceptance criteria, cannot we mark its
+status as verifiable & validated implementation?"* - is answered **yes**, and the vocabulary is
+already built to take it.
 
-Revision 1 took that sentence, unquoted, and sold it as the feature that makes the mechanism a
-control. **A2's objection stands and is not answered by relabelling it.** A file-level pin on a
-document that took 10 commits in 12 days is stale as a steady state, and "stale" would then mean
-"someone reflowed a paragraph". Two ways out, and this document does not choose between them:
+ADR 0008 gave the state vocabulary **one home**: `tooling/kit-lib.sh:163-186`. `schema.sql:6` says
+it is *"DERIVED FROM kit-lib.sh, never authored here"*; `kit-index.sh:1187-1190` projects the
+partition table from those functions; `kit-trailers.sh:190`, `kit-task.sh:46` and
+`kit-entry.sh:149` all read the vocabulary rather than spelling it out. **Adding a state is one
+line plus its partition memberships, and every derived surface follows.**
 
-- **pin a section** — a heading anchor plus the blob of that section's bytes, so staleness means
-  *the part I certified against changed*; or
-- **accept the false-positive rate** and state it as a cost, on A2's own terms.
+Proposed: **`validated`** - the implementation exists and has been checked against the task's
+acceptance criteria.
 
-**"Needs no normalisation" was false.** `git hash-object <path>` applies the attributes-driven
-clean filter. Demonstrated on this tree: `.gitattributes` hashes `ff32dea1…` with filters and
-`d9df030d…` with `--no-filters`. It is stable here only because `.gitattributes:15` pins
-`*.md text eol=lf` and `core.autocrlf=true`. §6 then widens the path space to *"anywhere"*, which is
-exactly where neither guarantee holds. **This is open critical `38f178a2` on the census store,
-one document over** — *"`core.autocrlf=true` with no `.gitattributes` rule for `.json` makes an
-on-disk hash platform-dependent"*. Any pin proposed here inherits it: the design glob needs a
-`text eol=lf` rule, or the mechanism is platform-dependent by construction.
+| partition | value | why |
+|---|---|---|
+| `is_closed` | **0** | the work is not finished; this is the last state before it is |
+| `is_activity` | **1** | its actor is the task's owner, like `in-progress` and `on-hold` |
+| `is_measured` | **1** | work in flight is still work; only `cancelled` is unmeasured |
 
-**5.2 — a design closure mints an obligation, and the discharge carries its own pin.**
+**Its consumer is named, because that is the price of admission.** ADR 0008 records that
+`blocked`/`unblocked` died with **zero uses across 130 tasks**, and that `planned` survived review
+only by naming the next agent as its consumer. `validated`'s consumer is the **transition rule in
+§5.3**: it is the only state from which `completed` may be reached. A state nothing reads would go
+the way of `blocked`.
 
-```
-kit-resolve.sh --finding ID --conformant --design <path> --commit SHA --note TEXT
-```
+**`completed` is not redefined, and that is deliberate.** ADR 0008 makes `completed` terminal and
+not retracted, and **39 tasks are already in it**. Redefining it to mean *validated* would
+retroactively assert something about those 39 that nobody checked - the same
+back-fill-a-certificate objection §7 raises against the migration. `completed` keeps meaning
+*implementation finished*. What changes is how a task is allowed to get there.
 
-Revision 1 gave the discharge no blob, and §5.3 then read *"the `design_blob` the discharge was
-made against"* — a value nothing wrote. **Both reviewers found this independently**, and it is the
-defect that would have made the mechanism fire on correct work: the normal sequence is close at
-design stage → revise the design → implement the revision → certify, which §4's own history shows
-this repository doing, and against a closure-time pin every such certificate is stale at birth. The
-discharge re-pins. What re-opens an obligation is then a real question and is answered in §5.3.
+**5.2 - what makes the state mean something, and it must be able to fail**
 
-**5.3 — a REPORT, not a stop.**
+A state a human types is exactly the unchecked assertion both reviewers rejected. The check:
 
-`kit-preflight.sh --conformance` — **exit 0 either way**, printing the count and the rows. Revision
-1 chose exit 1 and that contradicts this repository's own recorded rule, at
-`tooling/kit-preflight.sh:78`:
+> **A task may not enter `validated` while any acceptance criterion is unticked.**
 
-> *"Exit 0 either way, deliberately: a standing blind spot is not a stop, it is something the report
-> must carry. Returning non-zero would make it a gate, and **a gate nobody can ever satisfy is the
-> failure the unassessable route was built to remove.**"*
+This is available today and needs no new record. Acceptance criteria are `- [ ]` / `- [x]` markdown
+checkboxes under a `## Acceptance criteria` heading - the shape `templates/task.md` ships. **The
+kit already parses checkbox syntax and already refuses malformed ones**: `kit-entry.sh:79` refuses
+a checkbox on a question, `:100` refuses one after the candidate section. The parsing is precedent,
+not new machinery.
 
-With 16 existing closures carrying no pin and four carrying no commit, an exit-1 gate is red on the
-day it ships for a reason nobody has decided. It reports two conditions:
+It can fail, and on the pre-change tree: `T-20260826-a-verified-claim-about-the-tree-has-no-a`
+carries six acceptance criteria, all unticked, and would be refused entry to `validated` today.
 
-1. **Undischarged** — a design closure with no `--conformant` mark. **This is bookkeeping and the
-   document says so**: `--conformant` is a human assertion, §9.3 leaves its evidence standard
-   undecided, and until that is decided the condition detects that nobody typed a sentence, not
-   that an implementation diverges. Revision 1's §5 promised "a part that cannot fail is not
-   proposed" and then proposed this; it is kept only because a count of unasserted designs is worth
-   printing, and it is labelled for what it is.
-2. **Stale** — `git hash-object <path>` today differs from the discharge's pin.
+**For the design-conformance case specifically** - the half of §1's ruling this document exists for
+- the rule is that **the criterion names the design it implements**. The obligation then lives
+where the work lives, is reviewable in the same diff, and is discharged by ticking a box that says
+what was checked. That is the task record carrying it, which is what the operator decided.
 
-**An unhashable design denies.** A missing or unreadable path is reported as *undischarged*, never
-skipped — the `--superseded` precedent, where absence is refused outright *because deleting the
-evidence must not be the cheapest way out of the gate*.
+**5.3 - the transition, not the state, is where the rule is enforced**
 
-**5.4 — the alternative that already ships, and the fork it forces**
+ADR 0008 Fact 3: *"a trailer records a transition a commit made, and frontmatter records the state
+a task rests in."* States and transitions are different objects, so the rule belongs on the
+transition:
 
-Reviewer B named it and it is the strongest objection in either review: **"the design is fixed and
-the application owes an implementation of it" is what an open task with acceptance criteria already
-is.** Verified — `T-20260826-a-verified-claim-about-the-tree-has-no-a` is `state: created` with an
-`## Acceptance criteria` section, and it is the task all 12 open criticals are anchored on.
-`6aafecf` (*"tasks: split the census store into three after a second review returned REVISE"*) is
-this operator recording exactly that fact in exactly that mechanism.
+> **`Task-Status: done` is refused on a task whose current state is not `validated`.**
 
-So §4's *"the conformance half was never recorded once"* is too strong. What is true is narrower:
-**it was never recorded as a finding disposition.** A second ledger keyed on
-`(design, blob, finding)`, with nothing reconciling it against the task that carries the same
-obligation, is two records of one fact that can disagree — which is a shape this repository files
-against itself elsewhere.
+`kit-trailers.sh` already validates `Task-Status` against `kit_state_vocab` at `:190`, and runs in
+CI as its own job - so the refusal lands in the writer rather than in a report nobody runs. That is
+the third of the four still-open `--superseded` defects ADR 0006's rejection banner lists
+(*"the guard lives in the caller rather than the writer"*), deliberately not repeated here.
 
-**This is a fork the operator has to settle, and everything downstream depends on it — see §9.1.**
+**This constrains future transitions only.** Nothing rewrites the 39 existing `completed` tasks and
+nothing re-opens them.
+
+**5.4 - the one thing that is not free**
+
+`validated` is a new value in a vocabulary whose partitions are asserted by
+`tests/conformance.sh:3013-3090`, which checks that every getter is non-empty and that every state
+appears in the projection. It has to be added to the conformance expectations in the same commit or
+the suite goes red - which is the behaviour ADR 0008 wanted, and is why the vocabulary was given one
+home in the first place.
 
 ## 6. Two things deliberately refused
 
@@ -248,36 +257,33 @@ survives unchanged.
 
 ## 7. What it costs, and what is not costed
 
-- **Hashing.** One `git hash-object` per mark, and one per obligation at report time.
-  `git hash-object` accepts multiple paths in one invocation, so the report is **one batched
-  spawn**, which is also what ADR 0006 §A2 says. Revision 1 costed 16 sequential spawns and got the
-  spawn figure from nowhere.
-- **The spawn figure, and a disagreement inside this repository.** `docs/TRIAL-PROTOCOL.md:255`
-  measures **1,015 ms per process creation on this machine**, with the PowerShell benchmark printed
-  beside it and Defender ruled out at 1,016 ms vs 1,015 ms. `docs/ADAPTERS.md:75` states **~0.2s on
-  Windows**. Both are stated as fact, they differ 5×, and nothing reconciles them. Reviewer B read
-  the second and called the first unsourced; the first names its command. **The disagreement is
-  itself worth filing** and is not resolved here. Batched, the report is one spawn either way, so
-  the choice does not change this design.
-- **The indexer shape, which revision 1 got wrong in kind.** *"A fifth follows the same shape at
-  `kit-index.sh:947-970`"* is false: those four are deferred **UPDATE**s on `finding`, keyed by
-  finding id, released at `END` behind an orphan check (`:992`) and a collision check (`:990`). An
-  obligation is an **INSERT** into a new table with a composite key, and inherits neither guard. An
-  orphan or id-ambiguous design closure would mint an obligation naming a finding that does not
-  exist. **The guards have to be written, not inherited.**
-- **`kit-event.sh:25-41` reserves acted-on kinds** so the generic recorder cannot mint them, and
-  `tests/conformance.sh:1090` derives that list from the indexer. A new acted-on kind that is not
-  reserved ships a writable discharge and a red suite.
-- **Retraction is unspecified and must not be.** `kit-index.sh:946-949` already accepts `"fixed":0` to
-  reopen a finding; nothing retires the obligation its earlier closure minted, leaving a
-  permanently undischargeable row. Re-marking with a different `--design` mints a second obligation
-  without retiring the first.
-- **Observability.** An obligation count needs a `kit-status.sh` line. `kit-preflight.sh:112-118`:
-  *"Adding an exclusion to the gate without adding the report that exposes it is how a gate quietly
-  stops meaning what its reader thinks it means."*
-- **Not costed: the migration** of the existing document-anchored closures. §4 shows the population
-  is uneven and not all of it is design-stage. Back-filling a pin from today's tree would certify a
-  revision nobody reviewed.
+The ledger's costs went with the ledger. What is left is smaller, and one item is larger than it
+looks.
+
+- **The vocabulary change is one line** in `tooling/kit-lib.sh` plus two partition memberships, and
+  the schema, the projection, the trailer validator, the task writer and the entry linter all
+  derive from it. This is ADR 0008's one-home decision paying for itself.
+- **The conformance expectations are NOT derived** and must move in the same commit
+  (`tests/conformance.sh:3013-3090`). Adding the state without them is a red suite, which is the
+  intended behaviour.
+- **The checkbox parser is the real work.** It must read a `## Acceptance criteria` section out of
+  a task file and decide ticked from unticked. `kit-entry.sh:79` and `:100` are precedent for the
+  syntax but not a parser for this shape, and this is a file-format read in shell - the class of
+  code this repository has filed defects against repeatedly.
+- **Refusing an empty criteria list is not an edge case.** A task with no `## Acceptance criteria`
+  section, or a section with no boxes, would otherwise satisfy *"no unticked criterion"* vacuously
+  and pass. That is the green-but-meaningless shape, and §10.3 makes it a case.
+- **No process spawns are added.** The check reads files the indexer already reads. This is the one
+  place revision 2's cost analysis is simply obsolete rather than corrected - and worth noting that
+  it turned on two figures this repository states as fact and that disagree by 5x:
+  `docs/TRIAL-PROTOCOL.md:255` measures **1,015 ms per process creation** with its benchmark
+  printed beside it, while `docs/ADAPTERS.md:75` states **~0.2s on Windows**. Nothing reconciles
+  them. **That disagreement is worth filing on its own** and is not resolved here.
+- **Not costed: the 130 open task files.** (169 exist; 39 are already `completed` and untouched.) Every one carries acceptance criteria written before any
+  of them gated anything - many are prose, aspirational, or already satisfied without being ticked.
+  Under §5.3 none of those tasks can reach `completed` until someone reads and ticks them. Whether
+  that is the point or an unacceptable stop is **§9.1**, and it is the largest uncosted item in
+  this document.
 
 ## 8. The proposed mark — for the operator, not to be run by an agent
 
@@ -289,32 +295,39 @@ bash tooling/kit-resolve.sh --finding '2026-08-28T02:07:03Z:5c1284da' --fixed \
   --note 'F1b states the refusal rule. Closed at design stage per the 2026-09-09 ruling; implementation conformance is a separate assertion about the application.'
 ```
 
-It carries no `--design` pin, because the flag does not exist and §9 has not been settled.
+It carries no design pin: under the operator's decision there is no pin, and the design a
+closure refers to belongs in the task's acceptance criterion instead (§5.2).
 
-## 9. Open — the operator's, and ordered
+## 9. Open - the operator's, and ordered
 
-1. **Second ledger, or the task record?** §5.4. If the task record carries the obligation, most of
-   §5 dissolves and what remains is a report over task state. If a ledger is wanted, it needs a
-   reconciliation rule against the task. **Nothing else should be built until this is answered.**
+**Answered 2026-09-09:** *second ledger or task record* - **the task record**. See §5.
+
+1. **Does `completed` require `validated` for every task, or only for tasks that name a design?**
+   A one-line change either way, and it is the difference between a rule and a special case. §5.3
+   as written is universal; a narrower version needs a way to tell which tasks are in scope, and
+   §6's refusal to infer stage from a path applies there too.
 2. **Does the ruling reopen findings already marked `--superseded`?** §2. It would change that
-   verb's meaning across 32 superseded criticals and belongs in its own document.
-3. **File-level pin or section-level?** §5.1, on ADR 0006 §A2's terms.
-4. **What does "contextually" admit as evidence?** The ruling's word. An agent reading design
-   against diff is judgement; the verify-ladder is deterministic and covers less. Until this is
-   answered, condition 1 of the report is bookkeeping — which the document now says out loud rather
-   than claiming otherwise.
-5. **Who may discharge?** `--fixed` is human-gated by convention; `--conformant` is the stronger
-   claim and the convention may not be enough.
+   verb's meaning across **32** superseded criticals and belongs in its own document.
+3. **What does "contextually" admit as evidence for ticking a design criterion?** The ruling's
+   word. An agent reading design against diff is judgement; the verify-ladder is deterministic and
+   covers less. §5.2's checkbox rule is a floor - it proves someone answered, not that the answer
+   is right - and this document says so rather than claiming otherwise.
+4. **Who may move a task to `validated`?** `--fixed` is human-gated by convention. This is the
+   stronger claim and the convention may not be enough.
+5. **Does this need its own ADR, or an amendment to ADR 0008?** It changes that ADR's decision
+   table. The repository has no ADR 0007 - the slot was left for the disposition-evidence successor
+   that was never written - so the number is not free by default.
 
 ## 10. Acceptance criteria, if this is built
 
 Written here because revision 1 offered one criterion and it was a cost measurement, against
-`docs/adr/0008-…md:287`'s rule — *"a conformance case that fails on the pre-change tree"*.
+`docs/adr/0008-...md:287`'s rule - *"a conformance case that fails on the pre-change tree"*.
 
-1. A conformance case that **fails on the pre-change tree**: seed a design closure, discharge it,
-   edit the design, and assert the report says *stale* rather than *clear*.
-2. A case asserting a missing design path reports **undischarged**, not skipped.
-3. A case asserting a `"fixed":0` reopen retires the obligation.
-4. A case asserting an orphan or id-ambiguous finding id mints **no** obligation.
-5. The report's spawn count is measured, not estimated, and recorded beside
-   `TRIAL-PROTOCOL.md:255`.
+1. A conformance case that **fails on the pre-change tree**: a task with an unticked acceptance
+   criterion is refused entry to `validated`.
+2. A case asserting `Task-Status: done` is refused on a task that is not `validated`.
+3. A case asserting a task with **no** `## Acceptance criteria` section is refused rather than
+   passing vacuously - an empty criteria list must not be a green check.
+4. The partition projection at `kit-index.sh:1187-1190` yields the new state with all three
+   booleans, and `tests/conformance.sh:3013-3090` still passes.
+5. The 39 existing `completed` tasks are untouched - asserted, not assumed.

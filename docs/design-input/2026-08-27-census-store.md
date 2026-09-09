@@ -395,7 +395,13 @@ silently.
 
 ### F1b — `census_id` and `--unit` are refused, not rewritten, and the precedent is not enough
 
-Closes `5c1284da`. Both become **path components** (`.project/census/<census_id>/<unit>.json`) and,
+**States the rule `5c1284da` asks for. It does not close it, and the difference is the point.**
+The finding remains OPEN in the index as of 2026-09-09, deliberately: two independent validators
+split PARTLY/ADDRESSED on whether a rule stated in prose closes a finding about a rule, and the
+unanimity rule left it unmarked for the operator. This sentence previously read *"Closes
+`5c1284da`"* — a closure the record never showed, written by the same hand that left it open,
+and believed hours later by that hand as fact. **A design does not get to mark its own
+findings.** Both become **path components** (`.project/census/<census_id>/<unit>.json`) and,
 under D5, **committed identity** — a disposition references the observation by them. So a bad value
 is not a bad directory name; it is a forged anchor that outlives the run.
 

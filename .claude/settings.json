@@ -1,0 +1,35 @@
+{
+  "$comment": [
+    "Spend instrumentation for the kit's OWN development.",
+    "",
+    "T-20260821-the-kit-does-not-measure-its-own-develop: per-agent spend works only when",
+    "the kit is loaded as a plugin, and that is not how the kit is developed -- so every",
+    "figure taken from a development session was empty by construction rather than by",
+    "result. This registers the same two hooks the plugin registers, pointed at the",
+    "tooling in this repository, so ordinary work here produces readings.",
+    "",
+    "Only the spend hooks. kit-guard.sh and kit-checkpoint.sh stay the plugin's job: the",
+    "guard's write boundary IS this repository, and a checkpoint fired from settings would",
+    "run in sessions that never loaded the kit.",
+    "",
+    "Safe to run alongside the plugin. kit-spend.sh replaces a transcript's row rather than",
+    "summing it, and does not append when the total has not moved, so a doubled Stop writes",
+    "one row and not two."
+  ],
+  "hooks": {
+    "SubagentStop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/tooling/kit-spend.sh\"" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR/tooling/kit-spend.sh\"" }
+        ]
+      }
+    ]
+  }
+}

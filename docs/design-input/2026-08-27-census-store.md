@@ -395,10 +395,19 @@ silently.
 
 ### F1b — `census_id` and `--unit` are refused, not rewritten, and the precedent is not enough
 
-**States the rule `5c1284da` asks for. It does not close it, and the difference is the point.**
-The finding remains OPEN in the index as of 2026-09-09, deliberately: two independent validators
-split PARTLY/ADDRESSED on whether a rule stated in prose closes a finding about a rule, and the
-unanimity rule left it unmarked for the operator. This sentence previously read *"Closes
+**States the rule `5c1284da` asks for.**
+
+> **CLOSED 2026-09-09 by the operator, and the split below is what resolved.** Two independent
+> validators divided PARTLY/ADDRESSED on whether a rule stated in prose closes a finding about a
+> rule, and the unanimity rule left it unmarked. It is no longer prose: `tooling/kit-claim.sh:158`
+> and `:249` refuse any `--census` or `--unit` outside `[A-Za-z0-9._-]`, which excludes the
+> separator, so neither can become a traversing path component. `:243` records that the same
+> grammar admits `.` and `..` and that both are refused separately. Shipped in `772e5c5`.
+> The mark cites that commit; this paragraph is amended in the same commit as the mark, so the
+> record and the design cannot say different things about the same finding.
+
+The paragraph as written on 2026-09-09 said the finding remained open, deliberately, and that
+reasoning stood until the code caught up with it. This sentence previously read *"Closes
 `5c1284da`"* — a closure the record never showed, written by the same hand that left it open,
 and believed hours later by that hand as fact. **A design does not get to mark its own
 findings.** Both become **path components** (`.project/census/<census_id>/<unit>.json`) and,

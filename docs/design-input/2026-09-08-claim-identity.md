@@ -24,6 +24,31 @@
 > one defect twice, once by each reviewer. Carrying both would have put two copies of one defect
 > into the gate, which is the shape this repository files against other people's work.
 >
+> **The thirteen transfer originals were marked on 2026-09-09, after their copies were verified
+> open and correctly anchored.** `--by` names one target and cannot carry thirteen
+> destinations, so the mapping is here. Two copies each carry a pair, because two reviewers
+> had independently filed one defect twice:
+>
+> | original(s) | re-filed as | anchored to |
+> |---|---|---|
+> | `23c47851` | `6fec1a0b` | `tooling/kit-event.sh` |
+> | `c10f050c` | `9995b290` | `tooling/kit-claim.sh` |
+> | `3d7e013c` | `1436fb6d` | the surviving design |
+> | `55ee0790` | `885d82e0` | the surviving design |
+> | `61b9b5ee` | `eca6ff95` | the surviving design |
+> | `9ccede30` | `2f099462` | the surviving design |
+> | `46afd86a` | `faf62525` | the surviving design |
+> | `5cfc6c4d` | `74919f75` | the surviving design |
+> | `d9cb4822` | `2737aa04` | the surviving design |
+> | `27a42a29` + `c1508989` | `39cc1b73` | the surviving design |
+> | `4a260462` + `90ad312b` | `c12ef01a` | the surviving design |
+>
+> **Two findings on this document are NOT marked and stay open**: `4b52bd98` and `3ed83349`.
+> Exactly one of three readers called each live, and the rule leaves those neither asserted
+> nor erased. An earlier summary described this document as holding fifteen transfer
+> originals; it held thirteen, and those two are the difference. Marking all fifteen would
+> have superseded the two the rule protects.
+>
 > **A correction the author owes the record.** The brief given to both verifiers stated that
 > `5c1284da` was CLOSED. It is not: it remains open in the index, deliberately, because an earlier
 > pair of validators split PARTLY/ADDRESSED on it and the unanimity rule left it unmarked. One

@@ -249,7 +249,12 @@ CREATE TABLE spend (
   tok_out     INTEGER,
   cache_read  INTEGER,
   cache_write INTEGER,
-  context     INTEGER
+  context     INTEGER,
+  -- How many cluster packs this transcript loaded, counted from the transcript itself by
+  -- kit-spend.sh rather than declared by the session. 0 is a real reading and not an absence:
+  -- it is what separates the arms of "do packs lower context per turn", which cannot be asked
+  -- of a population that does not say which side it is on.
+  pack_loads  INTEGER
 );
 CREATE INDEX idx_spend_task ON spend(task_id);
 

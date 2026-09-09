@@ -4583,6 +4583,93 @@ rm -f "$WORK.jsoneol"
 check $jbad "all $jn tracked .json are LF in the index and resolve to eol=lf"
 fi
 
+if step "the criteria report reconciles every box it found, and reports rather than refuses"; then
+# T-20260909. This report exists because four mechanisms for the same ruling were rejected by
+# seven blind reviews, and the surviving recommendation was to print the numbers rather than gate
+# on them. So the two things worth asserting are the two that would make the printing worthless:
+# that a box can go missing without the reader being told, and that a bad number becomes a stop.
+crit="$WORK.crit"; rm -rf "$crit"; mkdir -p "$crit"
+( cd "$crit" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+
+  # One completed task with an unticked criterion -- the population this report was built for.
+  # Its LAST box sits under a SUB-HEADING inside the criteria block, which the strict section
+  # rule puts out of section. That box is the one a silent parser would drop.
+  {
+    printf -- '---\nid: T-C1\ntitle: closed with an open box\ntier: T2\nstate: completed\n---\n\n'
+    printf -- '## Acceptance criteria\n\n'
+    printf -- '- [x] this one was met\n'
+    printf -- '- [ ] this one was not\n'
+    printf -- '- [~] this one carries the third glyph\n'
+    printf -- '\n### Added later\n\n'
+    printf -- '- [ ] out of section under the strict rule\n'
+  } > .project/tasks/T-C1.md
+
+  # A second task with CRLF line endings, because six task files in the kit are CRLF in the
+  # working tree and a report that counts zero boxes there would be quietly wrong.
+  {
+    printf -- '---\r\nid: T-C2\r\ntitle: crlf\r\ntier: T3\r\nstate: created\r\n---\r\n\r\n'
+    printf -- '## Acceptance criteria\r\n\r\n'
+    printf -- '- [ ] a criterion in a CRLF file\r\n'
+  } > .project/tasks/T-C2.md
+
+  # A third with NO criteria section at all -- must be named, not silently counted as clean.
+  printf -- '---\nid: T-C3\ntitle: none\ntier: T1\nstate: created\n---\n\nbody\n' > .project/tasks/T-C3.md
+
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  out=$(bash "$KIT/tooling/kit-criteria.sh" --all 2>/dev/null) || exit 1
+
+  # THE RECONCILIATION IS THE FAIL-OPEN GUARD, and this is what proves it can fail. Five boxes
+  # exist across the three files; four are in section and one is not. If the parser ever drops
+  # the out-of-section box, accounted becomes 4 while found stays 5 and MISMATCH prints.
+  printf '%s' "$out" | grep -q 'accounted (met+open+other+out) 5'   || exit 1
+  printf '%s' "$out" | grep -q 'boxes found in files           5'   || exit 1
+  printf '%s' "$out" | grep -q 'MISMATCH'                           && exit 1
+
+  # The counts themselves, by glyph, so a change that reclassifies one is caught.
+  printf '%s' "$out" | grep -q 'criteria met          1'            || exit 1
+  printf '%s' "$out" | grep -q 'criteria open         2'            || exit 1
+  printf '%s' "$out" | grep -q 'criteria other glyph  1'            || exit 1
+  printf '%s' "$out" | grep -q 'out-of-section boxes  1'            || exit 1
+
+  # CRLF is stripped: T-C2's single box is one of the two open ones counted above, and the task
+  # must not read as having no criteria.
+  printf '%s' "$out" | grep 'T-C2' | grep -q 'no criteria recorded' && exit 1
+
+  # A task with no section is NAMED. Counted as clean, it would be a task whose criteria vanished
+  # and whose row still looked fine -- the exact shape the reconciliation exists to prevent.
+  printf '%s' "$out" | grep 'T-C3' | grep -q 'no criteria recorded' || exit 1
+  printf '%s' "$out" | grep -q 'no criteria recorded: 1'            || exit 1
+
+  # The completed task with an open criterion is surfaced by id.
+  printf '%s' "$out" | grep -q 'completed with open   1'            || exit 1
+  # CAPTURED, NOT PIPED. Under `set -o pipefail` a direct pipe into `grep -q` returns 141:
+  # grep exits on the first match and the script takes SIGPIPE mid-write. That is a real property
+  # of any caller piping this report into a short-circuiting reader, and the house idiom -- assign
+  # then grep -- is what every other step here uses.
+  cwo=$(bash "$KIT/tooling/kit-criteria.sh" --closed-with-open 2>/dev/null) || exit 1
+  printf '%s' "$cwo" | grep -q 'T-C1' || exit 1
+
+  # IT REFUSES NOTHING. The news here is bad -- a completed task has an open criterion -- and the
+  # exit status must still be 0. A report that stops is a gate, and this design was chosen
+  # precisely because the gate variants were rejected.
+  bash "$KIT/tooling/kit-criteria.sh" >/dev/null 2>&1 || exit 1
+  exit 0 )
+check $? "counts by glyph, reconciles 5 of 5, names the task with no section, and exits 0"
+rm -rf "$crit"
+
+# The report must not be wired into the gitignored generated file, which is where it would be
+# invisible to a diff, a pull request and CI -- the reason it prints to stdout in the first place.
+grep -q 'STATUS.generated.md' "$KIT/tooling/kit-criteria.sh"
+gs=$?
+[ $gs -ne 0 ] || grep -qE 'WHY NOT A SECTION|gitignored' "$KIT/tooling/kit-criteria.sh"
+check $? "any mention of the generated file is the reasoning, not a write into it"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

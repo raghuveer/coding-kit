@@ -3,12 +3,85 @@
 
 # ADR 0010: A task reaches `completed` through `validated`, and the rule lives on the transition
 
-- **Date:** 2026-09-09   **Status:** **Proposed — not accepted**   **Supersedes:** —   **Related:** [[0008-the-task-state-vocabulary-and-its-partitions]], [[0009-contribution-is-a-set-assignment-is-a-declaration]]
+- **Date:** 2026-09-09   **Status:** **REJECTED — do not implement**   **Supersedes:** —   **Related:** [[0008-the-task-state-vocabulary-and-its-partitions]], [[0009-contribution-is-a-set-assignment-is-a-declaration]]
 
 > **Status is `Proposed` and no other ADR in this repository carries that value.** The seven before
 > it are `Accepted` or `REJECTED`. It is used here because acceptance is the operator's and this
 > document was written by an agent; recording it as `Accepted` would be the same self-certification
 > `.claude/CLAUDE.md` refuses for `Via:` and for `--fixed`.
+
+> **REJECTED 2026-09-09, the day it was written, by two `approach-reviewer` runs launched
+> concurrently and blind to each other — both REJECT, 3 criticals each.** Kept unedited below on
+> the same grounds as ADR 0005 and ADR 0006: the review is the value, and this document is now the
+> worked example of the failure it was written to avoid.
+>
+> **The number that decides it was never taken.** This ADR measured the 130 OPEN tasks and never
+> asked what the rule would have done to work this repository actually finished. Re-derived and
+> confirmed:
+>
+> **12 of the 39 `completed` tasks — 31% — carry unticked acceptance criteria and would have been
+> REFUSED.** Nine have no tick at all; three are partly ticked; none lacks a criteria section.
+> `T-20260815-an-empty-tracked-file-is-reported-as-bin` is a shipped three-criterion bug fix with
+> all three boxes unticked and every one of them tickable. **The load-bearing assumption — that
+> acceptance-criteria checkboxes are maintained — is false on this repository's own history.** The
+> entry check is not a floor on quality; it is a bookkeeping tax this project has never paid.
+>
+> **The admission argument is refuted by the query that produced its own evidence.** Decision part 1
+> defends the eighth state on the ground that `planned` survived review by naming a consumer.
+> Measured: **`planned` has 0 tasks and 0 events** — identical to the `blocked`/`unblocked` death it
+> is cited against. Four of the seven states are at zero. Naming a consumer saved nothing.
+>
+> **Three further defects, each verified against the tree:**
+>
+> 1. **The transition refusal cannot live where part 3 puts it.** `kit-trailers.sh` has no access to
+>    a task's state — `task_known()` greps the working tree for `^id:` and nothing more — and in
+>    `range` mode it re-validates historical commits against *today's* tree. After the `done` commit
+>    the task's current state is `completed`, so the push-to-`main` run refuses exactly what the PR
+>    run passed. Green PR, red main, on every completion.
+> 2. **The entry check guards a writer nobody must use.** `kit-index.sh:404` takes authored
+>    frontmatter state verbatim, and four open task files carry no `state:` key at all, so
+>    `kit-task.sh` did not write them. Typing `state: validated` by hand enters the state with no
+>    check having run — and that also falsifies Consequence 3's *"cannot grow"*.
+> 3. **Consequence 4 is false.** `tests/conformance.sh:3013-3090` stays **green** when a state is
+>    added: its patterns are derived from `kit_state_vocab` and its literal partition assertions pin
+>    only `cancelled`, `abandoned` and `completed`. The step that would redden is `:3106-3114`, over
+>    `README.md:262` and `docs/HANDOFF.md:109`, which this ADR names nowhere. The claimed safety net
+>    was pointed at the wrong lines — the same shape as ADR 0005 and 0006, asserted from the
+>    contract rather than from the behaviour.
+>
+> **Also wrong and corrected here rather than silently:** `T-20260826-a-verified-claim-about-the-tree-has-no-a`
+> carries **seven** unticked criteria, not six — and that was this ADR's only evidence that the
+> entry check can fail. *"The seven before it"* is **eight** prior ADRs.
+>
+> **One reviewer correction is REFUTED and is not carried forward.** Reviewer 1 reported that the
+> census row *"open tasks whose criteria name a design document | 1"* reproduces under no
+> definition, returning 0 by path. Re-run over **open tasks only** with the section bounded at the
+> next level-2 heading, it returns **1** — `T-20260808-make-the-security-assurance-cadence-a-po`.
+> The row is correct; reviewer 1 measured all 169 files. What the reviewer is right about is that
+> the row named no command, which is why two readers got three different answers.
+>
+> **The two options never considered, and the second reviewer's reframing of the question.** All
+> five options here are *scoping* variants of one mechanism — who a boolean gate applies to — and
+> every one presupposes that a tick is a reliable signal, which 31% refutes. Not considered:
+> **(F) a per-criterion disposition** — met / not-applicable-because / deferred-to-`T-…` — which is
+> the shape `kit-resolve.sh` already uses for findings, where `--fixed`, `--unassessable` and
+> `--superseded` exist *precisely because a boolean could not carry "real, but not addressable
+> here"*; and **(G) report, do not refuse** — which is the remedy `kit-preflight.sh:112-118`
+> prescribes and which this ADR quotes to kill option B without ever applying to option E. Option G
+> would have surfaced all 12 historical cases with no risk of a stuck task.
+>
+> **And the question underneath, which is the operator's to answer:** is the ruling of 2026-09-09 a
+> claim about **transitions**, or about **evidence attached to a completion**? The 31% suggests the
+> latter — the work was done; what was never written is the record of why it counts as done. A
+> per-criterion disposition records that. A state gate only refuses.
+>
+> **A stuck task's cheapest exit is a laundering path, and that alone would sink this.** A marked
+> task with an untickable criterion — `T-20260808-trial-the-kit-on-one-unfamiliar-brownfie`
+> requires a real unfamiliar repository — can never enter `validated`, so `done` is refused forever
+> with no waiver and no expiry. The only exits left are `cancelled` and `abandoned`, and
+> `cancelled` is `is_measured=0`: the cheapest way out of the new gate is to declare real, finished
+> work never worth doing, which removes it from the escape-rate denominator.
+> `kit-lib.sh:177-182` names that exact distortion as the reason the partition exists.
 
 **Why a new ADR rather than an amendment to 0008.** The house convention is in-place amendment —
 ADR 0004 amended itself the same day *"matching the convention ADR 0001 set"*. But both precedents

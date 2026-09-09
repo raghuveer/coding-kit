@@ -7,6 +7,31 @@
 >
 > **Superseded-by: docs/design-input/2026-08-27-census-store.md**
 >
+> **Second round, 2026-09-09: the twenty-eight non-criticals.** Three readers, two of them
+> independent verifiers with no sight of each other or of the author's split. They landed far
+> apart -- verifier A would have killed 13, verifier B 17, the author 23 -- so **only the 13 all
+> three agreed on were superseded.** Eleven distinct defects were re-filed against what actually
+> carries them; two more had a single transfer vote and are left open, marked neither way.
+>
+> **Two of the eleven are anchored to CODE, not to a design document**, because that is where the
+> defect is: `6fec1a0b` (`tooling/kit-event.sh` reserves six event kinds and not `claim-disposition`,
+> so the generic writer can mint one) and `9995b290` (`tooling/kit-claim.sh` writes a captured
+> artefact with a truncating redirect and no temp-file-plus-rename, while D5 commits that file's
+> hash as identity). The second was a hypothesis when it was filed and became true of running code
+> the same day, without anyone touching it.
+>
+> **Two pairs collapsed on re-file** -- `4a260462`/`90ad312b` and `27a42a29`/`c1508989` each named
+> one defect twice, once by each reviewer. Carrying both would have put two copies of one defect
+> into the gate, which is the shape this repository files against other people's work.
+>
+> **A correction the author owes the record.** The brief given to both verifiers stated that
+> `5c1284da` was CLOSED. It is not: it remains open in the index, deliberately, because an earlier
+> pair of validators split PARTLY/ADDRESSED on it and the unanimity rule left it unmarked. One
+> verifier checked and caught it anyway. Two DIES verdicts rested on that false statement and
+> survive it for a different reason -- F1b states the rule in the surviving design and it ships at
+> `tooling/kit-claim.sh:149-165`, which is true whether or not the finding is marked. **A rescue,
+> not a confirmation**, and recorded as such.
+>
 > That is where D5, F1b and F1c now carry this question. The nine critical findings against
 > this document were each classified by three independent verifiers, run in parallel with no
 > sight of each other; all three returned the same split. **Four named defects that are still

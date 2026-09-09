@@ -423,6 +423,50 @@ if [ "${SPENT:-0}" -gt 0 ]; then
                FROM spend s GROUP BY scope ORDER BY 1;")
   [ -n "$SCOPE" ] && { printf '\n**By scope**\n\n'; printf '%s\n' "$SCOPE" | sed 's/^/- /'; }
 
+  # What a turn costs, against how long the session was when it was taken.
+  #
+  # WHY THIS ROW AND NOT ANOTHER. DESIGN-NOTES section 0 measured the caching thesis at 97.5%
+  # cache-read ratio against a 0.100x floor and concluded the remaining levers are peak context
+  # window and model mix. This is the instrument for the first of those, and it was missing:
+  # scope told you the main loop dominates and nothing said why. Measured here 2026-09-09 over 28
+  # main-loop transcripts, cache_read is 76.5% of main-loop BTE against 0.01% fresh input -- so
+  # per-turn cost IS mean context, near enough, and there is no other term worth reporting.
+  #
+  # Session length is the axis because it is the one an operator controls. Context grows
+  # monotonically within a session, so a turn taken late necessarily re-reads more than a turn
+  # taken early; that part is mechanical rather than correlational. The BRIEF row is therefore
+  # the floor -- what a turn costs with no accumulated context -- and the gap between it and the
+  # LONG row is the part attributable to session length rather than to the work.
+  #
+  # It does NOT follow that splitting a long session saves that gap. A split only pays if the
+  # second session can start cold cheaply, which is what the derived state and the cluster packs
+  # exist for -- and the packs are read by nothing (T-20260808-cluster-packs-are-generated-and-
+  # read-by-). So this report states a bound and names its condition; it does not promise a saving.
+  #
+  # Buckets are fixed rather than quantiles. A quantile bucket moves as sessions accumulate, so
+  # two runs of this report would not be comparable -- which is the only reason to print it.
+  LEN=$(q "SELECT bucket||'  '||n||' session(s), '||bte_pt||'k per turn, '||ctx_pt||'k context per turn'
+             FROM (SELECT CASE WHEN s.turns>=900 THEN 'long   900+ turns'
+                               WHEN s.turns>=300 THEN 'medium 300-899'
+                               WHEN s.turns>=60  THEN 'short  60-299'
+                               ELSE                   'brief  under 60' END AS bucket,
+                          COUNT(*) n,
+                          CAST(AVG($BTE*1.0/s.turns)/100000 AS INT) bte_pt,
+                          CAST(AVG(s.cache_read*1.0/s.turns)/1000 AS INT) ctx_pt,
+                          MIN(s.turns) srt
+                     FROM spend s WHERE s.scope='main' AND s.turns>0
+                    GROUP BY bucket)
+            ORDER BY srt DESC;")
+  if [ -n "$LEN" ]; then
+    printf '\n**Main loop, by session length**\n\n'
+    printf '%s\n' "$LEN" | sed 's/^/- /'
+    printf '\n> Per-turn cost is mean context: cache-read is the bulk of main-loop spend and\n'
+    printf '> fresh input is a rounding error. The BRIEF row is the floor a turn cannot go below;\n'
+    printf '> the distance from it to LONG is session length rather than work. **That distance is\n'
+    printf '> a bound, not a saving** — realising any of it needs a cheap cold start, which is what\n'
+    printf '> the plan, the derived state and the cluster packs are for.\n'
+  fi
+
   # And by provenance, because "did the kit pay for itself" is a comparison, and a comparison
   # needs both populations labelled. Spend attributed to a task this pipeline never ran is not
   # the kit's cost; folding it in flatters or damns the wrong thing.

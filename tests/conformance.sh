@@ -2914,6 +2914,45 @@ check $? "empty spend says unavailable, populated spend reports, and the recorde
 rm -rf "$sp"
 fi
 
+if step "the main-loop report separates cost per turn from session length"; then
+# The By-scope rows say the main loop dominates and say nothing about why, and the answer is
+# the lever DESIGN-NOTES section 0 leaves open once caching is exhausted: per-turn cost is mean
+# context. This step guards the report that states it.
+#
+# The assertion with teeth is the LAST one. A grep for the heading passes when every session
+# falls in one bucket, and passes again if the per-turn figure is really a per-session total --
+# both of which look like a working report. So the fixture builds two transcripts that differ
+# on BOTH axes and requires the reported context-per-turn to rise with them.
+sl="$WORK.spendlen"; rm -rf "$sl"; mkdir -p "$sl"
+( cd "$sl" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  git add -A && git commit -q --no-verify -m "chore: seed"
+
+  # BRIEF: 5 turns, 1k re-read on each.   SHORT: 70 turns, 10k on each.
+  # Written as loops rather than one long literal so the turn counts are visible as numbers.
+  turn() { printf '{"type":"assistant","message":{"model":"m1","usage":{"input_tokens":0,"cache_creation_input_tokens":0,"cache_read_input_tokens":%s,"output_tokens":1}}}\n' "$1"; }
+  i=0; : > brief.jsonl; while [ $i -lt 5  ]; do turn 1000  >> brief.jsonl; i=$((i+1)); done
+  i=0; : > short.jsonl; while [ $i -lt 70 ]; do turn 10000 >> short.jsonl; i=$((i+1)); done
+
+  bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/brief.jsonl"
+  bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/short.jsonl"
+  bash "$KIT/tooling/kit-index.sh"  >/dev/null 2>&1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+
+  grep -q 'Main loop, by session length' STATUS.generated.md ||
+    { printf '    ^ the per-turn report is absent with two main transcripts recorded\n' >&2; exit 1; }
+  B=$(sed -n 's/^- brief .*, \([0-9][0-9]*\)k context per turn$/\1/p' STATUS.generated.md | head -1)
+  S=$(sed -n 's/^- short .*, \([0-9][0-9]*\)k context per turn$/\1/p' STATUS.generated.md | head -1)
+  [ -n "$B" ] && [ -n "$S" ] ||
+    { printf '    ^ a bucket did not render (brief=%s short=%s)\n' "$B" "$S" >&2; exit 1; }
+  [ "$S" -gt "$B" ] ||
+    { printf '    ^ context per turn does not rise with session length (brief=%s short=%s)\n' "$B" "$S" >&2; exit 1; } )
+check $? "the main-loop report separates cost per turn from session length"
+rm -rf "$sl"
+fi
+
 if step "the trial protocol's unit matches the one the kit computes"; then
 # docs/TRIAL-PROTOCOL.md fixes the unit a trial reports in, and a document is the easiest place
 # for a number to drift out of agreement with the code. The weights are computed in exactly one

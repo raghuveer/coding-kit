@@ -3673,6 +3673,93 @@ if step "validate.py"; then
 check $? "validate.py exits 0"
 fi
 
+if step "census allocation records all three attribution variables, or refuses"; then
+# D3 names three variables that must be recorded for a re-run to be attributable -- the subject
+# tree, the auditor, and the kit -- and says "a diff in which more than one moved is
+# uninterpretable". Before this, none of them could be recorded at all: capture refused a missing
+# manifest and nothing wrote one, so D3 was a caveat in prose in a document that calls it "a
+# control that can fail, not a caveat in prose".
+#
+# WHAT THE KIT MAY DERIVE IS THE POINT OF THE TEST. kit_sha and kit_version are about the kit and
+# are computed. subject_sha and subject_dirty are NOT: the design says deriving them here would
+# record the kit's own HEAD as the subject, and a census whose subject_sha is silently the kit's
+# is worse than one with none, because it looks attributable. So the operator supplies them and a
+# manifest missing either is refused rather than written with a blank -- a blank attribution
+# variable is indistinguishable from one that did not move.
+#
+# Every assertion matches its own diagnostic, and NO ASSERTION USES A PIPE: this file runs under
+# `set -o pipefail`, and a command that exits non-zero by design piped into grep reports the
+# command's status, not grep's. That cost a green-on-two-platforms, red-on-macOS run once.
+if ! command -v python3 >/dev/null 2>&1; then
+  skip "python3 is not on PATH" "census allocation records the attribution variables"
+else
+ca="$WORK.alloc"; rm -rf "$ca"; mkdir -p "$ca"
+( cd "$ca" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1 || { echo "  kit-init failed in the fixture"; exit 1; }
+
+  ini() { printf '%s' "$(bash "$KIT/tooling/kit-claim.sh" --census "$@" 2>&1)"; }
+  want() { _m=$1; shift; _o=$(ini "$@")
+           case "$_o" in *"$_m"*) return 0 ;; esac
+           echo "  missing diagnostic: $_m"; return 1; }
+
+  FULL="--purpose evaluation --subject-repo r --subject-sha 05c56eb --subject-dirty 0"
+  FULL="$FULL --source-document docs/ROADMAP.md --auditor-model opus --units u1,u2"
+
+  # D4: purpose is declared, never defaulted.
+  want 'purpose is required' c1 --init --subject-repo r --subject-sha s --subject-dirty 0 \
+       --source-document d --auditor-model m --units u1 || exit 1
+  # D3, variable one: the subject tree.
+  want 'subject_sha is required' c1 --init --purpose p --subject-repo r --subject-dirty 0 \
+       --source-document d --auditor-model m --units u1 || exit 1
+  want 'subject_dirty must be exactly 0 or 1' c1 --init --purpose p --subject-repo r \
+       --subject-sha s --subject-dirty yes --source-document d --auditor-model m --units u1 || exit 1
+  # D3, variable two: the auditor.
+  want 'auditor_model is required' c1 --init --purpose p --subject-repo r --subject-sha s \
+       --subject-dirty 0 --source-document d --units u1 || exit 1
+  # F1c and F1b, on the write path.
+  want 'units is required' c1 --init --purpose p --subject-repo r --subject-sha s \
+       --subject-dirty 0 --source-document d --auditor-model m || exit 1
+  want 'is not a usable name' c1 --init --purpose p --subject-repo r --subject-sha s \
+       --subject-dirty 0 --source-document d --auditor-model m --units 'a b' || exit 1
+  want 'is declared twice' c1 --init --purpose p --subject-repo r --subject-sha s \
+       --subject-dirty 0 --source-document d --auditor-model m --units u1,u1 || exit 1
+  want 'must contain only letters' 'c/1' --init --purpose p --subject-repo r --subject-sha s \
+       --subject-dirty 0 --source-document d --auditor-model m --units u1 || exit 1
+
+  # Nothing above may have created anything.
+  [ -e .project/census/c1/manifest.json ] && { echo "  a refused --init still wrote a manifest"; exit 1; }
+
+  _o=$(ini c1 --init $FULL)
+  case "$_o" in *allocated*) ;; *) echo "  refused a complete --init: $_o"; exit 1 ;; esac
+
+  # ALL THREE VARIABLES PRESENT AND NON-EMPTY. Asserted by reading the file, not by trusting the
+  # success line -- the whole defect class here is a record that looks complete and is not.
+  m=.project/census/c1/manifest.json
+  for k in subject_sha subject_dirty auditor_model kit_sha kit_version; do
+    grep -q "\"$k\"" "$m" || { echo "  manifest has no $k"; exit 1; }
+  done
+  grep -q '"kit_sha": ""' "$m" && { echo "  kit_sha was written blank"; exit 1; }
+  # kit_sha must be the KIT's HEAD, never the subject's -- the subject repo here has no commits,
+  # so a derived-from-cwd implementation would produce an empty or different value.
+  ksha=$(git -C "$KIT" rev-parse HEAD 2>/dev/null)
+  grep -q "$ksha" "$m" || { echo "  kit_sha is not the kit's HEAD"; exit 1; }
+  grep -q '"subject_sha": "05c56eb"' "$m" || { echo "  subject_sha is not what the operator gave"; exit 1; }
+
+  # A census is allocated once; re-init must refuse rather than re-point existing artefacts.
+  want 'already exists' c1 --init $FULL || exit 1
+
+  # And capture works against what allocation wrote -- the two halves must actually meet.
+  printf '%s' '{"source":"d","subject":"U","claims":[]}' |
+    bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json >/dev/null 2>&1 ||
+    { echo "  capture refused a manifest that --init wrote"; exit 1; }
+  exit 0 )
+check $? "all three D3 variables are recorded, kit_sha is the kit's, and a census allocates once"
+rm -rf "$ca"
+fi
+fi
+
 if step "census capture refuses what it cannot verify, and writes the rest verbatim"; then
 # Step 1 of the census store: `kit-claim.sh --census ID --unit NAME --json`. The store's own
 # sequence says of it "Durability is complete at this step and nothing is locked in", so this

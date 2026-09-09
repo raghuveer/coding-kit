@@ -3,6 +3,7 @@
 # Copyright 2026 Raghuveer Dendukuri
 # kit-claim.sh --vocab                           prints the accepted vocabularies
 # kit-claim.sh --contract                        prints the shape of a claim
+# kit-claim.sh --census ID --init [fields]       allocates a census: writes its manifest
 # kit-claim.sh --census ID --unit NAME --json    captures one auditor reply, VERBATIM
 #
 # THE VOCABULARY HOME FOR A CENSUS CLAIM. A claim is not a finding and must never be recorded
@@ -18,13 +19,18 @@
 # that refused a malformed reply would lose the ~35k BTE that produced it, which is the loss this
 # store exists to stop. So the bytes on stdin are written unexamined.
 #
-# MANIFEST CREATION IS NOT IMPLEMENTED HERE, AND THAT IS THE DESIGN RATHER THAN AN OMISSION.
-# Step 1 is "writes the reply verbatim ... AFTER manifest creation". census_id is allocated by the
-# operator when a census begins, and D4's `purpose` "must be a recorded field set by the operator"
-# because nothing in the tree can compute it. So this command REFUSES when the manifest is absent
-# and prints the shape it needs, rather than inventing a census on the operator's behalf. F1c
-# requires the same of an undeclared unit -- "refused rather than created" -- because intake
-# choosing a plausible name and SUCCEEDING is the failure mode here, not intake crashing.
+# MANIFEST CREATION IS `--init`, AND WHAT IT MAY DERIVE IS THE WHOLE DESIGN OF IT. Step 1 is
+# "writes the reply verbatim ... AFTER manifest creation", so allocation is its own act. D3 names
+# three attribution variables -- the subject tree, the auditor, and the kit -- and says a diff in
+# which more than one moved is uninterpretable. Two of those the kit MAY compute about itself
+# (`kit_sha`, `kit_version`). The third it must NOT: the design is explicit that `subject_sha` and
+# `subject_dirty` are "captured by the operator from the subject tree ... not `git rev-parse HEAD`
+# in the kit, which would record the kit's own SHA". A census whose subject_sha is silently the
+# kit's is worse than one with none, because it looks attributable.
+#
+# So `--init` derives exactly what is about the kit and REFUSES everything else that is missing.
+# D4's `purpose` cannot be computed from any tree and is refused when unset rather than defaulted,
+# because defaulting either way silently misfiles the census.
 #
 # THE STORE ITSELF STILL RECORDS NOTHING, AND THAT IS DELIBERATE. It answers "what may an
 # auditor send you" and nothing else. The store -- table, intake, `kit-status.sh` reporting,
@@ -113,6 +119,97 @@ Validation is ALL OR NONE. One bad value and the batch records nothing, because 
 half-stored census is a table that disagrees with the audit it came from.
 CONTRACT
     exit 0 ;;
+esac
+
+# ---- census allocation: the manifest writer ---------------------------------------------------
+case "$*" in
+  *--init*)
+  . "$(dirname "$0")/kit-lib.sh"
+  ROOT=$(kit_root) || { kit_warn "not a git repository"; exit 1; }
+  kit_active "$ROOT" || { kit_warn "kit not adopted here (no .claude/project-profile.md)"; exit 1; }
+  PROFILE=$(kit_profile "$ROOT")
+  STATE_DIR=$(kit_cfg "$PROFILE" paths.state ".project")
+
+  census=""
+  MAN_PURPOSE=""; MAN_SUBJECT_REPO=""; MAN_SUBJECT_SHA=""; MAN_SUBJECT_DIRTY=""
+  MAN_SOURCE_DOCUMENT=""; MAN_AUDITOR_MODEL=""; MAN_UNITS=""
+  MAN_SUBJECT_REMOTE=""; MAN_AUDITED_AT=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --census)          census=${2:-}; shift; shift ;;
+      --init)            shift ;;
+      --purpose)         MAN_PURPOSE=${2:-}; shift; shift ;;
+      --subject-repo)    MAN_SUBJECT_REPO=${2:-}; shift; shift ;;
+      --subject-sha)     MAN_SUBJECT_SHA=${2:-}; shift; shift ;;
+      --subject-dirty)   MAN_SUBJECT_DIRTY=${2:-}; shift; shift ;;
+      --subject-remote)  MAN_SUBJECT_REMOTE=${2:-}; shift; shift ;;
+      --source-document) MAN_SOURCE_DOCUMENT=${2:-}; shift; shift ;;
+      --auditor-model)   MAN_AUDITOR_MODEL=${2:-}; shift; shift ;;
+      --audited-at)      MAN_AUDITED_AT=${2:-}; shift; shift ;;
+      --units)           MAN_UNITS=${2:-}; shift; shift ;;
+      *) kit_warn "unknown argument: $1"; exit 2 ;;
+    esac
+  done
+  [ -n "$census" ] || { kit_warn "--census ID is required"; exit 2; }
+
+  # F1b, the same rule capture applies, applied here too. A census_id that capture would later
+  # refuse produces a directory nothing can ever be captured into.
+  case "$census" in
+    ''|*[!A-Za-z0-9._-]*)
+      kit_warn "--census must contain only letters, digits, dot, underscore or hyphen: '$census'"
+      exit 2 ;;
+  esac
+  case "$census" in
+    .|..) kit_warn "--census may not be '.' or '..': '$census'"; exit 2 ;;
+  esac
+
+  CDIR="$ROOT/$STATE_DIR/census/$census"
+  MAN="$CDIR/manifest.json"
+  # A census is allocated ONCE. Overwriting a manifest would silently re-point every artefact and
+  # every disposition already filed under this id at a different subject, and D5 makes that id part
+  # of a committed record. Refuse; a corrected census is a new census_id, which is what makes two
+  # of them diffable.
+  if [ -e "$MAN" ]; then
+    kit_warn "${MAN#$ROOT/} already exists -- a census is allocated once"
+    kit_warn "  Overwriting it would re-point artefacts and dispositions already filed under"
+    kit_warn "  this id at a different subject. A corrected census is a NEW census_id."
+    exit 1
+  fi
+
+  # THE TWO THE KIT MAY COMPUTE ABOUT ITSELF. Derived from the kit's own checkout, not the
+  # subject's -- see the header. If either cannot be determined the manifest is refused rather
+  # than written with a blank: D3's diff reports which variables moved, and a blank one is
+  # indistinguishable from one that did not.
+  MAN_KIT_VERSION=$(kit_version 2>/dev/null)
+  MAN_KIT_SHA=$(git -C "$(dirname "$0")" rev-parse HEAD 2>/dev/null)
+  [ -n "$MAN_KIT_VERSION" ] || { kit_warn "could not read the kit version; refusing to write a manifest with a blank attribution variable"; exit 1; }
+  [ -n "$MAN_KIT_SHA" ] || { kit_warn "could not resolve the kit's HEAD; refusing to write a manifest with a blank attribution variable"; exit 1; }
+  MAN_RECORDED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
+  [ -n "$MAN_RECORDED_AT" ] || { kit_warn "could not read the clock"; exit 1; }
+
+  command -v python3 >/dev/null 2>&1 || { kit_warn "python3 is required to write the manifest"; exit 1; }
+  export MAN_PURPOSE MAN_SUBJECT_REPO MAN_SUBJECT_SHA MAN_SUBJECT_DIRTY MAN_SUBJECT_REMOTE
+  export MAN_SOURCE_DOCUMENT MAN_AUDITOR_MODEL MAN_AUDITED_AT MAN_UNITS
+  export MAN_KIT_SHA MAN_KIT_VERSION MAN_RECORDED_AT
+  _json=$(python3 "$(dirname "$0")/kit_manifest.py" --write) || exit 1
+
+  mkdir -p "$CDIR" || { kit_warn "could not create ${CDIR#$ROOT/}"; exit 1; }
+  # TEMP FILE THEN RENAME. A half-written manifest beside artefacts that reference it is worse
+  # than none: capture would read it, fail to parse, and report the census unusable without
+  # saying why. rename is atomic on the same filesystem, so a reader sees the old file or the
+  # whole new one. (The capture path does NOT yet do this -- open finding 9995b290.)
+  _tmp="$CDIR/.manifest.json.$$"
+  if ! printf '%s' "$_json" > "$_tmp"; then
+    rm -f "$_tmp"; kit_warn "could not write ${MAN#$ROOT/} -- NOTHING was allocated"; exit 1
+  fi
+  if ! mv "$_tmp" "$MAN"; then
+    rm -f "$_tmp"; kit_warn "could not place ${MAN#$ROOT/} -- NOTHING was allocated"; exit 1
+  fi
+  printf 'kit: allocated %s\n' "${MAN#$ROOT/}" >&2
+  printf '  kit_sha %s  kit_version %s  (derived)\n' "${MAN_KIT_SHA%${MAN_KIT_SHA#???????}}" "$MAN_KIT_VERSION" >&2
+  printf '  subject_sha and subject_dirty came from you, by design: deriving them here would\n' >&2
+  printf '  record the kit HEAD as the subject and make every diff unattributable.\n' >&2
+  exit 0 ;;
 esac
 
 # ---- artefact capture, step 1 ---------------------------------------------------------------
@@ -227,6 +324,6 @@ case "${1:-}" in
   exit 0 ;;
 esac
 
-printf 'kit-claim.sh: --vocab | --contract | --census ID --unit NAME --json\n' >&2
+printf 'kit-claim.sh: --vocab | --contract | --census ID --init ... | --census ID --unit NAME --json\n' >&2
 printf '  The store -- table, derivation, reporting, diff -- is not implemented; see the header.\n' >&2
 exit 2

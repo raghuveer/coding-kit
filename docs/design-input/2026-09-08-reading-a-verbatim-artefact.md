@@ -7,6 +7,35 @@
 >
 > **Superseded-by: docs/design-input/2026-08-27-census-store.md**
 >
+> **Second round, 2026-09-09: the thirty non-criticals.** Same procedure, same three readers, no
+> sight of each other. The two verifiers disagreed with each other on six, so the unanimity rule
+> did real work: A would have killed 26, B 22, the author 25 -- **21 were unanimous and only those
+> were superseded.**
+>
+> **Five were re-filed against what actually carries them, before any mark was made.** Three are
+> anchored to CODE rather than to a design document, because that is where the defect is:
+>
+> | original | re-filed as | now anchored to |
+> |---|---|---|
+> | `1790d5bc` | `45a3bc6c` | the design -- `T-20260809` wants one JSON reader; `kit_manifest.py` is the second, `kit_claims.py` would be a third |
+> | `fb143cb9` | `59d1c2d5` | the design -- step 2 never chooses between the `ingest.extra` seam and hard-wiring |
+> | `9f3de1c7` | `6bb8375a` | `tooling/kit-claim.sh` -- python3's status recorded three ways that disagree |
+> | `8ce0de2c` | `7c03eb01` | `tooling/kit-index.sh` -- the WATCH list has no census entry |
+> | `bf606056` | `597df030` | `tooling/kit-index.sh` -- the dot-command defence covers adapter output only |
+>
+> **All five became live because the tree moved under them.** `kit_manifest.py` turned the
+> one-reader rule from a hypothetical into a present violation; artefact capture turned the
+> unwatched census directory and the python3 claim into shipping behaviour. A finding filed against
+> a hypothesis can become a finding against running code with nobody touching it, and that is the
+> case where superseding costs most and shows least.
+>
+> **Four are left open, marked neither way**, because exactly one of three readers called them
+> live: `659a1ecb`, `83c3fe5c`, `89acf767`, `f1b32df3`. One vote is not enough to assert a defect
+> against the surviving design, and not enough to erase one either. `89acf767` was the author's own
+> outlier -- both verifiers showed the option it calls missing is *affirmatively decided the other
+> way* by F12 and by shipping code at `tooling/kit-claim.sh:213-219` -- and it was not promoted
+> after the rule was set.
+>
 > Ten critical findings were anchored here. Each was classified by three readers -- the author and
 > two independent verifiers who could not see each other or the author's split. **Both verifiers
 > returned the same result: eight die with this document, two transfer.** The author had called

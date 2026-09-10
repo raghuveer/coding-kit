@@ -166,7 +166,7 @@ So the split is two and one:
 |---|---|---|
 | `26925ff4` | `claim_key` undefined, three candidates, an ordinal breaking AC6 | **superseded** — the key it criticises is the index-time key |
 | `e1c2ce2b` | the occurrence suffix is positional, so an ordinal-free key is not position-free | **superseded** — same key, same withdrawal |
-| `3e76f904` | `source_document` per census against `source` per unit | **OPEN, and it is a shipped defect** |
+| `3e76f904` | `source_document` per census against `source` per unit | **Was OPEN, and it was a shipped defect. Settled 2026-09-10** by `census-store.md` F1d — `source_document` is a CONSTRAINT and a census audits one document. This ADR's insistence that it not leave with the other two is what kept it in the gate until it was fixed rather than dispositioned |
 
 **`3e76f904` is not a keying question and must not leave with the other two.** Both fields exist in
 shipped code today — `source_document` is REQUIRED in `kit_manifest.py:44`, `source` is per-unit at
@@ -174,6 +174,13 @@ shipped code today — `source_document` is REQUIRED in `kit_manifest.py:44`, `s
 contradicts its own units, **in the artefact, with no derivation involved**. That is a defect in the
 format this ADR just made authoritative, which makes it more urgent under this decision rather than
 less.
+
+**Settled 2026-09-10, and the way it was settled is the point.** F1d makes `source_document` a
+constraint every unit's `source` must equal, enforced at capture **after** the write so F12 still
+holds, with a conformance step over the committed censuses and five mutations proving each branch.
+This ADR's split — two superseded, one open — is what made that possible: had `3e76f904` left with
+the two keying findings, the defect would have been dispositioned instead of fixed, in the format
+this ADR had just made authoritative.
 
 **When identity does come due**, it is decided against a second census and not this one.
 `docs/design-input/2026-09-08-claim-identity.md` was **REJECTED with 9 criticals** for settling it

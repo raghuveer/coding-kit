@@ -132,6 +132,12 @@ being a field.
 `claims` is the recordable list. **`"claims": []` is a measurement and is accepted** — a unit whose
 assertions all held is a real result. **Omitting the key is a different statement and is rejected.**
 
+**`source` must equal the census manifest's `source_document`.** A census audits ONE document
+(F1d). Capture writes your reply either way — nothing you return is ever discarded — and then
+**refuses the unit** when the two disagree, so a mismatch costs a re-run rather than a record. If
+the unit you were given belongs to a different document, say so in `narrative` and return it under
+its real `source`; allocating a second census is the operator's call, not a reason to relabel.
+
 REQUIRED on every claim: `claim`, `source_loc`, `verdict`, `location`.
 `evidence` is required **unless** the verdict is `UNVERIFIABLE`, where there is nothing to point
 at. `note` is required **when** the verdict is `UNVERIFIABLE` — the reason is the entire content of

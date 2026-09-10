@@ -10,13 +10,13 @@
 
 | | |
 |---|---|
-| Question | **Does the kit, loaded as a plugin, produce readings on a subject it did not author?** Specifically: does any `scope=subagent` spend row appear, and does any finding land, on a 967-file PHP subject with 169 commits. Written before the first command. |
+| Question | **Does the kit, loaded as a plugin, produce readings on a subject it did not author?** Specifically: does any `scope=subagent` spend row appear, and does any finding land, on a 967-file **Rust** subject with 169 commits. Written before the first command. **Corrected 2026-09-09: this read `PHP`.** The subject is Rust -- 291 `.rs` files, one `Cargo.toml`, 160 files referencing io_uring. File and commit counts were right; the language was not. ADR 0002's rule is that a pre-registered condition is only as good as its targets, so it is corrected before the run rather than after. |
 | Kit SHA | `9ce8b70` (`main`, all four CI checks green) |
 | Time-box / actual | not set / not run |
 | Subject | highper-gateway — 967 tracked files, 169 commits, branch `master`, clean tree, **not adopted** (no `.project/`) |
 | Greenfield / brownfield | **brownfield**, history intact, not truncated |
 | Outcome | **not run** — see §0 |
-| Baseline before the kit | not taken |
+| Baseline before the kit | **TAKEN 2026-09-09, on Linux** -- build green, tests do not compile. See the Baseline section |
 | Instruments verified live | **not yet** — this is the trial's own question |
 | Copy isolation verified | **YES** — `kit-preflight.sh --isolated` exit 0, `git remote -v` prints nothing |
 
@@ -33,6 +33,25 @@ Run 2026-09-09 against kit `9ce8b70`.
 | Unassessable criticals | `kit-preflight.sh --unassessable` | **9** — excluded from the gate and still true |
 | Superseded criticals | `kit-preflight.sh --superseded` | **32** — excluded, and each was real |
 | Copy isolated | `kit-preflight.sh --isolated <copy>` | **PASS** — no remote, no shared object store |
+
+> **The table above is the pre-flight AS RUN on 2026-09-09 and is not edited.** Later the same day
+> the gate moved **12 -> 7** and the kit SHA moved from `9ce8b70` to `bedc22e`. Recorded here rather
+> than rewritten, because a pre-flight that silently reports today's numbers cannot be compared with
+> the next trial's:
+>
+> | | then | now |
+> |---|---|---|
+> | criticals gate | 12 | **7** |
+> | unassessable | 9 | 9 |
+> | superseded | 32 | **35** |
+>
+> Two closed on evidence (`627b9764` fixed in `validate.py`; `5c1284da` enforced at
+> `kit-claim.sh:158`) and three were superseded by **ADR 0011**, which decided claims are recorded
+> in committed artefacts and not derived into the index -- retiring the three findings that objected
+> to index-time derivation specifically. The remaining seven are three claim-identity findings, due
+> at the second census, and four rationale defects in the design document.
+>
+> **The box still FAILS.** Seven is not zero, and the trial task's fifth blocker requires zero.
 
 **All 12 outstanding criticals are anchored in one file**, `docs/design-input/2026-08-27-census-store.md`
 — a design for a feature that was never built. Verified:
@@ -70,6 +89,98 @@ away.
    unbuilt design — but it is a protocol change, argued and recorded, never a bypass.
 
 **Neither has been done. This trial has not started.**
+
+## Baseline — taken 2026-09-09, BEFORE the kit touched the subject
+
+`kit_footprint=none` was asserted in the same run that produced these numbers, not assumed. The
+protocol requires the baseline before adoption because it cannot be reconstructed afterwards.
+
+### Why Linux, and why this is the whole point
+
+**Both this subject and aeon use io_uring, which is a Linux kernel API.**
+`docs/ARCHITECTURE.md` names `io_backend.rs` as the *"io_uring backend (Linux)"* -- an
+interface-first adapter whose OS-specific options are not fully integrated yet. The project's own
+CI is `runs-on: ubuntu-latest`. **A Windows run therefore measures the compatibility shim, not the
+subject**, and any earlier aeon-versus-highper-gateway comparison taken on Windows was comparing
+two projects' Windows fallbacks.
+
+So the environment is recorded as DATA, per
+`T-20260826-the-trial-environment-is-recorded-as-pro`, and the field that makes a bad run
+detectable is `io_uring_symbols`. On Windows it is zero.
+
+```
+image_distro      Debian GNU/Linux 12 (bookworm)   via nerdctl, rust:1-bookworm
+kernel            6.6.87.2-microsoft-standard-WSL2
+cores             8
+io_uring_symbols  507                              <- the control; zero on Windows
+rustc / cargo     1.98.0
+cmake             3.25.1                           <- SUPPLIED, see finding 1
+go                1.19.8
+subject files     967      commits 169      head 05c56eb
+kit_footprint     none
+```
+
+### Result
+
+| | command | exit | seconds |
+|---|---|---|---|
+| **Build** | `cargo build --release -p highper-gateway` | **0** | 579 |
+| **Test** | `cargo test --workspace --lib -- --test-threads=4` | **101** | 167 |
+
+**The build passes on Linux.** The tests do not fail at runtime and do not fail on io_uring --
+**they fail to compile**, so `cargo test` ran zero tests:
+
+```
+highper-gateway/src/runtime/signals.rs:238:47
+error[E0308]: mismatched types: expected `Sender<ReloadTrigger>`, found `UnboundedSender<_>`
+error: could not compile `highper-gateway` (lib test) due to 1 previous error; 60 warnings emitted
+```
+
+### Two SUBJECT findings, not applied
+
+Per the three-kinds split below: delivered to the owner as a proposal, never applied here.
+
+1. **Undeclared system dependency on `cmake`**, via `quiche 0.24 -> boringssl`. `.github/workflows/ci.yml`
+   installs no system packages, so the build succeeds only because the `ubuntu-latest` runner image
+   happens to ship cmake. On clean Debian with a Rust toolchain it fails at 151-156s with
+   *"is `cmake` not installed?"*. Reproduced twice.
+2. **The `--lib` test target does not compile at `05c56eb`.** Production `setup_signals_with_reload`
+   takes a **bounded** `mpsc::Sender<ReloadTrigger>` (`signals.rs:50`, using `try_send` at `:92`),
+   while two test sites still build `mpsc::unbounded_channel()` (`:200`, `:238`). The nearest
+   `#[cfg(test)]` above the error is `:161`, so this is test-only -- the library itself builds.
+   **The larger question is not the line:** CI runs `cargo test --workspace --lib`, so that job must
+   be red or not running. Worth checking before the trial, because a subject whose own CI is red is
+   a different trial subject from one whose CI is green.
+
+### What this settles about the platform confusion
+
+The difference between aeon passing and this subject not was **never io_uring and never Windows**.
+At `05c56eb` this test target compiles nowhere. On Windows that is indistinguishable from the
+missing backend; on a kernel with 507 io_uring symbols there is nothing else left to attribute it
+to.
+
+### Method — three false starts, recorded because the protocol asks for methodology findings
+
+None was a subject defect and all three were mine:
+
+1. Git Bash rewrote `/out/script.sh` into a Windows path; the container never ran the script.
+2. `cmake` missing in the image -- a real subject finding, but not a baseline.
+3. A `python` edit adding cmake died on a cygwin fork error, so the container silently re-ran the
+   OLD script and failed identically.
+
+**All three reported exit 0**, because the wrapper read the status of the last command in a
+pipeline rather than of the thing under test -- `docs/LESSONS.md` section 12, *"a status read from
+the wrong process"*. Each was caught by reading the log, never by the exit code. The final script
+carries a hard abort if `cmake` is absent, so it can no longer produce a number that describes the
+image instead of the subject.
+
+### Reproduction
+
+```sh
+nerdctl run --rm -v <subject>:/src:ro -v <scratch>:/out   -v hg-target:/work/target -v hg-registry:/usr/local/cargo/registry   rust:1-bookworm bash /out/baseline3.sh
+```
+
+On Git Bash, prefix with `MSYS_NO_PATHCONV=1` or `/out/...` is rewritten before nerdctl sees it.
 
 ## Cost
 

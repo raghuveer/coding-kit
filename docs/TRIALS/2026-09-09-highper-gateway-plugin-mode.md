@@ -13,7 +13,7 @@
 | Question | **Does the kit, loaded as a plugin, produce readings on a subject it did not author?** Specifically: does any `scope=subagent` spend row appear, and does any finding land, on a 967-file **Rust** subject with 169 commits. Written before the first command. **Corrected 2026-09-09: this read `PHP`.** The subject is Rust -- 291 `.rs` files, one `Cargo.toml`, 160 files referencing io_uring. File and commit counts were right; the language was not. ADR 0002's rule is that a pre-registered condition is only as good as its targets, so it is corrected before the run rather than after. |
 | Kit SHA | `9ce8b70` (`main`, all four CI checks green) |
 | Time-box / actual | not set / not run |
-| Subject | highper-gateway — 967 tracked files, 169 commits, branch `master`, clean tree, **not adopted** (no `.project/`) |
+| Subject | highper-gateway — 967 tracked files, 169 commits, branch `master`, clean tree, **not adopted** (no `.project/`). **Unmaintained since 2026-05-16 by operator decision** — attention moved to other projects — and **red on its own CI** at this SHA. Both are recorded below and neither disqualifies it |
 | Greenfield / brownfield | **brownfield**, history intact, not truncated |
 | Outcome | **not run** — see §0 |
 | Baseline before the kit | **TAKEN 2026-09-09, on Linux** -- build green, tests do not compile. See the Baseline section |
@@ -148,9 +148,57 @@ Per the three-kinds split below: delivered to the owner as a proposal, never app
    takes a **bounded** `mpsc::Sender<ReloadTrigger>` (`signals.rs:50`, using `try_send` at `:92`),
    while two test sites still build `mpsc::unbounded_channel()` (`:200`, `:238`). The nearest
    `#[cfg(test)]` above the error is `:161`, so this is test-only -- the library itself builds.
-   **The larger question is not the line:** CI runs `cargo test --workspace --lib`, so that job must
-   be red or not running. Worth checking before the trial, because a subject whose own CI is red is
-   a different trial subject from one whose CI is green.
+   **The larger question was not the line, and it is now answered.** CI runs the same command, so
+   the job had to be red or not running. **It is red** -- see the CI table below. That was checked
+   before the run rather than discovered in the write-up, which is the difference between a
+   recorded condition and an excuse.
+
+### The subject's own CI, on the same SHA — red, and red before the kit arrived
+
+Queried 2026-09-09 against `highperapp/highper-gateway`, run `25968962590`, head `05c56eb` — the
+trial subject's exact commit:
+
+| | job |
+|---|---|
+| **failure** | Test |
+| **failure** | Check |
+| **failure** | Clippy |
+| **failure** | Security Audit |
+| success | Build Release |
+| success | Format |
+| success | Validate Configs |
+
+**Four of seven failing, and the last four CI runs are all failures, all dated 2026-05-16.**
+
+**This is a parked project, not a neglected one.** The operator stopped work on it in May 2026 and
+moved to other projects; nothing has been pushed since. The record says so here because a reader
+arriving at this file in a year would otherwise infer decay, and because the trial protocol asks
+what state the subject was in before the kit touched it.
+
+**And it is the right kind of subject for a trial.** `design-input/2026-08-16-artifact-model-and-distribution.md`
+section 3.3 argues explicitly for archived or unmaintained subjects: real accreted debt, and a
+**frozen target, so two trials months apart remain comparable**. A moving subject would make the
+second trial incomparable with this one.
+
+**The baseline reproduces their CI independently.** `Build Release` green against
+`cargo build --release` exit 0; `Test` red against `cargo test --workspace --lib` exit 101. Two
+machines, two toolchains, same split — which is evidence the baseline measures the subject rather
+than this environment, and it is a stronger check than either result alone.
+
+`Check` and `Clippy` failing is consistent with the same single `E0308`: both compile the test
+target, and `Clippy` runs `-D warnings` against the 60 warnings the build emitted. `Security Audit`
+is `cargo-audit` and is a different thing — an advisory in the dependency tree, unexamined here.
+
+### Two consequences for how this trial must be read
+
+1. **Attribution.** The subject was already failing four jobs before the kit existed on it, so a
+   finding the kit produces is **not** evidence the kit found something new unless it is checked
+   against this table. Recorded before the run precisely so it cannot be decided afterwards.
+2. **A free oracle, and it is the most valuable thing on this page.** The kit *should* independently
+   surface the class of defect CI is already failing on. If a full run does not notice a test target
+   that will not compile, **that is a finding about the kit** — and a sharper one than a green
+   subject could ever have produced. This is the ground-truth injection that section 3.3 asks for,
+   except that the subject supplied it rather than us.
 
 ### What this settles about the platform confusion
 

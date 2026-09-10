@@ -242,6 +242,23 @@ which the 2026-09-08 claim-identity design input never considered. The dispositi
 | `census_id`, `unit`, ordinal, and the artefact's hash | reference | a future reader knows exactly what was in front of the person who judged |
 | the disposition and its required reason | the judgement itself | unchanged from D2 |
 
+> **REVISED 2026-09-10 — the hash is specified. Closes `322f03aa`.** The row above and the
+> reference row below both said *hash* and named no mechanism, no party and no width, which is
+> three unstated choices in a field that has to be reproducible by a stranger years later. The
+> kit already answered this twice and the design cited neither:
+>
+> | | |
+> |---|---|
+> | **mechanism** | `git hash-object --stdin`. Precedent: `tooling/kit-accel.sh:186` and `tooling/kit-spend.sh:127`. It keeps the dependency set at `git`, which the kit already requires, and needs no new tool |
+> | **width** | **16 hex characters**, `cut -c1-16` — the same width both precedents use. Not full-length, because these are correlation handles rather than security boundaries, and a truncated one is legible in a diff |
+> | **party** | **the writer of the disposition**, never the auditor. An auditor that supplies its own subject hash is attesting to what it wants judged, which is the self-certification rule that governs `Via:` and `--fixed` |
+> | **input** | the artefact **file bytes as committed**, not a re-serialisation. `git hash-object` on the path is therefore the operation, and a reader can re-run it |
+>
+> **What this does NOT make the hash.** It is not tamper-evidence and must not be described as
+> such: an actor who can rewrite the artefact can recompute the hash, and `kit-guard.sh` does not
+> match `Bash`. It answers *which bytes were in front of the judge*, which is the question D5 asks
+> of it and the only one it can answer.
+
 **Why the reference half is not decoration.** The operator names *"future readers (human or model
 both)"*, and for a model it is load-bearing: a disposition without its subject recorded is a verdict
 whose evidence must be re-derived from a tree that has moved. With the subject carried, a later
@@ -310,7 +327,7 @@ exactly as `ADR 0004` requires of every derived thing in this repository.
 
 | review finding | status under revision 2 |
 |---|---|
-| **F4** `normalise` unspecified; writer-or-indexer unstated | **Dissolved.** The committed artefact carries only the auditor's raw fields. `claim_key` is computed **at index time**, so re-keying stays free forever. There is nothing to freeze. <br><br> **⚠ Bounded by D5 (2026-09-08). "Re-keying stays free forever" is not established, and "computed at index time" has no mechanism.** Review A: free re-keying is true of the bytes on disk and false of which claims a committed record *reaches*, once a disposition must carry forward. Review B: `65e3d2a2` is open — `kit-index.sh` has zero python invocations and `kit_claims.py` does not exist. Under D5 a disposition carries its own subject, so this row's conclusion is reached by a different route than its argument. Not rewritten, per this document's own convention. |
+| **F4** `normalise` unspecified; writer-or-indexer unstated | **RETRACTED 2026-09-10. Closes `b032ddaf`.** This row said re-keying stays free forever because `claim_key` is computed at index time. **Both halves are now withdrawn** and the replacement is shorter than the claim it replaces. There is no index time: ADR 0011 decided claims are recorded in committed artefacts and not derived into the index, and `kit-claim.sh --contract` emits no key at all. And there is no key to re-key: **D5 embeds the subject in the disposition**, as text or as the 16-character hash specified above, so nothing joins an old claim to a new one and the freedom this row claimed is not needed rather than available. `b032ddaf` was right that a disposition naming a claim freezes something in the committed log -- what it freezes is the SUBJECT, deliberately, which is what makes the record self-describing. The defect was asserting freedom that the same revision had already spent. <br><br> **⚠ Bounded by D5 (2026-09-08). "Re-keying stays free forever" is not established, and "computed at index time" has no mechanism.** Review A: free re-keying is true of the bytes on disk and false of which claims a committed record *reaches*, once a disposition must carry forward. Review B: `65e3d2a2` is open — `kit-index.sh` has zero python invocations and `kit_claims.py` does not exist. Under D5 a disposition carries its own subject, so this row's conclusion is reached by a different route than its argument. Not rewritten, per this document's own convention. |
 | **F5** sequence inverted — step 2 decides what step 1 froze | **Dissolved.** Step 1 freezes nothing. The variance measurement can now run before, during or after without penalty. |
 | **F11** torn writes: 15KB–270KB batch, no lock, concurrent `spend` appenders | **Dissolved.** A unit is one file written once, not an append to a log shared with 18 subagents' `spend` hooks. There is no interleaving to protect against. |
 | **F13** one census adds ~270KB to a 237KB log the awk hot loop re-hashes every run | **Dissolved for the log.** Artefacts are separate files; `events.ndjson` does not grow per claim. The derived-table build cost remains and is budgeted below. |

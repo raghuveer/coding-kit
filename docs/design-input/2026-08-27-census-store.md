@@ -23,10 +23,13 @@
 > standing rule is that text is truth and the index is a disposable cache; claims in committed
 > artefacts are already text.
 >
-> **What this marker does NOT carry.** Claim identity, the occurrence suffix, and the
-> `source_document`/`source` split are not superseded -- they move to the artefact format and come
-> due at the second census. Nor are the four rationale findings against this document. ADR 0011
-> names each one.
+> **What this marker DOES and does NOT carry, corrected 2026-09-09.** It now also carries the
+> INDEX-TIME KEY: `claim_key` is specified at :310 (F4) as computed at index time, and the shipped
+> artefact contract emits no key at all, so `26925ff4` and `e1c2ce2b` criticise a mechanism this
+> marker withdraws. It does **NOT** carry `3e76f904` -- `source_document` per census against
+> `source` per unit is a defect in the SHIPPED artefact format, both fields exist today, and no
+> derivation is involved. Nor the four rationale findings. ADR 0011 states the split and why the
+> first version of this note got it wrong.
 >
 > Kept unedited below, on the same grounds as ADR 0005, ADR 0006 and ADR 0010: the review is the
 > value, and a design deleted from the tree takes its findings with it.

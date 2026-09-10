@@ -142,13 +142,42 @@ version, not a migration. Choosing B now forecloses nothing.
 leave the criticals gate, stay in the record permanently, and `kit-status.sh` counts them
 separately rather than folding them into zero.
 
-**Claim identity does not go away. It moves.** `26925ff4` (`claim_key` undefined), `e1c2ce2b` (the
-occurrence suffix is positional) and `3e76f904` (`source_document` per census against `source` per
-unit) are **not** superseded by this ADR. If artefacts are the record, they are a committed shared
-format, and identity comes due the moment two censuses are compared —
-`T-20260828-census-diff-and-the-attribution-control-`. Deciding it now, against one census, is what
-`docs/design-input/2026-09-08-claim-identity.md` already tried; it was **REJECTED with 9
-criticals**. Wait for the second census.
+**Claim identity does not go away, but it does not survive intact either — and this ADR first
+said it did.**
+
+> **Amended 2026-09-09, the second amendment to this document on the day it was accepted.** The
+> paragraph here originally read that `26925ff4`, `e1c2ce2b` and `3e76f904` are *"not superseded by
+> this ADR"* and all come due at the second census. **That is wrong on two of the three**, and it is
+> wrong by conflating *the question is alive* with *the finding's subject is alive* — the same
+> conflation this ADR criticises elsewhere. Corrected in place, per the convention ADR 0001 set.
+
+The question — *how is a claim identified across censuses* — is alive and belongs to
+`T-20260828-census-diff-and-the-attribution-control-`. The **mechanism** those findings criticise is
+not. Checked rather than reasoned:
+
+- `census-store.md:310` (F4) specifies `claim_key` as **computed at index time**. Index-time
+  derivation is what this ADR withdraws.
+- `kit-claim.sh --contract` emits **no key at all** — `grep -c claim_key` on it returns **0**. The
+  shipped artefact was never going to carry one; it was to be derived.
+
+So the split is two and one:
+
+| finding | subject | standing |
+|---|---|---|
+| `26925ff4` | `claim_key` undefined, three candidates, an ordinal breaking AC6 | **superseded** — the key it criticises is the index-time key |
+| `e1c2ce2b` | the occurrence suffix is positional, so an ordinal-free key is not position-free | **superseded** — same key, same withdrawal |
+| `3e76f904` | `source_document` per census against `source` per unit | **OPEN, and it is a shipped defect** |
+
+**`3e76f904` is not a keying question and must not leave with the other two.** Both fields exist in
+shipped code today — `source_document` is REQUIRED in `kit_manifest.py:44`, `source` is per-unit at
+`kit-claim.sh:93` — so a census spanning two documents records a manifest-level source that
+contradicts its own units, **in the artefact, with no derivation involved**. That is a defect in the
+format this ADR just made authoritative, which makes it more urgent under this decision rather than
+less.
+
+**When identity does come due**, it is decided against a second census and not this one.
+`docs/design-input/2026-09-08-claim-identity.md` was **REJECTED with 9 criticals** for settling it
+too early, and nothing here reopens that.
 
 **No SQL join between a claim and a task, finding, tier or spend row.** This is the real cost and
 it is not hypothetical: `kit-status.sh` cannot report claims beside findings without a reader

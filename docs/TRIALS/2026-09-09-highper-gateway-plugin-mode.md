@@ -430,10 +430,17 @@ information and one left out reads as fine:
   produce a `scope=subagent` row at all.
 - **`kit-spend.sh` against a foreign subject.** Note before running: it writes into the
   **subject's** tracked `events.ndjson`. That is why the trial runs against an isolated copy at
-  `…/scratchpad/trial-highper` and not against `D:\personal-github\highper-gateway`.
-- **Cluster packs.** `.project/packs/` is empty in the kit and would be empty here too;
-  `skills/task-context` step 4 loads a pack and there has never been one to load.
-- **The Windows conformance suite** for kit SHA `9ce8b70`.
+  `D:\trials\highper-gateway-05c56eb` and not against `D:\personal-github\highper-gateway`.
+- **Cluster packs.** ~~`.project/packs/` is empty in the kit and would be empty here too;
+  `skills/task-context` step 4 loads a pack and there has never been one to load.~~
+  **CORRECTED 2026-09-10: the kit now writes 17 packs.** Its largest cluster is **64 of 135 tasks
+  (47%)**, under the 60% cap that was withholding them when this line was written at 65%. So
+  `skills/task-context` step 4 has something to load *in the kit*. **What this trial exercises is
+  still unknown**: packs on the subject depend on the subject's own clustering, which nobody has
+  measured. Corrected rather than deleted, because "empty" and "withheld by a cap" are different
+  facts and only one of them was ever true.
+- ~~**The Windows conformance suite** for kit SHA `9ce8b70`.~~ **RUN 2026-09-10 on the frozen SHA
+  `50226b8`: 116 passed, 0 failed** — see §0b, including the caveat that the tree moved during it.
 
 ## Disputed
 

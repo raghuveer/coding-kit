@@ -105,6 +105,13 @@ A claim-auditor returns ONE JSON object:
   ]
 }
 
+REQUIRED on the object: "source", and it must equal the census manifest's
+`source_document`. A census audits ONE document (F1d). Capture writes your reply either
+way -- nothing you return is ever discarded -- and then REFUSES the unit when the two
+disagree, so a mismatch costs a re-run. If the unit you were given belongs to a different
+document, say so in `narrative` and return it under its real `source`; the operator
+allocates a second census.
+
 REQUIRED on every claim: claim, source_loc, verdict, location.
   evidence  REQUIRED unless verdict is UNVERIFIABLE -- there is nothing to point at.
   note      REQUIRED when verdict is UNVERIFIABLE  -- the reason is the whole content of
@@ -268,7 +275,7 @@ case "${1:-}" in
     kit_warn "  Step 1 writes a reply AFTER manifest creation. census_id is allocated by the"
     kit_warn "  operator, and D4's purpose cannot be derived from the tree, so this refuses"
     kit_warn "  rather than inventing a census. The manifest must carry at least:"
-    kit_warn '    { "purpose": "<why this census exists>", "units": ["<unit>", ...] }'
+    kit_warn '    { "purpose": "...", "source_document": "<path>", "units": ["<unit>"] }'
     exit 1
   fi
 
@@ -301,6 +308,15 @@ case "${1:-}" in
       kit_warn "  F1c refuses an undeclared unit rather than creating it: intake choosing a"
       kit_warn "  plausible name and SUCCEEDING is the failure mode, not intake crashing."
       exit 1 ;;
+    NOSOURCEDOC)
+      # F1d. `--init` always writes this field, so a manifest without it was hand-written. The
+      # constraint is the whole content of the field: a census whose source_document is unset
+      # cannot hold its units to anything, and accepting it would make the check unreachable
+      # exactly where it is needed. Refused before the write, so nothing is captured.
+      kit_warn "${MAN#$ROOT/} has no non-empty 'source_document'"
+      kit_warn "  F1d: it is a CONSTRAINT -- every unit's 'source' must equal it, and a census"
+      kit_warn "  audits one document. Unset, capture has nothing to check the reply against."
+      exit 1 ;;
     BADJSON*)
       kit_warn "${MAN#$ROOT/} is not readable as JSON: ${_verdict#BADJSON }"; exit 1 ;;
     *) kit_warn "unexpected manifest verdict: $_verdict"; exit 1 ;;
@@ -321,7 +337,50 @@ case "${1:-}" in
   fi
   printf 'kit: captured %s\n' "${_dest#$ROOT/}" >&2
   printf '  verbatim and unvalidated by design (F12): a reply that fails validation keeps its data.\n' >&2
-  exit 0 ;;
+
+  # F1d, and the ORDER is the whole design. The bytes are on disk before this runs, so every
+  # branch below decides an EXIT STATUS and none of them decides whether the reply survives.
+  # `3e76f904`: the manifest names one source_document per census while each unit names its own
+  # source, so until this check a census spanning two documents recorded a manifest that
+  # contradicted its own units -- in the committed artefact, with no derivation involved.
+  _sv=$(MAN="$MAN" ART="$_dest" python3 "$(dirname "$0")/kit_manifest.py" --source) \
+    || { kit_warn "the F1d source check could not run; ${_dest#$ROOT/} was KEPT"; exit 1; }
+  case "$_sv" in
+    OK) exit 0 ;;
+    UNPARSED*)
+      # THE HOLE, PRINTED RATHER THAN HIDDEN. Conformance asserts that a malformed reply is
+      # captured and NOT refused (F12), so a reply this cannot parse cannot be held to F1d.
+      # It enters the census unchecked, and the operator is told so in the same breath.
+      printf '  source NOT CHECKED (F1d): %s\n' "${_sv#UNPARSED }" >&2
+      printf '  The bytes are kept and the unit is in the census unverified. Re-derive it.\n' >&2
+      exit 0 ;;
+    NOSOURCE)
+      kit_warn "the reply parses but carries no 'source' -- REFUSED"
+      kit_warn "  ${_dest#$ROOT/} was KEPT (F12); nothing you paid for is lost."
+      kit_warn "  F1d is checkable only against a source. Omitting the field would otherwise be"
+      kit_warn "  a way to opt out of the constraint, so it is refused rather than skipped."
+      exit 1 ;;
+    SOURCEMISMATCH*)
+      _TAB=$(printf '\t')
+      _rest=${_sv#SOURCEMISMATCH$_TAB}
+      _decl=${_rest%%$_TAB*}
+      _got=${_rest#*$_TAB}
+      kit_warn "this unit audits a different document from the census -- REFUSED"
+      kit_warn "  manifest source_document: $_decl"
+      kit_warn "  reply source:             $_got"
+      kit_warn "  ${_dest#$ROOT/} was KEPT (F12); nothing you paid for is lost."
+      kit_warn "  F1d: a census audits ONE document. Two documents are two censuses -- allocate"
+      kit_warn "  a second with --init and capture this unit there."
+      exit 1 ;;
+    BADJSON*)
+      kit_warn "${MAN#$ROOT/} became unreadable between the two checks: ${_sv#BADJSON }"
+      kit_warn "  ${_dest#$ROOT/} was KEPT (F12)."
+      exit 1 ;;
+    *)
+      kit_warn "unexpected F1d verdict: $_sv"
+      kit_warn "  ${_dest#$ROOT/} was KEPT (F12)."
+      exit 1 ;;
+  esac ;;
 esac
 
 printf 'kit-claim.sh: --vocab | --contract | --census ID --init ... | --census ID --unit NAME --json\n' >&2

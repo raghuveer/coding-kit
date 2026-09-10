@@ -3821,7 +3821,11 @@ ca="$WORK.alloc"; rm -rf "$ca"; mkdir -p "$ca"
   want 'already exists' c1 --init $FULL || exit 1
 
   # And capture works against what allocation wrote -- the two halves must actually meet.
-  printf '%s' '{"source":"d","subject":"U","claims":[]}' |
+  # F1d MADE THAT LITERAL, and this fixture was the first thing it caught: the payload said
+  # `"source":"d"` against a manifest allocating `docs/ROADMAP.md`, which is exactly the
+  # contradiction `3e76f904` describes, sitting in the suite that was meant to prove the two
+  # halves meet. The reply now audits the document the census declares.
+  printf '%s' '{"source":"docs/ROADMAP.md","subject":"U","claims":[]}' |
     bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json >/dev/null 2>&1 ||
     { echo "  capture refused a manifest that --init wrote"; exit 1; }
   exit 0 )
@@ -3875,7 +3879,13 @@ cc="$WORK.census"; rm -rf "$cc"; mkdir -p "$cc"
   printf '%s' '{"purpose":"evaluation"}' > .project/census/c1/manifest.json
   want "no 'units' array" --census c1 --unit u1 --json || exit 1
 
+  # F1d, manifest level. Asserted BEFORE the valid capture so the "nothing was written"
+  # half means something: at this point in the fixture no artefact exists yet.
   printf '%s' '{"purpose":"evaluation","units":["u1"]}' > .project/census/c1/manifest.json
+  want "no non-empty 'source_document'" --census c1 --unit u1 --json || exit 1
+  [ -e .project/census/c1/u1.json ] && { echo "  captured into a census with no source_document"; exit 1; }
+
+  printf '%s' '{"purpose":"evaluation","source_document":"d.md","units":["u1"]}' > .project/census/c1/manifest.json
   want 'is not declared in' --census c1 --unit u2 --json || exit 1
 
   # F1b, and the two axes are asserted SEPARATELY because the charset alone admits `.` and `..`
@@ -3896,13 +3906,71 @@ cc="$WORK.census"; rm -rf "$cc"; mkdir -p "$cc"
   printf '%s\n' "$PAY" > expected.json
   cmp -s expected.json .project/census/c1/u1.json || { echo "  artefact is not verbatim"; exit 1; }
 
-  printf 'not json at all' | bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json >/dev/null 2>&1 ||
+  _out=$(printf 'not json at all' | bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json 2>&1) ||
     { echo "  refused a malformed reply, losing its data"; exit 1; }
   grep -q 'not json at all' .project/census/c1/u1.json ||
     { echo "  malformed reply was not captured verbatim"; exit 1; }
+  case "$_out" in *'source NOT CHECKED (F1d)'*) ;;
+    *) echo "  an unchecked unit entered the census without saying so"; exit 1 ;; esac
+
+  # F1d, `3e76f904`. THE ONLY REFUSAL IN THIS SCRIPT THAT WRITES THE FILE FIRST, so it is
+  # asserted on three things at once: a non-zero exit, its own diagnostic naming BOTH documents,
+  # and the artefact still on disk byte-for-byte. A refusal after the write does not weaken F12,
+  # and this is what proves it rather than asserting it.
+  #
+  # REDIRECTED FROM A FILE, NOT PIPED. The status of the capture is the assertion here, and under
+  # `set -o pipefail` a pipeline reports the wrong member's status -- the trap recorded above.
+  printf '%s\n' '{"source":"OTHER.md","subject":"U","narrative":"n","claims":[]}' > mismatch.json
+  _out=$(bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json < mismatch.json 2>&1) &&
+    { echo "  a unit auditing another document was accepted"; exit 1; }
+  case "$_out" in *'audits a different document'*) ;;
+    *) echo "  the F1d mismatch was not refused by name"; exit 1 ;; esac
+  case "$_out" in *'source_document: d.md'*) ;;
+    *) echo "  the refusal did not name the document the census declares"; exit 1 ;; esac
+  case "$_out" in *'reply source:'*'OTHER.md'*) ;;
+    *) echo "  the refusal did not name the document the reply audits"; exit 1 ;; esac
+  cmp -s mismatch.json .project/census/c1/u1.json ||
+    { echo "  a unit refused by F1d lost its data (F12)"; exit 1; }
+
+  # An envelope that parses and omits `source` is refused rather than skipped: skipping it is an
+  # opt-out from the constraint, which is a check that cannot fail.
+  printf '%s\n' '{"subject":"U","narrative":"n","claims":[]}' > nosource.json
+  _out=$(bash "$KIT/tooling/kit-claim.sh" --census c1 --unit u1 --json < nosource.json 2>&1) &&
+    { echo "  a reply with no source opted out of F1d"; exit 1; }
+  case "$_out" in *"carries no 'source'"*) ;;
+    *) echo "  the missing source was not refused by name"; exit 1 ;; esac
+  cmp -s nosource.json .project/census/c1/u1.json ||
+    { echo "  a reply refused for having no source lost its data (F12)"; exit 1; }
   exit 0 )
 check $? "each capture guard is asserted by its own diagnostic, and a valid reply lands verbatim"
 rm -rf "$cc"
+fi
+
+if step "every committed census artefact audits the document its manifest declares"; then
+# F1d against the RECORD rather than against a fixture. `3e76f904` is a defect in the shipped
+# artefact format, so the assertion that matters is about the artefacts this repository has
+# actually committed -- the first census was captured before the constraint existed and is
+# asserted here rather than assumed to have been consistent.
+#
+# The count is printed in the result line on purpose. A tree with no census passes this step
+# vacuously, and a reader who cannot see "0 checked" cannot tell that apart from a real pass --
+# the same reason the vocabulary step names the number of agents it found.
+f1d=0; f1dn=0
+for _man in "$KIT"/.project/census/*/manifest.json; do
+  [ -f "$_man" ] || continue
+  _cd=$(dirname "$_man")
+  for _art in "$_cd"/*.json; do
+    [ -f "$_art" ] || continue
+    case "$_art" in */manifest.json) continue ;; esac
+    f1dn=$((f1dn+1))
+    _v=$(MAN="$_man" ART="$_art" python3 "$KIT/tooling/kit_manifest.py" --source 2>&1)
+    case "$_v" in
+      OK) ;;
+      *) echo "  ${_art#$KIT/}: $_v"; f1d=1 ;;
+    esac
+  done
+done
+check $f1d "$f1dn committed census artefact(s) audit the document their manifest declares"
 fi
 
 if step "a verbatim artefact may cite a foreign home path, and nothing else may"; then

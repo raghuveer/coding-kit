@@ -272,8 +272,9 @@ claim-identity input's assertion that nothing committed names the key.
 
 **What it does NOT settle, listed so nothing is assumed.** ~~`unit` is still undefined and is a
 component of every identity proposed so far.~~ **Superseded the same day by F1c below, which
-defines it.** `source_document` (manifest, per-census) still conflicts with the artefact's own
-per-unit `source`. The derive path still has no JSON parser for a verbatim pretty-printed artefact,
+defines it.** ~~`source_document` (manifest, per-census) still conflicts with the artefact's own
+per-unit `source`.~~ **Closed by F1d, 2026-09-10 — and unlike the two strikethroughs above, this
+one is struck in the same commit as the code and the conformance step that make it true.** The derive path still has no JSON parser for a verbatim pretty-printed artefact,
 which is forced by this document's own §"raw artefact first" choice and not by any normaliser. The
 occurrence suffix is still positional. ~~`5c1284da`'s refusal rule is still a precondition rather
 than a follow-on.~~ **Superseded the same day by F1b below, which states the rule.**
@@ -438,9 +439,86 @@ would meet — the 44 rows under `docs/EXPERIMENTS/2026-09-07-claim-auditor-tier
 component of either identifier. Under this definition they can: a manifest naming their unit is
 written by the operator, with **no contract change and no edit to the artefacts**.
 
-**Still open, and not settled here:** `source_document` (a manifest, per-census field) against the
-artefact's own per-unit `source`. Same class of question, different field; it is not folded in
-silently.
+~~**Still open, and not settled here:** `source_document` (a manifest, per-census field) against
+the artefact's own per-unit `source`. Same class of question, different field; it is not folded in
+silently.~~ **Settled 2026-09-10 by F1d below, which is the same answer this section gives for
+`unit`: the manifest declares an input and capture refuses a reply that disagrees.** It was right
+not to fold it in silently — it took its own section, its own check and its own conformance step.
+
+### F1d — `source_document` is a constraint, and a census audits exactly one document
+
+**Settles `3e76f904`**, the last critical on this task and the last one in the repository's gate.
+Both fields shipped: `kit_manifest.py` requires one `source_document` per census, `kit-claim.sh
+--contract` emits one `source` per unit, and until now nothing compared them. A census spanning two
+documents recorded a manifest that contradicted its own units — in the committed artefact, which
+ADR 0011 made the record rather than a staging area.
+
+**The three candidates, and why two of them lose.**
+
+**Default — the manifest suggests, a unit may override — is rejected**, and it is the one that
+looks most accommodating. A declaration a unit can override is not a declaration; it is the
+auditor deciding what it was asked to audit. That is the self-certification rule this design
+already applies twice: D5 gives the subject hash to the writer of a disposition and never to the
+auditor, and `Via:` is proposed by a model and confirmed by a human. An auditor that can rename its
+own subject is attesting to what it wants judged.
+
+**Redundant — drop the field, let the artefacts carry it — is rejected on F1c's own argument.** A
+manifest is written **before** the audit runs. F1c refuses an undeclared `unit` for exactly this
+reason: *a unit is an INPUT to an audit, not a discovery of one.* The document is the same kind of
+input — it is what the auditor was pointed at — so it is declared in the same place, at the same
+time, and checked the same way. Remove it and a census has no declared subject until artefacts
+arrive, and a census with no captured units names nothing at all. There is also a D3 consequence:
+the document audited is an attribution variable of the same kind as `subject_sha` and
+`auditor_model`, and a diff across two censuses whose documents differ is not a drift measurement.
+
+**So: constraint. A census audits exactly ONE document, and two documents are two censuses.**
+
+**The cost, named rather than discovered.** A drift rate cannot be aggregated across documents into
+one figure — "37 of 112 stale" is per document, and a project auditing a roadmap and an
+architecture note gets two censuses and two fractions. That is the price of AC6's diff staying
+interpretable, and it is paid deliberately. If a single figure across documents is ever wanted, it
+is a report over censuses, not a loosening of this rule.
+
+**Where the check runs, and why it is after the write.** F12 is not negotiable: the raw reply
+reaches disk before anything judges it, so a rejected unit keeps the tokens that produced it.
+Capture therefore writes verbatim, then compares, then chooses an **exit status**. Nothing in this
+section decides whether bytes survive. A refused unit is on disk, named in the diagnostic, and the
+operator re-derives it or allocates the second census.
+
+**Three refusals and one announced hole:**
+
+| the reply | what happens |
+|---|---|
+| `source` equals the manifest's `source_document` | captured, exit 0 |
+| `source` differs | **kept and refused**, both documents named in the diagnostic |
+| a JSON object with no `source` | **kept and refused** — skipping it would let any auditor opt out of the constraint by omitting a field, which is a check that cannot fail |
+| not parseable as a JSON object | **captured, exit 0, and the terminal says the constraint was NOT checked** |
+
+The fourth row is a real gap and is written down as one. Conformance asserts that a malformed
+reply is still captured — F12 — so a reply this cannot parse cannot be held to F1d, and the unit
+enters the census unverified. It is bounded by being unparseable, which every later reader
+discovers too, and the announcement is asserted by its own conformance line so it cannot become
+silent.
+
+**A manifest with no `source_document` is refused on the read path as well as the write path.**
+`--init` always writes the field, so a manifest lacking it was hand-written — and a hand-written
+manifest that capture accepts is a census whose constraint can never be checked. Refused before
+the write, so nothing is captured into it.
+
+**What the rule caught the moment it existed, and it is the reason to state it as code rather than
+prose.** The conformance fixture that exists to prove *"the two halves must actually meet"* was
+capturing `{"source":"d"}` into a census allocated with `--source-document docs/ROADMAP.md`. The
+contradiction `3e76f904` describes was sitting inside the step written to prove the halves meet,
+and no reader had caught it in the file. The comparison caught it on its first run.
+
+**The first census is asserted, not assumed.** `handoff-invariants-2026-09-09` was captured before
+this rule existed. A conformance step walks every committed census and checks each artefact against
+its own manifest, printing the number it checked so a tree with no censuses cannot pass unnoticed.
+
+**The record and this document, kept honest.** The design says DECIDED; the finding is still marked
+OPEN until the operator runs the disposition, because marking findings is not this hand's to do.
+That gap is stated here rather than papered over — F1b's amendment landed with its mark in one
+commit, and this one cannot.
 
 ### F1b — `census_id` and `--unit` are refused, not rewritten, and the precedent is not enough
 

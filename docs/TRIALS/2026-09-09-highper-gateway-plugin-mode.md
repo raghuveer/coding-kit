@@ -176,7 +176,26 @@ The copy above carries `05c56eb` in its own directory name so the mistake is vis
 `116 passed, 0 failed` on `5116200` (2026-09-10). A second full run was started on `50226b8`, the
 frozen SHA, and its result is recorded here rather than assumed:
 
-**RESULT: PENDING — to be written in from the run on `50226b8` before the trial starts.**
+**RESULT: 116 passed, 0 failed, 0 skipped.** Same figure as the `5116200` run, one step wider than
+the 2026-09-09 suite because F1d added a step.
+
+**One caveat, stated because the alternative is a measurement nobody can check.** The run was
+started against the `50226b8` tree and **this file was edited while it was in flight** — so the
+tree was not constant for its whole duration. Why that does not invalidate it, checked rather than
+asserted:
+
+- `grep -n 'docs/TRIALS' tests/conformance.sh` returns **one** line, and it only asserts
+  `docs/TRIALS/TEMPLATE.md` exists. **No step reads this file.**
+- `validate.py` walks `.md` under `agents/` and the plugin directories, not `docs/TRIALS/`, and it
+  was run by hand on the final tree: 7 ok, 0 warnings, 0 errors.
+- CI ran the full suite on the exact branch tree on ubuntu and macOS, both green.
+
+A Windows run over a tree that never moved has **not** been done. If that is wanted before the
+trial, it is one command and about an hour:
+
+```sh
+KIT=$(pwd) WORK=<empty scratch dir> bash tests/conformance.sh
+```
 
 The three commits between `5116200` and `50226b8` are data-only — `.project/plans/default.tsv`, one
 task file, one `events.ndjson` line — but "data-only" is an argument and the box asks for a run, so

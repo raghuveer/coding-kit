@@ -5,7 +5,7 @@ epic: reporting
 tier: T3
 paths: tooling/schema.sql, tooling/kit-index.sh, tooling/kit-claim.sh, tooling/kit_claims.py, tooling/kit-status.sh
 blocked_by: T-20260826-no-agent-owns-verifying-documented-claim
-state: created
+state: on-hold
 ---
 
 ## SPLIT 2026-08-28 — this is now Task A of three

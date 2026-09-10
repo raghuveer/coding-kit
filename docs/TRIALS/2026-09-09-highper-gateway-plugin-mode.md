@@ -3,6 +3,12 @@
 
 # Trial: highper-gateway — 2026-09-09, plugin mode
 
+> **RE-PREPARED 2026-09-10, STILL NOT RUN.** §0 below is the pre-flight as run on 2026-09-09,
+> kept unedited with its gate box failing at 12. **§0b is the pre-flight for the run that can now
+> start**: the gate reads zero, and the subject copy this file named had to be rebuilt because the
+> original was destroyed by scratchpad reaping. Two boxes are the operator's — the time-box, and
+> one stop-condition judgement §0b sets out.
+>
 > **PREPARED, NOT RUN.** Section 0 below is filled in; everything after it is empty on purpose and
 > says why. The protocol requires the pre-flight answers to be recorded *before* the first command
 > — *"Record the answers; they are part of the result"* — so this file exists at pre-flight rather
@@ -11,14 +17,14 @@
 | | |
 |---|---|
 | Question | **Does the kit, loaded as a plugin, produce readings on a subject it did not author?** Specifically: does any `scope=subagent` spend row appear, and does any finding land, on a 967-file **Rust** subject with 169 commits. Written before the first command. **Corrected 2026-09-09: this read `PHP`.** The subject is Rust -- 291 `.rs` files, one `Cargo.toml`, 160 files referencing io_uring. File and commit counts were right; the language was not. ADR 0002's rule is that a pre-registered condition is only as good as its targets, so it is corrected before the run rather than after. |
-| Kit SHA | `9ce8b70` (`main`, all four CI checks green) |
+| Kit SHA | `9ce8b70` at pre-flight on 2026-09-09. **Re-frozen 2026-09-10 at `50226b8`** for the run — §0b, which states the check that catches a tree drifting off it |
 | Time-box / actual | not set / not run |
 | Subject | highper-gateway — 967 tracked files, 169 commits, branch `master`, clean tree, **not adopted** (no `.project/`). **Unmaintained since 2026-05-16 by operator decision** — attention moved to other projects — and **red on its own CI** at this SHA. Both are recorded below and neither disqualifies it |
 | Greenfield / brownfield | **brownfield**, history intact, not truncated |
 | Outcome | **not run** — see §0 |
 | Baseline before the kit | **TAKEN 2026-09-09, on Linux** -- build green, tests do not compile. See the Baseline section |
 | Instruments verified live | **not yet** — this is the trial's own question |
-| Copy isolation verified | **YES** — `kit-preflight.sh --isolated` exit 0, `git remote -v` prints nothing |
+| Copy isolation verified | **YES on 2026-09-09, and again 2026-09-10 on a REBUILT copy** — the first was destroyed by scratchpad reaping and reported itself intact via `git ls-files`. §0b carries the evidence and the new path |
 
 ## 0. Pre-flight — recorded, and one box FAILS
 
@@ -89,6 +95,135 @@ away.
    unbuilt design — but it is a protocol change, argued and recorded, never a bypass.
 
 **Neither has been done. This trial has not started.**
+
+## 0b. Pre-flight — RE-RUN 2026-09-10 against kit `50226b8`, and two boxes are the operator's
+
+**§0 above is the pre-flight as run on 2026-09-09 and stays unedited**, gate box failing at 12. It
+is not amended into a pass: the record of a trial that could not start is worth more than a tidy
+table. This section is a **second, dated pre-flight** for the run that can now start.
+
+**What changed between them:** the twelve criticals were dispositioned on evidence over PRs #78-#86
+— none by amending §0's box, which is the bypass the 2026-09-09 record named and refused.
+
+| box | command | result |
+|---|---|---|
+| Working tree clean | `git status` | **PASS** — clean at `50226b8` |
+| CI green every platform | `gh run list --branch main` | **PASS** — `50226b8`, four checks, read unfiltered |
+| Full local Windows conformance | `tests/conformance.sh` | see **Windows conformance** below |
+| **No unfixed critical** | `kit-preflight.sh --criticals` | **PASS — "no unfixed critical outstanding"** |
+| Unassessable criticals | `kit-preflight.sh --unassessable` | **9** — unchanged from 2026-09-09 |
+| Superseded criticals | `kit-preflight.sh --superseded` | **39** — was 32 |
+| `git rev-parse HEAD` recorded | | `50226b8f8fb92cc78c7adb45c8174017bdcf58ef` |
+| Spend capture live | `kit-preflight.sh --spend` | **this trial's own question** — see §0 of 2026-09-09 |
+| Findings capture live | `kit-review-record.sh` | **PASS** — 7 findings through the real loop, PR #79 |
+| Copy isolated | `kit-preflight.sh --isolated <copy>` | **PASS** — see **The subject copy** below |
+| Baseline before the kit | | **PASS** — taken 2026-09-09, unchanged; the subject is untouched |
+| The question written down | | **PASS** — header table, corrected 2026-09-09 |
+| **Time-box stated** | | **NOT SET — the operator's number** |
+| Stop rules stated | | **PASS** — recorded below |
+| Abort path stated | | **PASS** — recorded below |
+
+### The kit SHA is frozen at `50226b8`, and the check for it can fail
+
+Every command above ran against that tree. **This record itself lands on top of it**, so a tree
+carrying this file is one docs-only commit ahead. Before the first trial command, run:
+
+```sh
+git -C <the kit checkout> diff --stat 50226b8..HEAD
+```
+
+**Only `docs/TRIALS/2026-09-09-highper-gateway-plugin-mode.md` may appear.** Anything else and the
+pre-flight above describes a different kit than the one about to run, and it must be re-run.
+
+### The subject copy — REBUILT, and the reason is a finding
+
+**The copy this file previously named was destroyed**, and the way it failed is worth recording
+because nothing announced it:
+
+```
+.git/objects   0 files, no packs, 177K total
+git log        fatal: bad object HEAD
+git ls-files   967          <- the stale index, answering as if intact
+```
+
+It lived in a **session scratchpad**, which is reaped. A later reader running `git ls-files` — the
+same command that produced the "967 files" figure in this document — would have been told the copy
+was fine. **The lesson is the location, not the loss:** a subject copy prepared by one session for
+another session to use must not live anywhere a session owns.
+
+Rebuilt 2026-09-10 by §4's procedure, at a path outside every repository and every scratchpad:
+
+```
+copy:      D:\trials\highper-gateway-05c56eb
+made by:   git clone --no-hardlinks <subject> <copy>   then   git remote remove origin
+verified:  HEAD 05c56eb   169 commits   967 files   branch master   clean
+           remotes 0   alternates none   .project absent (not adopted)
+control:   kit-preflight.sh --isolated <copy>  ->  "isolated -- no remote, no shared object store"
+```
+
+**Two checkouts of this subject exist on the machine and only one is this trial's subject:**
+
+| path | HEAD | commits | files | tree |
+|---|---|---|---|---|
+| `D:\personal-github\highper-gateway` | `05c56eb` | 169 | 967 | clean — **this one**, and it matches the baseline |
+| `D:\my-opensource\highper-gateway` | `4da4c07` | 217 | 971 | dirty — **not this trial's subject** |
+
+Cloning the second would change the subject silently and invalidate every figure in this document.
+The copy above carries `05c56eb` in its own directory name so the mistake is visible in a path.
+
+### Windows conformance
+
+`116 passed, 0 failed` on `5116200` (2026-09-10). A second full run was started on `50226b8`, the
+frozen SHA, and its result is recorded here rather than assumed:
+
+**RESULT: PENDING — to be written in from the run on `50226b8` before the trial starts.**
+
+The three commits between `5116200` and `50226b8` are data-only — `.project/plans/default.tsv`, one
+task file, one `events.ndjson` line — but "data-only" is an argument and the box asks for a run, so
+it was run.
+
+### Stop rules — stated before the run, per §0
+
+Stop and record what you have when **any** of these holds. None is a judgement call at the moment it
+fires; the judgement was making the list.
+
+1. **The time-box expires.** Whatever has been produced is the result.
+2. **The same kit defect blocks progress three times.** Not three defects — the same one, three
+   times. A kit that cannot get past its own defect is the finding.
+3. **Any VOID condition in §3 is hit.**
+
+### Abort path — stated before the run, per §0
+
+If the kit **crashes or corrupts state mid-trial**, the trial is recorded as **ABORTED at that
+point, with the cause**. It is never silently restarted: a restarted trial has a contaminated index
+and is no longer comparable with any other trial, which is the whole reason this protocol exists.
+
+### The one box the operator must judge, and it is not the time-box
+
+§0's unassessable box defines **three things that are stops**, and the first one needs a human:
+
+> *An unassessable critical on a task this trial will exercise. The blind spot is then inside the
+> path being measured, and any finding the trial produces there cannot be told from the one nobody
+> could judge. Check the `task_id` column the command prints against the trial's scope.*
+
+The nine unassessable criticals sit on **five** tasks, and every one of them is plausibly inside
+this trial's path:
+
+| task | findings | why it is arguably in scope |
+|---|---|---|
+| `T-20260808-a-task-id-matching-no-task-file-is-count` | 3 | the trial ingests a foreign backlog into tasks — a task id matching no file is that failure mode |
+| `T-20260808-record-how-a-task-was-executed-so-kit-wo` | 2 | "each carries how it was executed" is an acceptance criterion of the trial task itself |
+| `T-20260801-nothing-invokes-kit-finding-so-the-findi` | 2 | whether a finding lands is one of this trial's two questions |
+| `T-20260808-kit-cfg-strips-space-and-tab-from-a-valu` | 1 | the profile is read on every path the trial exercises |
+| `T-20260808-an-apostrophe-in-a-tier-rule-breaks-the-` | 1 | tier floors meeting brownfield paths is a named degradation this trial measures |
+
+**This is recorded as a question and not ticked.** The other two stop conditions do NOT fire, and
+both were checked rather than assumed: the count is **9, unchanged** since 2026-09-09 (condition 2
+is about it going UP), and **0 of the 9 print `(no reason recorded)`** (condition 3).
+
+A defensible answer is to run anyway and carry the five task ids in the report, so a finding landing
+on one of those paths is read next to the blind spot rather than instead of it. That is a decision,
+not a formality, and it is the operator's.
 
 ## Baseline — taken 2026-09-09, BEFORE the kit touched the subject
 
@@ -287,15 +422,21 @@ information and one left out reads as fine:
 
 ## Setup already done, so a run can start immediately
 
+> **CORRECTED 2026-09-10.** This section named `<scratchpad>/trial-highper`, and that copy no longer
+> exists — a session scratchpad is reaped, and the remains answered `git ls-files` with 967 as if
+> intact. The path below is outside every repository and every scratchpad for exactly that reason.
+> §0b carries the evidence; the old path is recorded here rather than quietly swapped.
+
 ```
-copy:      <scratchpad>/trial-highper
-verified:  169 commits, 967 files, remotes: []   kit-preflight.sh --isolated -> exit 0
+copy:      D:\trials\highper-gateway-05c56eb
+verified:  HEAD 05c56eb, 169 commits, 967 files, master, clean, remotes: [], alternates: none
+           kit-preflight.sh --isolated -> exit 0     (re-verified 2026-09-10)
 ```
 
 The run itself must happen in a **plugin-mode session**, which is the one thing the preparing
 session cannot supply:
 
 ```
-cd <scratchpad>/trial-highper
+cd D:\trials\highper-gateway-05c56eb
 claude --plugin-dir D:\personal-github\cck\coding-kit
 ```

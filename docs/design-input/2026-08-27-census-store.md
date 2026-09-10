@@ -10,7 +10,11 @@
 > **Scope, stated precisely, because a marker on a whole file is read as a verdict on all of it.**
 > What is superseded is this document's step 2 -- deriving claims into `index.db`, the `claim` and
 > `census` tables, `normalise` at index time, and the ingestion path that needs a JSON parser
-> inside `kit-index.sh`. **Step 1 is NOT superseded**: `kit-claim.sh` and `kit_manifest.py` are
+> inside `kit-index.sh` -- **and, added 2026-09-09, this document's EXCLUSION OF THE
+> CLAIMS-AS-EVENTS ROUTE.** ADR 0011 was amended the day it was accepted to consider that route as
+> option D and reject it on F12: capture writes the reply verbatim before validation, and a
+> line-oriented append-only log cannot take an unvalidated blob. The exclusion this document made
+> without costing is now made with an argument, which is what `6a07968d` and `65e35340` asked for. **Step 1 is NOT superseded**: `kit-claim.sh` and `kit_manifest.py` are
 > shipped, carry 52 conformance references, and captured this repository's first census on
 > 2026-09-09.
 >

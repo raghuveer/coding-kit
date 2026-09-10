@@ -89,6 +89,43 @@ that is paid before a single report is written, and no reader has yet asked for 
 **B — artefacts only, with a reader. Chosen.** The validator exists as twenty lines. The artefacts
 are already tracked. Nothing in `kit-index.sh` changes.
 
+**D — claims as EVENTS, appended to `.project/events.ndjson`.**
+
+> **Added by amendment 2026-09-09, the day this ADR was accepted, because omitting it was a
+> defect.** This ADR shipped with three options and none of them was the events route, which is the
+> **same omission** `6a07968d` and `65e35340` file against `census-store.md`: that route excluded
+> without being costed. Two findings say so and neither was superseded by this ADR as first written
+> — it repeated their complaint one document later. Amended in place, matching the convention ADR
+> 0001 set and ADR 0004 followed.
+
+The route is real and its machinery ships. Verified 2026-09-09:
+
+- `tooling/kit_findings.py` writes compact single-line JSON at three sites
+  (`json.dumps(..., separators=(",", ":"))`) — the writer exists.
+- `.gitattributes:20` marks the log `merge=union text eol=lf`, and it already carries **901 lines
+  across 12 distinct event kinds** — heterogeneous records are the norm there, not an exception.
+- `jf()` in `kit-spend.sh` and `kit-index.sh` reads those lines — the reader exists.
+
+**Rejected, and on a discriminator neither prior document stated: F12.** Capture must write the
+auditor's reply **verbatim, before validation** — `kit-claim.sh` prints it on every capture, and the
+reason is that a reply which fails validation must keep its data, because it cost real tokens to
+produce. An append-only line-oriented log cannot take an unvalidated blob: every other reader of
+`events.ndjson` parses it line by line, so a malformed reply would either have to be validated
+first — which F12 forbids at that step — or corrupt a log that eleven other event kinds depend on.
+
+Two lesser reasons, stated so the rejection does not rest on one point:
+
+- **An artefact is a nested document; an event is a flat record.** A reply carries `source`,
+  `subject`, a `narrative`, and a `claims[]` array. As events it becomes N lines plus a homeless
+  narrative, and the atomic unit — *one auditor reply* — stops being addressable.
+- **Blast radius.** `events.ndjson` is the authoritative log for findings, spend, and task
+  transitions. A census of 489 claims would multiply it by half again, and every consumer of that
+  file pays for a subject none of them read.
+
+**So the decision below is unchanged and its argument is now complete.** That distinction matters:
+the conclusion was right and the reasoning had a hole, which is exactly the shape ADR 0005, 0006
+and 0010 were rejected for. Being right by luck is not a standard this repository accepts.
+
 **C — hybrid: capture verbatim, derive a narrow projection later.** Not rejected on merit, and it
 is what B becomes if a reader needs it. Named here so it is not re-derived as a new idea: **B and C
 differ only in when**, which is the whole reason B is safe.

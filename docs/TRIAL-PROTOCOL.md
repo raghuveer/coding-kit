@@ -309,12 +309,20 @@ Each of these produced a wrong answer on a real run. A trial that hits one is no
 result — it is **no result**. Revision 1 stated the conditions without saying how to notice
 them, which made three of five undetectable in practice.
 
+**Six conditions as of 2026-09-09.** The sixth differs from the other five in a way worth
+naming: they all leave a trace a suspicious reader can find — a path outside the worktree, a
+dirty tree, a denial in a tool log, a `rejected` gap row. **The sixth leaves none.** A
+structurally blind review is well-formed, confidently worded, and complete on its face; the
+only thing wrong with it is what it was never shown. So it is the one condition that must be
+checked *before* the review rather than doubted afterwards.
+
 | Condition | Detection you can actually run |
 |---|---|
 | **A worktree path in a prompt does not isolate a subagent.** Both agents in one comparison found and read the live repository; one said so and reviewed that instead. | Grep the agent's own reply and tool log for paths outside the worktree root. If the harness does not expose a tool log, a blind comparison cannot be validated — say so and do not claim one. |
 | **Registering a finding contaminates every later blind run.** | `sqlite3 … "SELECT COUNT(*) FROM finding WHERE at < '<worktree commit date>'"` — the worktree must predate every row you are hiding. |
 | **Reindexing before committing** showed `T2 0/8` and nearly produced a report that the escape mechanism was broken. | Run `git status --short` before `kit-index.sh`; a non-empty tree means the index you are about to read is early. |
 | **A permission denial inside a subagent degrades into a partial read.** | Check the tool log for denials. An agent that discloses one is salvageable; assume an undisclosed denial happened if its tool count is far below its peers on the same task. |
+| **A per-file review is STRUCTURALLY BLIND to a defect whose halves live in different files.** Proved 2026-09-09: a reviewer was given `tooling/kit-guard.sh` and a ground-truth check asked whether it found the documented gap that the guard matcher omits `Bash`. It returned **zero** -- and could not have returned anything else, because the matcher is in `hooks/hooks.json` and the reviewer was handed only the script. Unlike every row above, this one produces a **confident, well-formed, complete-looking review**: 7 findings, 7/7 valid vocabulary, no correction loop. Nothing about the output says it was blind. | Before believing a review of `F` found nothing of a class, list what could hold the other half:<br><br>`git grep -lF "$(basename F)" -- . ':!docs' ':!.project' ':!*.md' \| grep -v "^F$"`<br><br>Every file that NAMES `F` is a place a defect about `F` can be half-written. On `kit-guard.sh` this returns 6 files and `hooks/hooks.json` is one of them. Either include them in the prompt, or record them in **Not exercised** by name. The unfiltered form returns 24 here and is unusable, which is why the pathspecs are part of the check rather than an optimisation. |
 | **A reviewer that returns nothing may not have reviewed nothing.** An empty `{"findings":[]}` records as `reason=empty` — *"looked and found nothing"*. | `sqlite3 .project/index.db "SELECT json_extract(payload,'$.reason') AS reason, COUNT(*) FROM event WHERE kind='finding-gap' GROUP BY 1"`. Any `rejected` row is a review whose findings were lost. Confirm the reviewer received a prompt before believing any zero. |
 
 **The last detection was itself undetectable, and that is a fourth instance of this section's

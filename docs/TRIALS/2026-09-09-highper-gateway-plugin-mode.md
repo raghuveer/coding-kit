@@ -3,6 +3,10 @@
 
 # Trial: highper-gateway — 2026-09-09, plugin mode
 
+> **EVERY PRE-FLIGHT BOX TICKED OR RULED, 2026-09-11.** Time-box 1 h, cap 4 h, with a recorded
+> STOP / CONTINUE / RETRY at each boundary (§0b). The unassessable stop condition is **ruled
+> PROCEED, carrying the five task ids** — the operator's words: *"run it, record the box as proceed with the five ids."*
+>
 > **RE-PREPARED 2026-09-10, STILL NOT RUN.** §0 below is the pre-flight as run on 2026-09-09,
 > kept unedited with its gate box failing at 12. **§0b is the pre-flight for the run that can now
 > start**: the gate reads zero, and the subject copy this file named had to be rebuilt because the
@@ -223,6 +227,12 @@ and is no longer comparable with any other trial, which is the whole reason this
 
 ### The one box the operator must judge, and it is not the time-box
 
+> **RULED 2026-09-11 by the operator: PROCEED, carrying the five ids.** In the operator's words:
+> *"run it, record the box as proceed with the five ids."* The table below is therefore the scope of the blind spot the trial
+> runs over. The trial report carries all five ids beside any finding, observation or failure on
+> those paths, so a reading there is read next to the blind spot and never instead of it. The
+> analysis that follows is kept as written; it is why the ruling was needed.
+
 §0's unassessable box defines **three things that are stops**, and the first one needs a human:
 
 > *An unassessable critical on a task this trial will exercise. The blind spot is then inside the
@@ -328,7 +338,10 @@ how that template sits beside an existing policy is a brownfield observation. Th
 below is over 500 characters, so the session's first reply is expected to open with that list. That
 is the subject, not a defect.
 
-#### The stop condition §0b left open is still open
+#### The stop condition §0b left open — RULED 2026-09-11: proceed, carrying the five ids
+
+> **RULED:** *"run it, record the box as proceed with the five ids."* The paragraph below was written before the ruling and is kept as
+> written.
 
 §0's first unassessable stop — *an unassessable critical on a task this trial will exercise* —
 applies to all five tasks tabulated above. The operator directed a one-hour run; that direction is

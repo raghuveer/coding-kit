@@ -775,25 +775,39 @@ runtime/signals.rs"* — and rung 2, the only rung that runs the tests, never ra
 
 The split was stated before the run so it could not be decided after it.
 
-### 1. Kit defects — PROPOSED, NOT FILED
+### 1. Kit defects — FILED 2026-09-11, on the operator's confirmation
 
-Filing is the operator's decision (`kit-task.sh`: *"The confirmation is the gate"*). Each proposal
-was checked against the code and the backlog before being written here.
+The operator confirmed all eight, and the four evidence notes, on 2026-09-11: *"file all eight and
+the evidence notes"*. Each was checked against the code and the backlog before filing. Two tiers
+moved from the proposal: K5, K6 and K8 were proposed at T1 and filed at T2, the floor `tooling/**`
+sets in this repository's profile; K3 was filed at T3, because linking a carried-over finding has
+to reach the `finding` table through `kit-index.sh`.
 
-**New tasks proposed:**
+| | filed as |
+|---|---|
+| K1 | `T-20260911-kit-status-re-decides-pack-withholding-w` |
+| K2 | `T-20260911-a-finding-recorded-by-hand-carries-no-ag` |
+| K3 | `T-20260911-a-carried-over-finding-is-recorded-as-a-` |
+| K4 | `T-20260911-kit-status-reports-spend-with-no-as-of-t` |
+| K5 | `T-20260911-kit-init-prints-the-claude-remedy-when-t` |
+| K6 | `T-20260911-kit-init-next-steps-omit-choosing-git-ad` |
+| K7 | `T-20260911-kit-guard-refuses-the-harness-scratchpad` |
+| K8 | `T-20260911-kit-status-per-model-spend-lines-end-in-` |
+
+**New tasks — as proposed, with the filed tier:**
 
 | | proposed task | tier | evidence |
 |---|---|---|---|
 | K1 | `kit-status.sh` re-decides pack withholding with a hard-coded 60, so it reports packs **withheld** that `kit-plan.sh` wrote | T2 | notes 13:56:24Z. `kit-plan.sh:527` withholds only when `pct > cluster.max_share` **and** `tasks >= cluster.min_tasks` (default 10). `kit-status.sh:875` tests `pct > 60` alone, ignoring both keys and the `cluster_packs_withheld` flag. Hits every first backlog under 10 tasks |
 | K2 | The reply-in-hand door drops `agent_id`, so a hand-recorded finding cannot be joined to its reviewer's spend row | T2 | 11 of 11 finding rows have `agent_id: ""`; 3 of 3 reviewer spend rows carry one. `kit-finding.sh:69` accepts `--agent-id`, but its usage header (`:4-6`) and `skills/verify-ladder/SKILL.md:73-75` omit it. *The notes say the flag does not exist. That is false: the fault is that nothing tells the agent to pass it* |
-| K3 | A carried-over finding is re-recorded as a new row every review round, so per-task counts grow with rounds | T2 | 11 rows for 5 defects; #2 and #4 appear three times each, with nothing linking a round-2 row to its original |
+| K3 | A carried-over finding is re-recorded as a new row every review round, so per-task counts grow with rounds | T3 | 11 rows for 5 defects; #2 and #4 appear three times each, with nothing linking a round-2 row to its original |
 | K4 | `kit-status.sh` reports spend with no as-of time, so a reading taken inside a session silently omits everything since the last `Stop` | T2 | `kit-status.txt` reports main 6,902.9 kBTE, as of 13:57:34Z; the trial's main loop was 10,259.6 at 14:10:54Z — see **Cost** |
-| K5 | `kit-init.sh`'s ignore remedy prints the `.claude/` idiom even when the blocked path is `.project/` | T1 | notes 13:37Z; `kit-init.sh:208-220` is hard-coded to `.claude/` |
-| K6 | `kit-init.sh`'s next steps omit choosing `git.adopted_at`, which `INSTALL.md:155` makes the first brownfield step | T1 | `kit-init.sh:185-194`. The trial followed that printed order and left the key unset, hence `kit-status.txt`'s *"97 of 98 non-trivial commits carry no Task-Id"* — the consequence `INSTALL.md:158-160` predicts for unset |
+| K5 | `kit-init.sh`'s ignore remedy prints the `.claude/` idiom even when the blocked path is `.project/` | T2 | notes 13:37Z; `kit-init.sh:208-220` is hard-coded to `.claude/` |
+| K6 | `kit-init.sh`'s next steps omit choosing `git.adopted_at`, which `INSTALL.md:155` makes the first brownfield step | T2 | `kit-init.sh:185-194`. The trial followed that printed order and left the key unset, hence `kit-status.txt`'s *"97 of 98 non-trivial commits carry no Task-Id"* — the consequence `INSTALL.md:158-160` predicts for unset |
 | K7 | `kit-guard` refuses the harness-designated scratchpad, so temp writes go through Bash, which the guard's matcher does not cover | T2 | notes 14:05:06Z. A design tension rather than a bug: the guard is right to refuse, and the effect is to push writes to the unguarded tool. Bash's absence from the matcher is already recorded in `T-20260808-a-repeatable-trial-protocol-for-running-` |
-| K8 | `kit-status.sh`'s per-model spend lines end in a CR on Windows | T1 | `kit-status.txt` lines 56-57 (`> - claude-opus-5  6902k`, then a CR byte). `q` (`kit-status.sh:32`) does not strip CR, and `:483` sends its multi-row output straight to stdout, while `:871`, `:887`, `:909` and `:923` pipe the same kind of output through `tr -d '\r'`. It is also one of the two reasons this directory needs `-text` |
+| K8 | `kit-status.sh`'s per-model spend lines end in a CR on Windows | T2 | `kit-status.txt` lines 56-57 (`> - claude-opus-5  6902k`, then a CR byte). `q` (`kit-status.sh:32`) does not strip CR, and `:483` sends its multi-row output straight to stdout, while `:871`, `:887`, `:909` and `:923` pipe the same kind of output through `tr -d '\r'`. It is also one of the two reasons this directory needs `-text` |
 
-**Evidence proposed for tasks already filed** — a dated note on each, not new tasks:
+**Evidence added to tasks already filed** — a dated 2026-09-11 note on each, not new tasks:
 
 | task | what this trial adds |
 |---|---|

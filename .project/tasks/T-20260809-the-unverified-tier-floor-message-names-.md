@@ -66,3 +66,15 @@ repository. The same run also confirmed the parts that work: topological layerin
 against the roadmap's real dependencies, clustering grouped tasks by shared file and epic, and
 co-change on 169 commits produced a correct blast radius for the DSL subsystem with no
 configuration at all.
+
+**2026-09-11 — hit again, on the same subject, through a cause this task does not list.** The
+highper-gateway plugin-mode trial declared **12** `tier.rule` lines, and its one task declared
+`paths: highper-gateway/src/discovery/registry.rs`. No rule matches `discovery/**`, so no floor
+applies. The report still said *"No declared `paths:` and no files touched yet"* — about a task that
+had declared its path, and whose path a commit had touched.
+
+The same mechanism is behind this and cause 3: `floorof()` (`kit-index.sh:377-378`) starts with
+`best = ""`, returns it when nothing matches, and that is stored as the same NULL as "no paths
+declared". **A fix for cause 3 alone (no rules at all) would miss this case** — here the rules exist;
+they just do not cover the path. Evidence: `kit-status.txt`, and the task file beside it, in
+`docs/TRIALS/2026-09-09-highper-gateway-plugin-mode/`.

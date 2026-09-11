@@ -187,3 +187,48 @@ What changes is that a schema proposed here can now be **tried against 44 real r
 
 Source: `docs/TRIALS/2026-08-26-highper-gateway-reconciliation.md` kit defect 1;
 `docs/TRIALS/2026-08-27-aeon-reconciliation.md`.
+
+## CORRECTION 2026-09-11 — the transcripts are not gone, and whether the claims survive is now UNKNOWN
+
+**The 2026-08-27 correction above says:** *"All 35 subagent transcripts from both trials are
+gone. The `spend` rows preserve every `agent_id`; a search across all 15 project transcript
+directories under `~/.claude/projects/` found **0 of 35** matching `agent-<id>.jsonl`."*
+
+**The transcripts exist.** Checked 2026-09-11 against the spend table: **43 of 43** subagent ids
+have a transcript. Claude Code stores them one level down, at
+`<project>/<session-id>/subagents/agent-<id>.jsonl`, so a search for `agent-<id>.jsonl` directly
+inside each project directory finds none — the likeliest way 0 of 35 was produced. The trial
+copies' own directories hold 18 (`…tmp-aeon-copy`, dated 2026-08-26), 18 (`…tmp-aeonm-copy`,
+2026-08-27) and 17 (`…tmp-trial-copy`, 2026-08-25/26).
+
+**What that changes, measured rather than inferred:**
+
+- The five verdict words occur 417, 679 and 449 times across those three sets. **That is not a
+  claim count** — every auditor prompt lists the vocabulary, so the counts are inflated by
+  construction.
+- Parsing only the **final reply** of each of the 18 transcripts in `…tmp-aeonm-copy`: **6 of 18**
+  carry per-claim verdicts as markdown table rows, **92 rows in total**. The date matches the
+  2026-08-27 aeon run that reported 489 claims; nothing here confirms that copy is that run. The
+  other 12 final replies are 7.6k–18k characters in formats the parse did not match. The JSON form
+  the contract now requires appears **0** times, as expected — the contract postdates these runs.
+
+So **"792 verified claims … survive nowhere" is no longer established.** At least 92 survive at
+claim granularity, from one run, in table form. How many more are recoverable from the remaining
+replies and the other two runs is unmeasured. The claim is **UNKNOWN**, not refuted.
+
+`agents/claim-auditor.md` repeats it and is deliberately **not** edited here. It is plugin-loaded
+content, and the highper-gateway trial freezes everything the plugin loads
+(`docs/TRIALS/2026-09-09-highper-gateway-plugin-mode.md` §0b). Correcting it waits for the count
+and for the trial to end.
+
+**Archived before they expire.** Claude Code's default transcript cleanup is 30 days and this
+machine does not override it, so the oldest would have gone around 2026-09-24. All four
+`…d393adad-tmp-*` project directories were copied, byte-identical (`diff -rq`), 117 files and 17M,
+to `D:\trials\transcript-archive\`. **Not into this repository**: it is public, and transcripts
+carry local paths and everything pasted into a session.
+
+**Consequence for point 1 above** (*"there is no free test data"*): the 2026-09-08 update already
+softened it with 44 rows. Up to 92 more real rows from a real run may be recoverable without
+spending a census — worth measuring before census #3 is spent, for the reason that update gives.
+That update's heading, *"for the first time"*, is also wrong: rows from 2026-08-27 survived all
+along; nobody had looked in the right folder.

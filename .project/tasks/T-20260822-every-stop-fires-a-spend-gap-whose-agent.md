@@ -74,3 +74,15 @@ mode adds — `docs/TRIALS/2026-08-12-fd-throwaway.md` ran portable and produced
 all. It is deliberately NOT added to the trial task's `blocked_by`: the trial can run and report
 its census, co-change and inventory findings with cost marked UNAVAILABLE, which is what the fd
 trial did honestly. It is the cost figures specifically that this gates.
+
+**2026-09-11 — the measurement the first criterion asks for, from the highper-gateway plugin-mode
+trial.** 19 `spend-gap` events with 19 distinct agent ids, every one with an empty agent name. After
+the session closed, **none of the 19 has a transcript anywhere under `~/.claude`**. All 3 real
+subagents — the reviewers — do have transcripts, and were measured as `scope=subagent` rows. So on
+this run the gaps are **phantoms, not timing**: there is no later-arriving transcript to pick up.
+
+Two things the Intent did not have. The gaps fire **mid-turn** as well as at `Stop` (13:54:15Z,
+13:54:24Z, 13:54:48Z and more). And they begin before any subagent had been spawned (13:40:45Z).
+`kit-status.sh` reported *"15 subagent run(s) unmeasured"* against 3 real subagents, all of them
+measured. **n is now 2 sessions.** Evidence:
+`docs/TRIALS/2026-09-09-highper-gateway-plugin-mode/events.ndjson`.

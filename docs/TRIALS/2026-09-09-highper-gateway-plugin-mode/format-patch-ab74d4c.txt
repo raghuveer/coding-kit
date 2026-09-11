@@ -1,0 +1,254 @@
+From ab74d4c346aeaa2a9e1fa27c92bdd2312f06ba12 Mon Sep 17 00:00:00 2001
+From: Raghu Veer Dendukuri <raghuveer.dendukuri@gmail.com>
+Date: Fri, 11 Sep 2026 19:36:01 +0530
+Subject: [PATCH] fix(discovery): respect refresh TTL in
+ ServiceRegistry::get_upstreams
+
+get_upstreams refreshed from the discovery backend on every call
+(`should_refresh = true`), while the last_update map was written and
+never read. It now refreshes only when the service is uncached, has
+never been refreshed, or was last refreshed at least refresh_interval
+seconds ago. refresh_interval = 0 keeps refresh-on-every-call.
+
+watch_service no longer builds its backup ticker when refresh_interval
+is 0: tokio::time::interval panics on a zero period, and with a zero
+TTL every lookup already refreshes. Found by review.
+
+Roadmap UC12.A (docs/planning/ROADMAP.md). Tests added but not run: the
+--lib test target does not compile at this commit (unrelated error at
+src/runtime/signals.rs:238), and the crate does not build on Windows.
+
+Task-Id: T-20260911-uc12-a-discovery-registry-respects-refre
+Tier: T3
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_019g5ZTE9Ffw6dktpWMyzVLi
+---
+ highper-gateway/src/discovery/registry.rs | 173 +++++++++++++++++++++-
+ 1 file changed, 166 insertions(+), 7 deletions(-)
+
+diff --git a/highper-gateway/src/discovery/registry.rs b/highper-gateway/src/discovery/registry.rs
+index 12fe1a8..01c36c9 100644
+--- a/highper-gateway/src/discovery/registry.rs
++++ b/highper-gateway/src/discovery/registry.rs
+@@ -35,12 +35,20 @@ impl ServiceRegistry {
+         })
+     }
+ 
++    /// Build a registry around an existing backend, bypassing `create_discovery`
++    #[cfg(test)]
++    fn with_discovery(discovery: Arc<dyn ServiceDiscovery>, config: DiscoveryConfig) -> Self {
++        Self {
++            discovery,
++            upstreams: Arc::new(RwLock::new(DashMap::new())),
++            last_update: Arc::new(RwLock::new(DashMap::new())),
++            config,
++        }
++    }
++
+     /// Get upstream servers for a service
+     pub async fn get_upstreams(&self, service_name: &str) -> Result<Vec<ServiceInstance>> {
+-        // Check if we need to refresh - simplified to always refresh for now
+-        let should_refresh = true;
+-
+-        if should_refresh {
++        if self.needs_refresh(service_name).await {
+             self.refresh_service(service_name).await?;
+         }
+ 
+@@ -52,6 +60,26 @@ impl ServiceRegistry {
+             .ok_or_else(|| anyhow::anyhow!("Service not found: {}", service_name))
+     }
+ 
++    /// Whether `get_upstreams` must ask the discovery backend before answering.
++    ///
++    /// True when the service is not cached, has never been refreshed, or was last refreshed
++    /// at least `refresh_interval` seconds ago. A `refresh_interval` of 0 refreshes on every
++    /// call, which was the only behaviour before this TTL existed.
++    async fn needs_refresh(&self, service_name: &str) -> bool {
++        let ttl = Duration::from_secs(self.config.refresh_interval);
++        if ttl.is_zero() {
++            return true;
++        }
++        if !self.upstreams.read().await.contains_key(service_name) {
++            return true;
++        }
++        let last_update = self.last_update.read().await;
++        match last_update.get(service_name) {
++            Some(refreshed_at) => refreshed_at.elapsed() >= ttl,
++            None => true,
++        }
++    }
++
+     /// Refresh service instances from discovery backend
+     pub async fn refresh_service(&self, service_name: &str) -> Result<()> {
+         info!("Refreshing service instances for: {}", service_name);
+@@ -102,6 +130,17 @@ impl ServiceRegistry {
+         self.discovery.deregister_service(service_id).await
+     }
+ 
++    /// Period of the backup refresh started by `watch_service`, or `None` when there is none.
++    ///
++    /// A `refresh_interval` of 0 means `get_upstreams` refreshes on every call, so a backup
++    /// ticker adds nothing, and `tokio::time::interval` panics on a zero period.
++    fn backup_refresh_period(&self) -> Option<Duration> {
++        match self.config.refresh_interval {
++            0 => None,
++            secs => Some(Duration::from_secs(secs)),
++        }
++    }
++
+     /// Start watching a service for changes
+     pub async fn watch_service(&self, service_name: &str) -> Result<()> {
+         info!("Starting watch for service: {}", service_name);
+@@ -109,12 +148,18 @@ impl ServiceRegistry {
+         self.discovery.watch_service(service_name).await?;
+ 
+         // Also start periodic refresh as backup
++        let Some(period) = self.backup_refresh_period() else {
++            info!(
++                "No backup refresh for {}: refresh_interval is 0, every lookup refreshes",
++                service_name
++            );
++            return Ok(());
++        };
+         let registry = Arc::new(self.clone());
+         let service = service_name.to_string();
+ 
+         tokio::spawn(async move {
+-            let mut ticker =
+-                tokio::time::interval(Duration::from_secs(registry.config.refresh_interval));
++            let mut ticker = tokio::time::interval(period);
+             loop {
+                 ticker.tick().await;
+                 if let Err(e) = registry.refresh_service(&service).await {
+@@ -158,7 +203,10 @@ impl Clone for ServiceRegistry {
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+-    use crate::discovery::DiscoveryBackend;
++    use crate::discovery::{DiscoveryBackend, HealthStatus};
++    use async_trait::async_trait;
++    use std::collections::HashMap;
++    use std::sync::atomic::{AtomicUsize, Ordering};
+ 
+     #[tokio::test]
+     async fn test_service_registry_creation() {
+@@ -178,4 +226,115 @@ mod tests {
+         let _result = ServiceRegistry::new(config).await;
+         // We don't assert since discovery backend may not be available
+     }
++
++    /// Counts backend lookups so a test can tell a cache hit from a refresh
++    struct CountingDiscovery {
++        lookups: AtomicUsize,
++    }
++
++    #[async_trait]
++    impl ServiceDiscovery for CountingDiscovery {
++        async fn get_service_instances(&self, service_name: &str) -> Result<Vec<ServiceInstance>> {
++            self.lookups.fetch_add(1, Ordering::SeqCst);
++            Ok(vec![ServiceInstance {
++                id: format!("{}-1", service_name),
++                name: service_name.to_string(),
++                address: "127.0.0.1".to_string(),
++                port: 8080,
++                health: HealthStatus::Passing,
++                tags: vec![],
++                metadata: HashMap::new(),
++            }])
++        }
++
++        async fn get_healthy_instances(&self, service_name: &str) -> Result<Vec<ServiceInstance>> {
++            self.get_service_instances(service_name).await
++        }
++
++        async fn register_service(&self, _instance: ServiceInstance) -> Result<()> {
++            Ok(())
++        }
++
++        async fn deregister_service(&self, _service_id: &str) -> Result<()> {
++            Ok(())
++        }
++
++        async fn update_health(&self, _service_id: &str, _status: HealthStatus) -> Result<()> {
++            Ok(())
++        }
++
++        async fn watch_service(&self, _service_name: &str) -> Result<()> {
++            Ok(())
++        }
++    }
++
++    fn counting_registry(refresh_interval: u64) -> (ServiceRegistry, Arc<CountingDiscovery>) {
++        let backend = Arc::new(CountingDiscovery {
++            lookups: AtomicUsize::new(0),
++        });
++        let config = DiscoveryConfig {
++            backend_type: DiscoveryBackend::Static,
++            addresses: vec![],
++            refresh_interval,
++            service_name: None,
++            health_check_enabled: false,
++            only_healthy: true,
++            static_backends: vec![],
++            static_health_check_interval: 10,
++            static_health_check_timeout: 3,
++        };
++        let registry = ServiceRegistry::with_discovery(backend.clone(), config);
++        (registry, backend)
++    }
++
++    #[tokio::test]
++    async fn test_get_upstreams_serves_cache_within_ttl() {
++        let (registry, backend) = counting_registry(30);
++
++        registry.get_upstreams("svc").await.unwrap();
++        registry.get_upstreams("svc").await.unwrap();
++
++        assert_eq!(backend.lookups.load(Ordering::SeqCst), 1);
++    }
++
++    #[tokio::test]
++    async fn test_get_upstreams_refreshes_after_ttl() {
++        let (registry, backend) = counting_registry(30);
++        registry.get_upstreams("svc").await.unwrap();
++
++        let expired = Instant::now()
++            .checked_sub(Duration::from_secs(31))
++            .expect("monotonic clock can be backdated by 31s");
++        registry
++            .last_update
++            .read()
++            .await
++            .insert("svc".to_string(), expired);
++        registry.get_upstreams("svc").await.unwrap();
++
++        assert_eq!(backend.lookups.load(Ordering::SeqCst), 2);
++    }
++
++    #[tokio::test]
++    async fn test_zero_refresh_interval_refreshes_every_call() {
++        let (registry, backend) = counting_registry(0);
++
++        registry.get_upstreams("svc").await.unwrap();
++        registry.get_upstreams("svc").await.unwrap();
++
++        assert_eq!(backend.lookups.load(Ordering::SeqCst), 2);
++    }
++
++    #[test]
++    fn test_zero_refresh_interval_has_no_backup_ticker() {
++        // tokio::time::interval panics on a zero period, so watch_service must not build one
++        let (registry, _) = counting_registry(0);
++        assert_eq!(registry.backup_refresh_period(), None);
++
++        let (registry, _) = counting_registry(30);
++        assert_eq!(
++            registry.backup_refresh_period(),
++            Some(Duration::from_secs(30))
++        );
++    }
+ }
+-- 
+2.53.0.windows.2
+

@@ -3,6 +3,14 @@
 
 # Trial: highper-gateway — 2026-09-09, plugin mode
 
+> **RUN 2026-09-11 — OUTCOME COMPLETE.** 13:35:32Z to the boundary report at 14:10:31Z, 35 minutes
+> of a 1-hour box; the operator chose **STOP** at the first boundary: *"STOP, record it as
+> COMPLETE."* **Both readings are YES** — three `scope=subagent` spend rows and eleven findings. The
+> evidence is copied byte for byte into
+> [`2026-09-09-highper-gateway-plugin-mode/`](2026-09-09-highper-gateway-plugin-mode/), and every
+> section from **Evidence** down is filled from those files. Everything above **Baseline** was
+> written before the run and is kept as written.
+>
 > **EVERY PRE-FLIGHT BOX TICKED OR RULED, 2026-09-11.** Time-box 1 h, cap 4 h, with a recorded
 > STOP / CONTINUE / RETRY at each boundary (§0b). The unassessable stop condition is **ruled
 > PROCEED, carrying the five task ids** — the operator's words: *"run it, record the box as proceed with the five ids."*
@@ -21,13 +29,14 @@
 | | |
 |---|---|
 | Question | **Does the kit, loaded as a plugin, produce readings on a subject it did not author?** Specifically: does any `scope=subagent` spend row appear, and does any finding land, on a 967-file **Rust** subject with 169 commits. Written before the first command. **Corrected 2026-09-09: this read `PHP`.** The subject is Rust -- 291 `.rs` files, one `Cargo.toml`, 160 files referencing io_uring. File and commit counts were right; the language was not. ADR 0002's rule is that a pre-registered condition is only as good as its targets, so it is corrected before the run rather than after. |
-| Kit SHA | `9ce8b70` at pre-flight on 2026-09-09. **Re-frozen 2026-09-10 at `50226b8`** for the run — §0b, which states the check that catches a tree drifting off it |
-| Time-box / actual | **1 h**, then a recorded STOP / CONTINUE / RETRY under §0b's pre-registered rule, **cap 4 h** / not run |
+| Kit SHA | `9ce8b70` at pre-flight on 2026-09-09. **Re-frozen 2026-09-10 at `50226b8`** for the run — §0b, which states the check that catches a tree drifting off it. **Ran 2026-09-11** from the working tree at `2072bdf`, whose plugin-loaded files were identical to `50226b8` — checked at 13:36Z, first lines of the notes |
+| Unassessable / superseded criticals | **9 / 39** (`kit-preflight.sh`, at the copy-back), unchanged since §0b. The previous trial by date, 2026-08-27 aeon, records neither; the last to record them, 2026-08-26 highper-gateway reconciliation: **9 / 13** |
+| Time-box / actual | **1 h**, then a recorded STOP / CONTINUE / RETRY under §0b's pre-registered rule, **cap 4 h** / **35 min** — 13:35:32Z to the boundary report at 14:10:31Z; STOP at the first boundary |
 | Subject | highper-gateway — 967 tracked files, 169 commits, branch `master`, clean tree, **not adopted** (no `.project/`). **Unmaintained since 2026-05-16 by operator decision** — attention moved to other projects — and **red on its own CI** at this SHA. Both are recorded below and neither disqualifies it |
 | Greenfield / brownfield | **brownfield**, history intact, not truncated |
-| Outcome | **not run** — see §0 |
+| Outcome | **COMPLETE** — STOP at the 14:10Z boundary, recorded 14:13:25Z in the operator's words: *"STOP, record it as COMPLETE"* |
 | Baseline before the kit | **TAKEN 2026-09-09, on Linux** -- build green, tests do not compile. See the Baseline section |
-| Instruments verified live | **not yet** — this is the trial's own question |
+| Instruments verified live | **YES, both** — 3 `scope=subagent` spend rows and 11 findings, written by the plugin's hooks and by `kit-finding.sh`. See **Cost** and **Findings** |
 | Copy isolation verified | **YES on 2026-09-09, and again 2026-09-10 on a REBUILT copy** — the first was destroyed by scratchpad reaping and reported itself intact via `git ls-files`. §0b carries the evidence and the new path |
 
 ## 0. Pre-flight — recorded, and one box FAILS
@@ -577,47 +586,289 @@ nerdctl run --rm -v <subject>:/src:ro -v <scratch>:/out   -v hg-target:/work/tar
 
 On Git Bash, prefix with `MSYS_NO_PATHCONV=1` or `/out/...` is rewritten before nerdctl sees it.
 
+## Evidence — copied back 2026-09-11
+
+Copied after the trial session had closed — the log's last event, `14:17:47Z`, was checked unchanged
+immediately before copying — from `D:\trials\highper-gateway-05c56eb` into
+[`2026-09-09-highper-gateway-plugin-mode/`](2026-09-09-highper-gateway-plugin-mode/):
+
+| file | from the copy |
+|---|---|
+| `trial-notes.md` | `.project/trial-notes.md` — the session's running log and boundary report |
+| `events.ndjson` | `.project/events.ndjson` — every event the hooks and scripts wrote, 49 lines |
+| `tasks/T-20260911-uc12-a-discovery-registry-respects-refre.md` | `.project/tasks/` — the one task |
+| `project-profile.md` | `.claude/project-profile.md` — as confirmed by the operator at 13:47:22Z |
+| `reviews/review-rung4.txt`, `review-rung5.txt`, `review-rereview.txt` | `.project/reviews/` — the three reviewer replies |
+| `kit-status.txt` | `STATUS.generated.md` — the final `kit-status.sh` output, 14:09:07Z |
+| `logs/container-check.log` | `.project/logs/` — the rung-1 container probe |
+| `spend-by-agent.txt` | the protocol §1 query, run against the index as the trial left it |
+| `git-log.txt`, `git-status.txt` | `git log --oneline 05c56eb..HEAD` and `git status --short` |
+| `format-patch-ab74d4c.txt` | `git format-patch -1 ab74d4c --stdout` — the UC12.A change, as the proposal to the subject's owner |
+
+**Stored byte for byte, and checked.** Left to this repository's settings, two things would have
+changed them: `kit-status.txt` carries 2 CRLF lines among its 91 (kit defect K8), which `core.autocrlf=true`
+normalises on `git add`, and a Windows checkout would turn every LF file here into CRLF — edits to
+evidence that nothing would announce. The directory's own `.gitattributes` sets `-text`. After
+staging, each blob equalled `git hash-object --no-filters` of its source: **13 of 13**.
+
+**Left out, deliberately:** `.project/logs/cargo-check-win.log` and `cargo-check-win-nodefault.log`,
+which carry `C:\Users\<name>` paths; `.project/index.db`, `packs/` and `plans/`, which are derived and
+rebuild from the files above; and `.project/verify-linux.sh`, `commit-msg.txt` and
+`logs/kit-status-early.txt`, which stay in the copy. Note that every `commands.*` value calls
+`verify-linux.sh`, so the profile cannot be re-run from this directory alone. `python3 validate.py`
+on the tree carrying these files: **7 ok, 0 warnings, 0 errors** — nothing needed exempting.
+
+**Transcripts** — the main loop and the three reviewers, 3.0 MB — are archived at
+`D:\trials\transcript-archive\D--trials-highper-gateway-05c56eb\`, `diff -r` identical to the
+source, and are not in this repository.
+
+**The copy is kept, and is contaminated** (protocol §7): adoption files, commit `ab74d4c`, and 2.6 GB
+of probe caches under `.project/cache/`. It must not be reused as a subject.
+
 ## Cost
 
-*Not measured — the trial has not run.* When it does, plugin mode is the reason: kit-development
-mode structurally emits **zero** `scope=subagent` rows, so every per-agent figure taken from a
-development session is empty by construction rather than by result.
+BTE = `tok_in×1 + cache_write×1.25 + cache_read×0.1 + tok_out×5`, weights read from `kit-status.sh`'s
+`BTE=` line. **n = 1 main-loop transcript and 3 subagent transcripts, one session, one subject.**
+Nothing here is a rate.
 
-- BTE by tier / scope / provenance / model — pending
-- BTE by agent — pending
-- Raw counters — pending
-- Wall-clock and API time, separately — pending
+### What the kit reported — and why it is not the trial's cost
+
+From `kit-status.txt` (14:09:07Z) and `spend-by-agent.txt`:
+
+| scope | agent | model | transcripts | kBTE |
+|---|---|---|---|---|
+| main | (main loop) | claude-opus-5 | 1 | 6,902.9 |
+| subagent | `coding-kit:implementation-reviewer` | claude-sonnet-5 | 3 | 754.6 |
+
+**The main-loop figure stops at 13:57:34Z.** The index keeps the latest row per transcript, and the
+main loop's rows are written by the `Stop` hook at the END of each turn. The final `kit-index.sh`
+(14:07Z) ran inside the turn that went on to write the boundary report, so the newest main-loop row
+it could see was the one before. Reconciled from `events.ndjson`, same weights, last row per
+transcript:
+
+| cut | main-loop row | turns | main kBTE | subagent kBTE (n=3) |
+|---|---|---|---|---|
+| the index as the trial left it | 13:57:34Z | 194 | 6,902.9 | 754.6 |
+| **trial end** — `Stop` of the boundary-report turn | **14:10:54Z** | **267** | **10,259.6** | 754.6 |
+| session end — the last `Stop` row | 14:17:46Z | 282 | 10,837.5 | 754.6 |
+
+**The kit's own reading understates the trial's main loop by 3,356.7 kBTE, a third.** Trial total:
+**11,014.2 kBTE** — claude-opus-5 10,259.6 (93.1%), claude-sonnet-5 754.6 (6.9%). The rows after
+14:10:54Z are the operator's STOP and a log copy, not trial work. See methodology M1 and kit
+defect K4: `kit-status.sh` prints no as-of time, so nothing on the page says the figure is stale.
+
+### By tier and provenance — empty, and why
+
+**No spend reached any task.** Attribution binds a transcript to the task whose status transition
+follows it (protocol §5). Rule 2 forbade marking the task done and no other transition was made, so
+all four spend records are **unattributed** — `kit-status.txt`: *"4 spend record(s) unattributed"*.
+By tier: nothing. By provenance: `unknown 1 task(s), 0 escape(s)`, with no spend. Rate card:
+`T3 1 open x no rate yet`. The cost appears in By scope and per model only, which is what the kit
+says it does.
+
+### By agent — the three reviewers
+
+| transcript | role | turns | tok_in | tok_out | cache_read | cache_write | kBTE |
+|---|---|---|---|---|---|---|---|
+| `agent-ac7e0037f040926ff` | rung 4 | 12 | 24 | 28,064 | 135,701 | 124,682 | 309.8 |
+| `agent-aef898e5643e9c10b` | rung 5, blind | 14 | 28 | 27,694 | 228,110 | 65,312 | 242.9 |
+| `agent-a2e86f9d43dfeaf7b` | re-review | 16 | 32 | 12,040 | 286,154 | 90,452 | 201.9 |
+
+Rung 4's reply was extracted from `agent-ac7e…` (notes 14:00:04Z). The re-review was spawned last
+(14:02Z). Rung 5 is the remaining transcript.
+
+### Raw counters — the main loop at trial end (the 14:10:54Z row)
+
+`turns 267 · tok_in 7,356 · tok_out 622,922 · cache_read 54,244,512 · cache_write 1,370,525 ·
+context 324,496 · pack_loads 1`. The subagents, summed: `tok_in 84 · tok_out 67,798 · cache_read
+649,965 · cache_write 280,446`.
+
+### Unmeasured — 15, and every one a phantom
+
+The final index had **15 `spend-gap` events**, and the whole log has **19**, each with a distinct agent
+id. After the session closed, **none of the 19 has a transcript anywhere under `~/.claude`**, while
+all 3 real subagents were measured. So `kit-status.txt`'s *"15 subagent run(s) unmeasured"* is 100%
+noise on this run — evidence for `T-20260822-every-stop-fires-a-spend-gap-whose-agent`, below.
+
+### Time
+
+- **Wall-clock: 34 min 59 s**, from 13:35:32Z (`date -u`, first entry of the notes) to 14:10:31Z
+  (the boundary report). The session's last `Stop` was at 14:17:46Z.
+- **API time: not measured.** The kit emits no such figure. The harness reported the reviewers at
+  ~307 s, ~346 s and ~208 s (n=1 each; quoted in the notes, not a kit measurement).
+- The rung-1 container probe ran **1,464 s** and exited 101 (notes 14:09:09Z; `logs/container-check.log`).
 
 ## Findings
 
-*None. Not run.*
+**11 finding rows, 0 rejected, 5 distinct defects, 1 agent** — all from
+`coding-kit:implementation-reviewer` on claude-sonnet-5, across three transcripts, and every row on
+`highper-gateway/src/discovery/registry.rs` (`events.ndjson`, `kind=finding`). Verdicts: **REVISE,
+REVISE (blind), APPROVED** after the fix.
 
-- By agent — pending
-- Rejected by the recorder (`finding-gap` rows) — pending
-- Escape rate by tier over both provenance populations — pending, and expected to have **no
-  `via:kit` denominator** on a first run, which must be reported as an absent denominator rather
-  than as zeroes shaped like a rate
+| # | defect | rung 4 | rung 5, blind | re-review |
+|---|---|---|---|---|
+| 1 | `watch_service` builds `tokio::time::interval` from `refresh_interval`, and that panics on 0 — a value the diff's own test now declares valid (`:145`) | correctness / **major** | correctness / **major** | — fixed in `ab74d4c`, confirmed |
+| 2 | no single-flight: concurrent callers at TTL expiry each hit the discovery backend (`:51`–`:52`) | race / minor | perf / minor | race / minor, carried over |
+| 3 | `needs_refresh` and the cache read are separate lock acquisitions, a check-then-act (`:51`, `:56`) | — | race / minor | race / minor, carried over |
+| 4 | no test at `elapsed() == ttl`, so a `>=`→`>` mutant survives (`:78`, `:288`) | correctness / minor | correctness / minor | unclassified / minor, carried over |
+| 5 | the new test covers `backup_refresh_period` only; nothing calls `watch_service(0)` at the panic site (`:328`) | — | — | unclassified / minor |
+
+- **The blind second reader converged on the major.** Both round-1 readers found #1 independently,
+  and only rung 5 found #3. That is consistent with verify-ladder's claim that rung 5 buys a
+  different half — a small one here, and n = 1 pair.
+- **The same defect got different classes.** #2 was classed race, perf, race; #4 correctness,
+  correctness, unclassified. Where accelerators are seeded from `class`, one defect lands in two buckets.
+- **11 rows for 5 defects.** A carried-over finding is recorded as a new row each round, and nothing
+  links it to its original — kit defect K3.
+- **Rejected by the recorder: none** — 0 `finding-gap` rows. All three replies came wrapped in a
+  ```` ```json ```` fence, which `agents/implementation-reviewer.md` forbids. **0 of 3 complied**, the
+  third despite an in-prompt "NO code fence". `kit_findings.py:184-195` strips one fence on purpose,
+  so all three landed.
+- **Every finding landed because the session ran `kit-finding.sh --json` by hand**, and nothing in
+  plugin mode invoked it. Every row also carries `agent_id: ""` while all three spend rows carry an
+  id, so no finding can be joined to the reviewer that produced it — kit defect K2.
+- **Dispositions: none.** `fixed_at` is NULL on all 11, including #1, which `ab74d4c` fixed. Rule 2
+  forbade `kit-resolve.sh` during the trial.
+- **Escape rate by tier:** `T3 0 / 0 via:kit, 0 / 1 all` (`kit-status.txt`). That is **an absent
+  denominator, not a clean result**: no `Via:` was written and no task closed. The session proposed
+  `Via: kit`, caveated that rungs 1–3 were not satisfied; the operator has not decided it.
+
+**The baseline's free oracle was not tested.** The Baseline says a run that does not notice the test
+target failing to compile is a finding about the kit. This run gave the kit no chance to notice it
+independently: the reviewer prompts supplied the fact — rung 4 writes *"per the task's stated facts:
+--lib target does not build at this commit due to an unrelated pre-existing error in
+runtime/signals.rs"* — and rung 2, the only rung that runs the tests, never ran. See methodology M6.
+
+**The five unassessable ids** — whether the run touched them, per the notes:
+
+| id | touched? |
+|---|---|
+| `T-20260808-kit-cfg-strips-space-and-tab-from-a-valu` | every profile read goes through `kit_cfg`; no value had edge whitespace, so the defect's condition never arose |
+| `T-20260808-an-apostrophe-in-a-tier-rule-breaks-the-` | the floor path ran; no rule contained an apostrophe — not triggered |
+| `T-20260801-nothing-invokes-kit-finding-so-the-findi` | **yes** — 11 of 11 findings landed only by hand |
+| `T-20260808-record-how-a-task-was-executed-so-kit-wo` | **yes** — the phantom `spend-gap` rows are claims about what ran |
+| `T-20260808-a-task-id-matching-no-task-file-is-count` | the unattributed-spend notice's second clause is that path; the first clause is what applied here (no transition) |
 
 ## Which brownfield degradations bit
 
-*Not measured.* The three to watch, from the protocol:
-
-- Over-tiering from an empty edge table
-- Co-change: usable graph, or withheld
-- Planner ordering on a backlog it did not author
+- **Over-tiering from an empty edge table — BIT.** The subject's commits carry no Task-Id, so there
+  were 0 `touches` edges, blast radius was UNKNOWN, and *"unknown reads as at least T2"* overrode
+  `tier.default: T1` (no rule covers `discovery/**`). A second, separate mechanism then raised it to
+  **T3**: `ladder.rung3` and `ladder.rung5` are empty. So a half-day roadmap item, in a module with **no
+  caller** (*"temporarily not actively used"*, `registry.rs:5-6`), paid for three reviews — **754.6
+  kBTE, 6.9% of the trial**. It bought the major (#1), found by both blind readers. That is one task;
+  it paying off here says nothing about how often it does.
+- **Co-change — the graph was usable, and empty for the file that mattered.** It was emitted, not
+  withheld: 4,904 pairs, 483 files, average degree 20.3, under `max_degree 50`. But `registry.rs` has
+  **0 rows**. Its three commits (the initial import, a release, a `cargo fmt --all`) are all bulk
+  commits over `cochange.commit_cap 50`. The session applied the documented reading — empty means
+  unknown, never "only these". The moved-aside `.claude/settings.local.json` appears as a hub,
+  because it is still in history.
+- **Planner ordering on a backlog it did not author — NOT EXERCISED.** The subject's backlog lives
+  in `docs/planning/ROADMAP.md` checklists. `kit-index.sh` reads only `.project/tasks/*.md`, and no
+  adapter converts a markdown checklist. The plan held only the task created in-session: 1 cluster ×
+  1 task, pack written and loaded (`pack_loads: 1`). Separately, the subject's `.gitignore:39`
+  (`.project`, an Eclipse line) ignores every kit state file, so the plan would not survive a clone,
+  and `kit-plan.sh` said so.
 
 ## Three kinds of finding
 
-*None yet.* The split is stated in advance so it cannot be decided after the fact:
+The split was stated before the run so it could not be decided after it.
 
-1. **Kit defects** — filed as tasks before any is fixed
-2. **Subject defects** — delivered to highper-gateway's owner as a proposal, never applied
-3. **Methodology** — folded back into `TRIAL-PROTOCOL.md` §3, with a detection
+### 1. Kit defects — FILED 2026-09-11, on the operator's confirmation
+
+The operator confirmed all eight, and the four evidence notes, on 2026-09-11: *"file all eight and
+the evidence notes"*. Each was checked against the code and the backlog before filing. Two tiers
+moved from the proposal: K5, K6 and K8 were proposed at T1 and filed at T2, the floor `tooling/**`
+sets in this repository's profile; K3 was filed at T3, because linking a carried-over finding has
+to reach the `finding` table through `kit-index.sh`.
+
+| | filed as |
+|---|---|
+| K1 | `T-20260911-kit-status-re-decides-pack-withholding-w` |
+| K2 | `T-20260911-a-finding-recorded-by-hand-carries-no-ag` |
+| K3 | `T-20260911-a-carried-over-finding-is-recorded-as-a-` |
+| K4 | `T-20260911-kit-status-reports-spend-with-no-as-of-t` |
+| K5 | `T-20260911-kit-init-prints-the-claude-remedy-when-t` |
+| K6 | `T-20260911-kit-init-next-steps-omit-choosing-git-ad` |
+| K7 | `T-20260911-kit-guard-refuses-the-harness-scratchpad` |
+| K8 | `T-20260911-kit-status-per-model-spend-lines-end-in-` |
+
+**New tasks — as proposed, with the filed tier:**
+
+| | proposed task | tier | evidence |
+|---|---|---|---|
+| K1 | `kit-status.sh` re-decides pack withholding with a hard-coded 60, so it reports packs **withheld** that `kit-plan.sh` wrote | T2 | notes 13:56:24Z. `kit-plan.sh:527` withholds only when `pct > cluster.max_share` **and** `tasks >= cluster.min_tasks` (default 10). `kit-status.sh:875` tests `pct > 60` alone, ignoring both keys and the `cluster_packs_withheld` flag. Hits every first backlog under 10 tasks |
+| K2 | The reply-in-hand door drops `agent_id`, so a hand-recorded finding cannot be joined to its reviewer's spend row | T2 | 11 of 11 finding rows have `agent_id: ""`; 3 of 3 reviewer spend rows carry one. `kit-finding.sh:69` accepts `--agent-id`, but its usage header (`:4-6`) and `skills/verify-ladder/SKILL.md:73-75` omit it. *The notes say the flag does not exist. That is false: the fault is that nothing tells the agent to pass it* |
+| K3 | A carried-over finding is re-recorded as a new row every review round, so per-task counts grow with rounds | T3 | 11 rows for 5 defects; #2 and #4 appear three times each, with nothing linking a round-2 row to its original |
+| K4 | `kit-status.sh` reports spend with no as-of time, so a reading taken inside a session silently omits everything since the last `Stop` | T2 | `kit-status.txt` reports main 6,902.9 kBTE, as of 13:57:34Z; the trial's main loop was 10,259.6 at 14:10:54Z — see **Cost** |
+| K5 | `kit-init.sh`'s ignore remedy prints the `.claude/` idiom even when the blocked path is `.project/` | T2 | notes 13:37Z; `kit-init.sh:208-220` is hard-coded to `.claude/` |
+| K6 | `kit-init.sh`'s next steps omit choosing `git.adopted_at`, which `INSTALL.md:155` makes the first brownfield step | T2 | `kit-init.sh:185-194`. The trial followed that printed order and left the key unset, hence `kit-status.txt`'s *"97 of 98 non-trivial commits carry no Task-Id"* — the consequence `INSTALL.md:158-160` predicts for unset |
+| K7 | `kit-guard` refuses the harness-designated scratchpad, so temp writes go through Bash, which the guard's matcher does not cover | T2 | notes 14:05:06Z. A design tension rather than a bug: the guard is right to refuse, and the effect is to push writes to the unguarded tool. Bash's absence from the matcher is already recorded in `T-20260808-a-repeatable-trial-protocol-for-running-` |
+| K8 | `kit-status.sh`'s per-model spend lines end in a CR on Windows | T2 | `kit-status.txt` lines 56-57 (`> - claude-opus-5  6902k`, then a CR byte). `q` (`kit-status.sh:32`) does not strip CR, and `:483` sends its multi-row output straight to stdout, while `:871`, `:887`, `:909` and `:923` pipe the same kind of output through `tr -d '\r'`. It is also one of the two reasons this directory needs `-text` |
+
+**Evidence added to tasks already filed** — a dated 2026-09-11 note on each, not new tasks:
+
+| task | what this trial adds |
+|---|---|
+| `T-20260822-every-stop-fires-a-spend-gap-whose-agent` | the measurement its first acceptance criterion asks for: 19 gaps, 19 distinct ids, and **none** has a transcript anywhere under `~/.claude` after the session closed, while 3 of 3 real subagents were measured. **Phantom, not timing.** n is now 2 sessions, and gaps also fire mid-turn, not only at `Stop` |
+| `T-20260809-the-unverified-tier-floor-message-names-` | **hit again, on the same subject**, through a cause the task does not list: 12 `tier.rule` lines declared, none matching the task's declared path. `floorof()` (`kit-index.sh:377-378`) returns `""` for no match, stored as the same NULL as "no paths" |
+| `T-20260821-kit-plan-writes-two-meta-keys-the-indexe` | **observed in the wild.** `cluster_largest_pct` existed after `kit-plan.sh` ran (13:49Z) — the 13:54Z status printed from it — and is absent from the index after the 14:01Z and 14:07Z reindexes. `kit-status.txt` carries no cluster line at all |
+| `T-20260801-nothing-invokes-kit-finding-so-the-findi` | in plugin mode, 11 of 11 findings landed only by hand, and `kit-review-record.sh --cmd` has no shape for the plugin's own Agent-tool reviewers |
+
+**Checked, and NOT defects:** the fence tolerance is deliberate (`kit_findings.py:184-195`). Finding
+rows follow their task's tier on reindex: all 11 carry T3, which contradicts the notes' 14:04Z
+reading of T2 because that reading predates the `Tier: T3` trailer. And the "97 of 98" line is
+documented behaviour; K6 is about the step being unreachable, not the line.
+
+### 2. Subject defects — a proposal to highper-gateway's owner, never applied
+
+| | defect | where | state |
+|---|---|---|---|
+| S1 | UC12.A: `get_upstreams` refreshed on every call while `last_update` was written and never read | `registry.rs:40-41`; `ROADMAP.md:454-456` | **patch: `format-patch-ab74d4c.txt`.** Its tests are written and **not run**: the `--lib` target does not compile at `05c56eb`, and the crate does not build on Windows |
+| S2 | `watch_service` panics its backup task on `refresh_interval = 0` | `registry.rs:145` | found by review (#1), fixed in the same patch |
+| S3 | `Cargo.lock` is stale against `highper-gateway/Cargo.toml:158` (`async-graphql-value`), so any cargo command without `--locked` rewrites it | notes, 13:40–13:44Z | not applied |
+| S4 | `protoc` is an undeclared build dependency under `--all-features` (`etcd-client v0.14.1`), alongside `cmake` (Baseline finding 1) | `logs/container-check.log` | not applied. *Whether it contributes to the red `Check` job is unverified* |
+| S5 | the four minors the re-review deferred — no single-flight (#2), check-then-act (#3), no `== ttl` test (#4), `watch_service(0)` untested at the panic site (#5) — plus its question: the detached `tokio::spawn` has no shutdown path | `reviews/` | not applied |
+
+**Not a defect unless Windows is a target:** the crate does not build on Windows, because `io-uring`
+is unconditional and the default `jemalloc` feature's `tikv-jemalloc-sys` runs autoconf. The
+project's CI is Linux-only.
+
+### 3. Methodology — PROPOSED for `TRIAL-PROTOCOL.md` §3, not yet written there
+
+| | failure | detection |
+|---|---|---|
+| M1 | **The final reading omitted the turn that produced it.** Main-loop spend is written at each `Stop`, so a status read inside the session sees the previous turn's row: 6,902.9 kBTE read, 10,259.6 spent | after the session closes, the index's `spend.at` for the main transcript must equal the last `spend` event for it in `events.ndjson`; if not, reindex before reading |
+| M2 | **Writes outside the copy, by Bash**, against rule 1: logs and reply extracts went to the harness scratchpad after `kit-guard` refused a Write there (notes 14:05:06Z, self-reported) | the opening prompt names a temp location inside the copy (the gitignored `.project/`); at copy-back, list every file the transcript wrote outside the copy root |
+| M3 | **Probe side effects inside the copy.** cargo rewrote `Cargo.lock`, and `nerdctl -v name:/path` bind-mounted cwd-relative host directories (2.2 GB) instead of named volumes | `git status --short` before every `kit-index.sh`. The session did this, and it caught both |
+| M4 | **Estimated timestamps ran ahead of the clock** (13:40–13:44Z, corrected at 13:44:22Z) | every stamp comes from `date -u` in the same command that makes the observation |
+| M5 | **The pre-flight never ran the profile's commands in the verification environment**, so rung 1's missing `protoc` surfaced at minute 33 | a pre-flight box: run each `commands.*` value once there, reading its exit status from the process itself |
+| M6 | **The free oracle was spent before the run.** The reviewer prompts carried the `signals.rs` compile failure from this record, so the kit had no chance to find it | reviewer prompts carry no baseline defect, or the record lists every baseline fact supplied to an agent |
 
 ## Not exercised
 
-Everything. Named rather than omitted, because an untested component named as untested is
-information and one left out reads as fine:
+**After the run, 2026-09-11.** An untested component that is named is information; one left out
+reads as fine:
+
+- **Planner ordering on a foreign backlog** — the roadmap was never ingested (see the degradations above).
+- **Rungs 1–3.** Nothing compiled anywhere: the crate does not build on Windows, and the container's
+  `cargo check --workspace --all-features` failed at `protoc`. The tests never ran. Rung 3 was
+  declared unavailable.
+- **`kit-review-record.sh`'s bounded retry loop.** Every finding came through the reply-in-hand door.
+- **Dispositions.** `kit-resolve.sh` was never run, so 0 of 11 findings are dispositioned.
+- **Provenance and the escape rate.** With no `Via:` and no closed task, there is no `via:kit`
+  denominator and no spend attributed to any task.
+- **Every agent except `implementation-reviewer`**, and every accelerator — none was configured.
+- **CONTINUE and RETRY** — the operator chose STOP at the first boundary.
+- **The baseline's free oracle** (methodology M6).
+- **The io_uring control.** The container log never captured its banner lines, so the 507-symbol
+  reading was not repeated.
+
+**Written before the run, and kept as written — with what the run did to each item:** plugin mode ran
+and produced 3 `scope=subagent` rows. `kit-spend.sh` ran against a foreign subject and wrote into the
+copy's `events.ndjson`, as predicted. Cluster packs were written and loaded (`pack_loads: 1`), on a
+1-task backlog. Windows conformance was done before the run.
 
 - **Plugin mode itself** — the session that prepared this file is kit-development mode and cannot
   produce a `scope=subagent` row at all.
@@ -637,7 +888,18 @@ information and one left out reads as fine:
 
 ## Disputed
 
-*Nothing. No finding has been produced to dispute.*
+**Nothing is disputed by the subject's owner** — the proposal has not been delivered yet. There are
+two disagreements between the coding session and its reviewers. Both positions are recorded, and
+**neither is resolved here**:
+
+1. **#4, the `== ttl` boundary test.** All three reviewers say a `>=`→`>` mutant survives. The
+   session says that with `std::time::Instant`, `elapsed()` is never exactly `ttl`, so a real-clock
+   test cannot tell the two apart — it would need an injectable clock.
+2. **Where #1 panics.** Rung 4: the zero value *"will panic the task that calls watch_service on
+   it"*. The session: `tokio::time::interval` is called inside the `tokio::spawn`ed block, so the
+   backup task dies and the caller does not — the result is a silently dead backup refresh. The
+   re-review's wording, *"a panic there would surface asynchronously in a task nobody awaits"*,
+   agrees with the session. The defect is real either way, and the fix stands on both readings.
 
 ## Setup already done, so a run can start immediately
 

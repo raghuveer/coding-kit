@@ -1,0 +1,4 @@
+ D .claude/settings.local.json
+ M .gitignore
+ M CLAUDE.md
+?? .gitattributes

@@ -51,3 +51,11 @@ written from memory of ADR 0004's intent rather than from the code.
 
 Related: `T-20260820-kit-plan-computes-the-ordering-before-re` is also about `kit-plan.sh`
 ordering-vs-index sequencing; this one is about what it writes.
+
+**2026-09-11 — observed in the wild.** On the highper-gateway plugin-mode trial, `kit-plan.sh` ran at
+13:49Z, and the 13:54Z `kit-status.sh` printed its cluster line from `cluster_largest_pct:default`.
+After the 14:01Z and 14:07Z reindexes the key is gone from the index — `SELECT key FROM meta WHERE
+key LIKE 'cluster%'` returns no rows — and the final `kit-status.txt` carries no cluster line at all.
+Evidence: `docs/TRIALS/2026-09-09-highper-gateway-plugin-mode/`, and the trial notes at 13:56:24Z.
+Related: `T-20260911-kit-status-re-decides-pack-withholding-w`, where the same notice is also
+computed by the wrong rule.

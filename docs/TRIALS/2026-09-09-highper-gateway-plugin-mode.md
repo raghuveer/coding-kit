@@ -18,7 +18,7 @@
 |---|---|
 | Question | **Does the kit, loaded as a plugin, produce readings on a subject it did not author?** Specifically: does any `scope=subagent` spend row appear, and does any finding land, on a 967-file **Rust** subject with 169 commits. Written before the first command. **Corrected 2026-09-09: this read `PHP`.** The subject is Rust -- 291 `.rs` files, one `Cargo.toml`, 160 files referencing io_uring. File and commit counts were right; the language was not. ADR 0002's rule is that a pre-registered condition is only as good as its targets, so it is corrected before the run rather than after. |
 | Kit SHA | `9ce8b70` at pre-flight on 2026-09-09. **Re-frozen 2026-09-10 at `50226b8`** for the run — §0b, which states the check that catches a tree drifting off it |
-| Time-box / actual | not set / not run |
+| Time-box / actual | **1 h**, then a recorded STOP / CONTINUE / RETRY under §0b's pre-registered rule, **cap 4 h** / not run |
 | Subject | highper-gateway — 967 tracked files, 169 commits, branch `master`, clean tree, **not adopted** (no `.project/`). **Unmaintained since 2026-05-16 by operator decision** — attention moved to other projects — and **red on its own CI** at this SHA. Both are recorded below and neither disqualifies it |
 | Greenfield / brownfield | **brownfield**, history intact, not truncated |
 | Outcome | **not run** — see §0 |
@@ -119,7 +119,7 @@ table. This section is a **second, dated pre-flight** for the run that can now s
 | Copy isolated | `kit-preflight.sh --isolated <copy>` | **PASS** — see **The subject copy** below |
 | Baseline before the kit | | **PASS** — taken 2026-09-09, unchanged; the subject is untouched |
 | The question written down | | **PASS** — header table, corrected 2026-09-09 |
-| **Time-box stated** | | **NOT SET — the operator's number** |
+| **Time-box stated** | | **PASS — 1 h, stated by the operator 2026-09-11**; a recorded STOP / CONTINUE / RETRY at each boundary, cap 4 h — see the amendment at the end of §0b |
 | Stop rules stated | | **PASS** — recorded below |
 | Abort path stated | | **PASS** — recorded below |
 
@@ -134,6 +134,10 @@ git -C <the kit checkout> diff --stat 50226b8..HEAD
 
 **Only `docs/TRIALS/2026-09-09-highper-gateway-plugin-mode.md` may appear.** Anything else and the
 pre-flight above describes a different kit than the one about to run, and it must be re-run.
+
+> **SUPERSEDED 2026-09-11** by the working-tree check in the amendment at the end of §0b. Kept
+> rather than deleted, because it was wrong in a way worth seeing: it read `HEAD`, and the plugin
+> is loaded from the working tree.
 
 ### The subject copy — REBUILT, and the reason is a finding
 
@@ -243,6 +247,182 @@ is about it going UP), and **0 of the 9 print `(no reason recorded)`** (conditio
 A defensible answer is to run anyway and carry the five task ids in the report, so a finding landing
 on one of those paths is read next to the blind spot rather than instead of it. That is a decision,
 not a formality, and it is the operator's.
+
+### AMENDED 2026-09-11 — the one-hour rule, a safety deviation, the opening prompt, the copy-back
+
+Written before the first trial command, at the operator's direction: *"try for an hour and do
+either a retry or a continue based on built state and choice."* Everything below is
+pre-registered, so the decision at each boundary is made against criteria fixed now rather than
+invented after seeing the first hour.
+
+#### Time-box: 1 hour, then a recorded decision — cap 4 hours
+
+At each 1-hour boundary the session stops and writes a boundary report. The operator then chooses
+exactly one of three, and the choice is recorded with the time and the reason:
+
+| choice | when | what it means for the record |
+|---|---|---|
+| **STOP** | the instrument question is answered — both readings present, or absent with a stated reason — **or** any stop rule fired | the result is what exists. Outcome COMPLETE, or as the stop rule says |
+| **CONTINUE** | **all** of: no stop rule or VOID condition fired; the three state checks below are clean; a next activity is named | +1 hour on the **same** copy and index. Same trial, one record |
+| **RETRY** | the attempt was set up wrong in a way every later reading would inherit — wrong profile values already indexed, the plugin not loaded, an operator or setup error | attempt 1 is recorded as its own outcome (VOID, naming the setup cause), its copy renamed `…-attempt1` and kept, a fresh copy made by §4, `--isolated` re-run, a new time-box. **The index is never reused** |
+
+**Cap: 4 hours of trial time across all continuations.** At the cap, STOP is the only choice.
+
+**RETRY is not the abort path.** If the *kit* crashes or corrupts state, the attempt is
+**ABORTED** — a result about the kit, recorded as one. Any later attempt is then a second trial
+with its own record, never a resumption. RETRY exists for mistakes in *setting up* an attempt;
+using it to erase a kit failure is the silent restart §0 forbids.
+
+**State checks at a boundary**, all three required for CONTINUE:
+
+    git -C D:/trials/highper-gateway-05c56eb status --short   # only kit-produced paths, plus the one deviation below
+    bash D:/personal-github/cck/coding-kit/tooling/kit-index.sh    # from inside the copy: clean
+    bash D:/personal-github/cck/coding-kit/tooling/kit-status.sh   # from inside the copy: clean
+
+#### The kit under test is the WORKING TREE, so the check is on the working tree
+
+The plugin is loaded from `D:\personal-github\cck\coding-kit` as it sits on disk, not from a
+commit. **So the drift check earlier in this section was aimed at the wrong thing twice.** It
+compared `50226b8..HEAD` against a one-file list, which any task filed since breaks while nothing
+the plugin loads has changed; and it read `HEAD`, while an uncommitted edit or a switched branch
+changes the plugin without moving `HEAD` at all. It is replaced by two checks that can fail, run
+immediately before the session starts:
+
+    git -C D:/personal-github/cck/coding-kit status --short
+    git -C D:/personal-github/cck/coding-kit diff --stat 50226b8 -- tooling tests hooks skills agents templates .claude-plugin validate.py
+
+**Both must print nothing.** The first says the working tree is what git says it is; the second
+says nothing the plugin loads or runs differs from the frozen SHA. **While the trial session is
+open, nobody edits or switches branches in the kit checkout** — including to write this record.
+
+#### One deviation from an untouched subject, made for safety, and how to undo it
+
+The copy carried the subject's **tracked** `.claude/settings.local.json`: 24 pre-approved
+commands, among them `Bash(git *)` and seven naming `D:\my-opensource\highper-gateway` (six `git -C`,
+one `nerdctl build`) — the
+*other* checkout of this subject, which has uncommitted changes. User-level settings on this
+machine pre-approve **nothing**, so that file would have been the trial session's only
+pre-approval, and **any command beginning `git` — including against the real, dirty checkout —
+would have run with no prompt.** `kit-preflight.sh --isolated` checks remotes and alternates only,
+so it passed. Filed as a kit defect, `T-20260911-the-isolation-check-passes-while-the-cop`.
+
+**Moved out of the copy before the trial**, byte-identical, to
+`D:\trials\highper-gateway-05c56eb.settings.local.json.orig`. The copy's `git status` therefore
+shows exactly one change before the kit runs — ` D .claude/settings.local.json` — and
+`--isolated` still passes. Restore with:
+
+    git -C D:/trials/highper-gateway-05c56eb checkout -- .claude/settings.local.json
+
+**What it costs the trial:** the session will prompt for commands the subject had pre-approved, so
+prompt frequency on this run is not a measure of the kit's friction. Recorded so it is not read as
+one.
+
+#### A known condition: the subject's CLAUDE.md is a gateway response policy
+
+47 lines committed in `9bc8af3` (2026-05-02), beginning *"rules apply to every response unless
+explicitly overridden by the route configuration"*: CITE OR REFUSE, refusal tokens such as
+`NO_SOURCE_PROVIDED`, and a rule that any turn with more than 500 pasted characters opens by listing
+three claims with confidence ratings. Claude Code loads it anyway. **Left untouched.** The kit's own
+adoption step 2 — *"append templates/CLAUDE.kit.md to your CLAUDE.md"* — runs inside the trial, and
+how that template sits beside an existing policy is a brownfield observation. The opening prompt
+below is over 500 characters, so the session's first reply is expected to open with that list. That
+is the subject, not a defect.
+
+#### The stop condition §0b left open is still open
+
+§0's first unassessable stop — *an unassessable critical on a task this trial will exercise* —
+applies to all five tasks tabulated above. The operator directed a one-hour run; that direction is
+**not** recorded here as a ruling on this box, because it was not stated as one. The opening prompt
+carries the five ids so that anything the session sees on those paths is flagged next to the blind
+spot. **If the operator rules the box a STOP, the trial does not start.**
+
+#### The opening prompt, verbatim
+
+Pasted as the first message of the plugin session. The rules in it are the kit's working agreement
+for this run, which `CLAUDE.kit.md` does not carry; putting them in the prompt rather than in the
+subject's files keeps the adoption the kit's own.
+
+```text
+This session is a TRIAL of the coding-kit plugin. It is not development work on this project.
+
+Subject: this directory - an isolated copy of highper-gateway at 05c56eb, with no remote.
+Kit: loaded as a plugin from D:\personal-github\cck\coding-kit. Its scripts are in tooling\ there.
+Protocol: D:\personal-github\cck\coding-kit\docs\TRIAL-PROTOCOL.md
+Record: D:\personal-github\cck\coding-kit\docs\TRIALS\2026-09-09-highper-gateway-plugin-mode.md
+Read both if useful. Write to neither.
+
+The question: does the kit, loaded as a plugin, produce readings on a subject it did not author?
+Specifically: does any scope=subagent spend row appear, and does any finding land?
+
+Time-box: 60 minutes. Run `date -u` first and write the time into your notes as the start.
+At 60 minutes, stop wherever you are and write the boundary report below. Do not continue past it
+on your own judgement - continuing is my decision.
+
+Rules for this session:
+1. Write only inside this directory. Nothing into the kit repository, and nothing into
+   D:\personal-github\highper-gateway or D:\my-opensource\highper-gateway - not by Bash either.
+2. Never mark a task done. Never run kit-resolve.sh with --fixed, --unassessable or --superseded.
+3. File, don't fix. A kit defect is written down in the notes. It is not fixed, and it is not
+   quietly worked around.
+4. Do not write a Via: trailer on any commit. Propose a value in your summary.
+5. Propose values for commands.build, commands.test, commands.lint, commands.typecheck and
+   tier.rule, and wait for my confirmation before writing them.
+6. If the kit crashes or corrupts state, stop. The trial is ABORTED at that point, with the cause.
+   Do not restart it.
+
+Keep a running log at .project/trial-notes.md - one timestamped line per observation: what you ran,
+what the kit did, what surprised you, and every kit defect with the command that shows it. That
+file is copied back into the kit afterwards, so write it for a reader who was not here.
+
+Order of work:
+1. kit-init.sh, then append the kit's templates\CLAUDE.kit.md to CLAUDE.md (adoption step 2).
+2. Propose the profile values and wait for me.
+3. kit-index.sh, then kit-plan.sh. Report the cluster sizes, and whether packs were written or
+   withheld.
+4. Pick one small, real task from the subject's roadmap and run it the kit's way: task-context,
+   the work at its tier, the reviewer agents, their findings recorded.
+5. kit-status.sh, then check the two readings.
+
+Five kit tasks carry criticals nobody can judge. If anything you see touches one of them, say so in
+the notes by its id:
+T-20260808-a-task-id-matching-no-task-file-is-count
+T-20260808-record-how-a-task-was-executed-so-kit-wo
+T-20260801-nothing-invokes-kit-finding-so-the-findi
+T-20260808-kit-cfg-strips-space-and-tab-from-a-valu
+T-20260808-an-apostrophe-in-a-tier-rule-breaks-the-
+
+Boundary report at 60 minutes, in the notes and in your reply:
+- spend: a scope=subagent row, yes or no, with the query and its output
+- findings: a finding landed, yes or no, with the row
+- state: `git status --short`, and whether kit-index.sh and kit-status.sh ran clean
+- what is built so far
+- your recommendation - STOP, CONTINUE (one more hour on this state) or RETRY (a fresh copy) -
+  with the reason, against the criteria in section 0b of the trial record. The choice is mine.
+```
+
+#### Copy-back — manual, after the session ends, from a kit session
+
+Nothing moves results from the copy into the kit, and the copy has no remote by design. That is
+the shape that lost verified claims before — `T-20260826-a-verified-claim-about-the-tree-has-no-a`:
+*"delivered into an isolated working copy that had no remote."* So the copy-back is a step,
+written before the run:
+
+1. **Close the trial session first.** The kit checkout is the plugin; writing into it mid-trial
+   changes the kit under test.
+2. Copy, unchanged, into `docs/TRIALS/2026-09-09-highper-gateway-plugin-mode/`:
+   `.project/trial-notes.md`, `.project/events.ndjson`, `.project/tasks/`,
+   `.claude/project-profile.md`, plus the output of `kit-status.sh`, §1's per-agent spend query,
+   and `git log --oneline 05c56eb..HEAD` and `git status --short` from the copy, each as `.txt`.
+3. Run `python3 validate.py` before committing. It checks `.md` files for baked `/home/` and
+   `/Users/` paths; a copied file that trips it is **exempted deliberately or left out**, never
+   edited — it is evidence.
+4. **Transcripts go to `D:\trials\transcript-archive\`, never into this repository.** The
+   repository is public, and a transcript carries local paths and everything pasted into it.
+   Claude Code's default cleanup deletes them after 30 days, which is why they are archived at
+   all. Reviewer transcripts sit one level down, in each session's `subagents/` folder.
+5. Then fill **Cost**, **Findings**, **Which brownfield degradations bit** and **Three kinds of
+   finding** from the copied files. Kit defects become kit tasks with the operator's confirmation;
+   subject defects become a proposal to the owner; methodology becomes an edit to §3.
 
 ## Baseline — taken 2026-09-09, BEFORE the kit touched the subject
 

@@ -433,3 +433,13 @@ unknown classes, so fixing the plumbing alone would record a biased sample.
 
 The checkpoint hook is the obvious home, but it fires per work unit and reviews happen
 mid-unit, so the findings would need somewhere to accumulate first.
+
+**2026-09-11 — plugin mode, measured.** On the highper-gateway plugin-mode trial, **11 of 11 findings
+landed only because the session ran `kit-finding.sh --json` by hand** after each reviewer returned;
+nothing in plugin mode invoked it. `kit-review-record.sh`'s `--cmd` wants a command that reads a
+prompt on stdin and writes a reply to stdout. The plugin's own reviewers are Agent-tool subagents
+with no such command, and a separate `claude -p` would be a different session, whose spend this
+session's hooks never see. So in plugin mode the retry loop this task built has no caller shape at
+all. Related: `T-20260911-a-finding-recorded-by-hand-carries-no-ag`, because the by-hand door also
+drops `agent_id`. Evidence: `docs/TRIALS/2026-09-09-highper-gateway-plugin-mode/trial-notes.md`, at
+13:40–13:44Z and 14:01:04Z.

@@ -1,0 +1,6 @@
+# Verbatim trial evidence, copied from the subject copy by the record's section 0b copy-back.
+# Stored byte for byte. kit-status.txt carries two CRLF lines among LF ones, which
+# core.autocrlf would normalise on `git add`; and a Windows checkout would turn every LF file
+# here into CRLF. Either would make a file differ from what the trial wrote. Checked after
+# staging: each blob equals `git hash-object --no-filters` of its source.
+* -text

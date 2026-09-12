@@ -20,11 +20,16 @@ CREATE TABLE state_class (
   is_closed   INTEGER NOT NULL,     -- the work is not coming back: finished, or dropped
   is_activity INTEGER NOT NULL,     -- this state's actor is the task's owner. NOT "not closed":
                                     -- a task nobody has picked up has no owner to infer
-  is_measured INTEGER NOT NULL      -- in the escape-rate denominator. NOT a synonym for is_closed:
+  is_measured INTEGER NOT NULL,     -- in the escape-rate denominator. NOT a synonym for is_closed:
                                     -- `cancelled` is closed and NOT measured, because work that
                                     -- was never work must not count toward what the pipeline did.
                                     -- `abandoned` is both -- it was real work, and hiding it would
                                     -- flatter the record. One boolean cannot carry this.
+  is_plannable INTEGER NOT NULL     -- may be ordered into a plan. NOT `is_closed` inverted either:
+                                    -- `on-hold` is open, keeps its dependency edges and still
+                                    -- blocks what waits on it, but must not be scheduled. Classing
+                                    -- it closed would drop those edges and move its dependents to
+                                    -- layer 0. See docs/adr/0008.
 );
 
 -- LEGACY SPELLING -> CANONICAL STATE, projected from kit_state_legacy in kit-lib.sh, plus an

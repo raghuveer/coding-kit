@@ -103,8 +103,11 @@ kit_warn() { printf 'kit: %s\n' "$*" >&2; }
 # failure and pipe an empty stream into `cksum`, which yields the same value an empty backlog
 # does — so two uncomputable digests compared equal and cleared the staleness warning.
 kit_plan_digest() {
+  # PARTITIONS ON PLANNABLE, not on closed, so parking and un-parking each move the digest and
+  # mark the plan stale. On the closed partition they did not: the parked task stayed in the hash,
+  # the plan that no longer contained it still compared fresh, and nothing told anyone to replan.
   _kpd=$(sqlite3 "$1" "SELECT id||'|'||COALESCE(tier,'')||'|'||COALESCE(epic,'')||'|'||COALESCE(blocked_by,'')
-                         FROM task WHERE state NOT IN ($(kit_state_sql "$(kit_state_closed)")) ORDER BY id;") || return 1
+                         FROM task WHERE state IN ($(kit_state_sql "$(kit_state_plannable)")) ORDER BY id;") || return 1
   printf '%s\n' "$_kpd" | tr -d '\r' | cksum | awk '{print $1 "-" $2}'
 }
 
@@ -169,6 +172,20 @@ kit_state_closed()   { printf 'completed cancelled abandoned'; }
 # The states whose actor is the task's OWNER. Deliberately not "vocab minus closed": a task nobody
 # has picked up yet has no owner to infer. Maps forward from the old `started progress blocked`.
 kit_state_activity() { printf 'in-progress on-hold'; }
+
+# MAY BE ORDERED INTO A PLAN. ADR 0008 left this open -- "both are open, both are plannable, and no
+# evidence here says they should differ" -- and asked for evidence. The evidence: a task parked on
+# 2026-09-09 was rank 1 in the plan before parking and still rank 1 two days later. Parking was the
+# operator's only way to say "not now" and the planner could not hear it.
+#
+# NOT `kit_state_closed` inverted, and that distinction is the whole defect. `on-hold` is OPEN: it
+# keeps its task row, keeps its `depends_on` edges, and keeps blocking what waits on it. Classing it
+# closed instead would drop those edges and land its dependents in layer 0 as though nothing were in
+# their way -- which is worse than the bug, because it is silent and it reorders real work.
+#
+# So a parked task is WITHHELD from the plan, not deleted from the graph, and what waits behind it is
+# withheld with it -- the same treatment an unfiled blocker already gets, through the same path.
+kit_state_plannable() { printf 'created planned in-progress'; }
 
 # IN THE ESCAPE-RATE DENOMINATOR -- the tasks that count toward judging the pipeline.
 #

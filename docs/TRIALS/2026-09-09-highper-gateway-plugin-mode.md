@@ -874,7 +874,21 @@ So the documentation states the goal as though it were already true. That is a f
 owner: not applied here, and the owner decides the wording. It does not change this trial's
 reading, which ran where the subject builds today.
 
-### 3. Methodology — PROPOSED for `TRIAL-PROTOCOL.md` §3, not yet written there
+### 3. Methodology — WRITTEN INTO THE PROTOCOL 2026-09-12, split by what each one is
+
+The six below were proposed for §3 as a block. Checked against §3's own bar — *a trial that hits
+one is not a weak result, it is no result* — only one clears it, and they landed in three
+different places:
+
+| | where it went | why |
+|---|---|---|
+| M1 | **§3**, as the seventh VOID condition | the number reported was wrong, and the detection is a query that runs — verified against this repository |
+| M2 | **§4**, as a worked example | §4 already states the cause: the guard matches `Write\|Edit\|NotebookEdit` and *"does not see Bash at all"*. The rule predicted this; it needed evidence, not a new condition |
+| M3, M4 | **§2**, as disciplines | both were caught and corrected in-run by the trialist. Calling a self-corrected slip *no result* would make the VOID list unusable |
+| M5 | **not written** — it is acceptance criterion 4 of `T-20260912-a-declared-rung-whose-tooling-fails-has-` | *"pre-flight proves every `commands.*` actually RUNS before the clock starts"* is the same requirement. Duplicating it into §3 would fork one fix across two homes |
+| M6 | **§2**, on the operator's decision | its detection is prose, and §3 refuses conditions nobody can check — it documents its own failure of having shipped three. Recorded there with what a mechanical version would need: the reviewer prompts kept as evidence, which nothing captures today |
+
+The originals are kept below as written.
 
 | | failure | detection |
 |---|---|---|

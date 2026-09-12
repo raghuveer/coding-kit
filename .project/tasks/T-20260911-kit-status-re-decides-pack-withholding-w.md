@@ -5,7 +5,7 @@ epic: planning
 tier: T2
 lang: bash
 paths: tooling/kit-status.sh, tooling/kit-plan.sh, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent

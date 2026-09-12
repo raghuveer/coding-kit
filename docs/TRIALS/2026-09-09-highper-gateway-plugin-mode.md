@@ -831,9 +831,19 @@ documented behaviour; K6 is about the step being unreachable, not the line.
 | S4 | `protoc` is an undeclared build dependency under `--all-features` (`etcd-client v0.14.1`), alongside `cmake` (Baseline finding 1) | `logs/container-check.log` | not applied. *Whether it contributes to the red `Check` job is unverified* |
 | S5 | the four minors the re-review deferred — no single-flight (#2), check-then-act (#3), no `== ttl` test (#4), `watch_service(0)` untested at the panic site (#5) — plus its question: the detached `tokio::spawn` has no shutdown path | `reviews/` | not applied |
 
-**Not a defect unless Windows is a target:** the crate does not build on Windows, because `io-uring`
-is unconditional and the default `jemalloc` feature's `tikv-jemalloc-sys` runs autoconf. The
-project's CI is Linux-only.
+**S6 — the subject's documentation claims native Windows builds work; they do not.** *Corrected
+2026-09-11; this line first read "Not a defect unless Windows is a target".*
+
+The crate does not build natively on Windows, because `io-uring` is unconditional and the default
+`jemalloc` feature's `tikv-jemalloc-sys` runs autoconf. The project's CI is Linux-only. But its own
+`KNOWN_LIMITATIONS.md:371` says *"Windows native builds work but testing limited"*. Its owner
+states the goal as *"use io_uring for linux and its alternatives for other operating systems"*,
+while the alternative backend files exist (`epoll_backend`, `hybrid_stream`, `io_uring_shim`), the
+adapter is not complete and `tokio-uring` is an unconditional dependency (`Cargo.toml:13`).
+
+So the documentation states the goal as though it were already true. That is a finding for the
+owner: not applied here, and the owner decides the wording. It does not change this trial's
+reading, which ran where the subject builds today.
 
 ### 3. Methodology — PROPOSED for `TRIAL-PROTOCOL.md` §3, not yet written there
 

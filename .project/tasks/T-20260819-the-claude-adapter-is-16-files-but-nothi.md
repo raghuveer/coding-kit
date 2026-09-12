@@ -63,3 +63,38 @@ multi-adapter end product, but it does not depend on the port and should not wai
 **The operator's stated goal** is a kit usable with Claude Code as a plugin and subsequently with
 other coding agents. The measurement above says that goal is closer than it appears; this task
 exists so the distance is recorded rather than re-derived by whoever picks it up.
+
+**2026-09-11 — spend capture is adapter behaviour living in the portable core, and the boundary
+check as written would miss it.**
+
+The second acceptance criterion checks that no harness name, model name or `CLAUDE_*` variable
+appears under `tooling/`. That passes today: no non-comment line in `tooling/*.sh` uses a `CLAUDE_*`
+variable. Yet `tooling/kit-spend.sh` depends entirely on Claude Code's formats:
+
+- **the hook payload fields** `transcript_path` and `agent_type` (`kit-spend.sh:75-76`);
+- **the transcript directory layout** `<session>/subagents/agent-<id>.jsonl`, with a `.meta.json`
+  beside each file (`:88`, `:108`, `:122`, `:141`);
+- **Anthropic's usage fields** in each transcript line: `input_tokens`, `output_tokens`,
+  `cache_read_input_tokens` and `cache_creation_input_tokens` (`:211-214`).
+
+So per-agent spend — one of the two readings the 2026-09-09 highper-gateway trial confirmed — works
+only under Claude Code, even though the script lives in the core.
+
+The enumeration this task asks for ("the hook surface") should name spend capture explicitly: a
+reader per adapter that emits the kit's own `spend` event. And the boundary check needs a second
+form, one that looks for foreign data formats, not just names.
+
+**A second dependency of the same kind:** `kit-charter.sh:50` reads `.claude-plugin/plugin.json`.
+
+**The sequencing criterion's premise is now out of date.** It says *"the brownfield trial has never
+run"*, but trial records now exist for:
+
+- 2026-08-12 — `fd`, a throwaway subject;
+- 2026-08-24 and 2026-08-26 — highper-gateway;
+- 2026-08-27 — aeon;
+- the plugin-mode run of 2026-09-11, recorded as `2026-09-09-highper-gateway-plugin-mode`, which
+  ran on Claude Code only.
+
+Whether they meet the criterion is the operator's call.
+
+Operator direction, 2026-09-11: the kit is meant to work with any coding agent.

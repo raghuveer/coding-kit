@@ -5,7 +5,7 @@ epic: reporting
 tier: T2
 lang: bash
 paths: tooling/kit-status.sh, skills/status-report
-state: open
+state: created
 ---
 
 ## Intent

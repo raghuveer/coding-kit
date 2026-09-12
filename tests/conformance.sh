@@ -772,11 +772,24 @@ if step "a subagent whose transcript cannot be found is reported, not costed" sp
 ( cd "$sx" || exit 1
   bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" --agent-id GHOST --agent coder
   bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" --agent-id GHOST --agent coder
+  # THE PHANTOM, and it is the case a real session is full of: the harness fires for something
+  # that was never an agent -- no name, no transcript. Measured 19 times in one trial against 3
+  # real subagents, several mid-turn, one before any subagent existed. Fired twice here for the
+  # same reason the named one is: once is not evidence that it is not counted per firing.
+  bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" --agent-id PHANTOM
+  bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" --agent-id PHANTOM
   bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
   rows=$(sqlite3 .project/index.db "SELECT COUNT(*) FROM spend;" | tr -d '\015')
   gaps=$(sqlite3 .project/index.db "SELECT COUNT(*) FROM event WHERE kind='spend-gap';" | tr -d '\015')
-  [ "$rows" = 2 ] && [ "$gaps" = 1 ] )
-check $? "no spend row, one spend-gap, and not one gap per firing"
+  unt=$(sqlite3 .project/index.db "SELECT COUNT(*) FROM event WHERE kind='spend-untracked';" | tr -d '\015')
+  # The NAMED agent is still a gap and still loud -- that is a subagent run whose cost is missing,
+  # and suppressing it would be the filter-hides-real-work failure this split exists to avoid.
+  # The unnamed one is recorded, once, under its own kind, and never as an unmeasured run.
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q '1 subagent run(s) unmeasured' STATUS.generated.md || exit 1
+  grep -q '1 stop firing(s) were not subagent runs' STATUS.generated.md || exit 1
+  [ "$rows" = 2 ] && [ "$gaps" = 1 ] && [ "$unt" = 1 ] )
+check $? "a named agent with no transcript is a gap; an unnamed stop firing is not"
 rm -rf "$sx"
 fi
 

@@ -1054,6 +1054,23 @@ done
 # now is: an input. A malformed file is REFUSED and named rather than half-loaded -- a plan
 # missing rows would reorder work silently, which is worse than no plan.
 PLANS_DIR="$ROOT/$STATE_DIR/plans"
+# The clustering self-check's two knobs, read HERE because this is now where the check is made.
+# It lived in kit-plan.sh, which wrote both answers straight to `meta` -- and `meta` is rebuilt
+# from scratch by every run of this script, so each reindex erased them. kit-status.sh then found
+# no recorded decision and re-decided with a literal, disagreeing with the planner that had just
+# written the packs. Derived from the plan rows below, the answer survives because it is re-made.
+# A bad value falls back rather than failing the build: kit-plan.sh already exits 2 on one, so an
+# unusable profile stops the planning, and taking the whole index down as well helps nobody.
+CL_SHARE=$(kit_cfg "$PROFILE" cluster.max_share 60)
+CL_MIN=$(kit_cfg "$PROFILE" cluster.min_tasks 10)
+case "$CL_SHARE" in ''|*[!0-9]*)
+  kit_warn "cluster.max_share is not a whole number; using 60 for the clustering self-check"
+  CL_SHARE=60 ;;
+esac
+case "$CL_MIN" in ''|*[!0-9]*)
+  kit_warn "cluster.min_tasks is not a whole number; using 10 for the clustering self-check"
+  CL_MIN=10 ;;
+esac
 if [ -d "$PLANS_DIR" ]; then
   # TWO FILES MAY NOT CLAIM ONE GOAL. Each emits DELETE-then-INSERT for its `#goal`, so with a
   # duplicate the shell's glob order silently decides which ordering survives — an ordering no
@@ -1073,7 +1090,7 @@ if [ -d "$PLANS_DIR" ]; then
       _g=$(awk -F'\t' '$1=="#goal"{sub(/\r$/,"",$2); print $2; exit}' "$_pf")
       printf '%s\n' "$_dupes" | grep -qxF "${_g:-}" && continue
     fi
-    awk -F'\t' -v file="${_pf#$ROOT/}" '
+    awk -F'\t' -v file="${_pf#$ROOT/}" -v cl_share="$CL_SHARE" -v cl_min="$CL_MIN" '
       function q(s){ gsub(/\047/,"\047\047",s); return s }
       function refuse(why) { reason = why; bad = 1 }
       # A plan file is UNTRUSTED INPUT — SECURITY.md §1 classes anything anyone with commit
@@ -1159,6 +1176,21 @@ if [ -d "$PLANS_DIR" ]; then
                  q(g[i]), q(t[i]), l[i], r[i], s[i], c[i]
         if (withheld != "")
           printf "INSERT OR REPLACE INTO meta VALUES(\047plan_withheld:%s\047,\047%s\047);\n", q(goal), q(withheld)
+        # THE CLUSTERING SELF-CHECK, made once and here. The rows carry their cluster already, so
+        # this costs one pass over an array that is in memory regardless -- against a rule that
+        # previously lived in two scripts and disagreed with itself the first time a real
+        # adoption ran it (2026-09-09, highper-gateway: one task, packs written, packs reported
+        # withheld). `cluster.min_tasks` is the floor that keeps a small backlog out of it: two
+        # tasks in one cluster is 100% and is a small project, not a degenerate clustering.
+        if (rows > 0) {
+          for (i=1; i<=rows; i++) nclust[c[i]]++
+          cbig = 0
+          for (ck in nclust) if (nclust[ck] > cbig) cbig = nclust[ck]
+          cpct = int(cbig * 100 / rows)
+          printf "INSERT OR REPLACE INTO meta VALUES(\047cluster_largest_pct:%s\047,\047%d\047);\n", q(goal), cpct
+          if (cpct > cl_share+0 && rows >= cl_min+0)
+            printf "INSERT OR REPLACE INTO meta VALUES(\047cluster_packs_withheld:%s\047,\047%s\047);\n", q(goal), "1"
+        }
       }' "$_pf" || {
         # awk's status was discarded here, and the task pass twenty lines up carries an entire
         # KIT_SEEN counter precisely because that knowledge is expensive: an unreadable file

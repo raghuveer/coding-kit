@@ -307,3 +307,42 @@ verifying that the new check bites on the pre-change tree confirmed it rather th
 should differ. And it takes no position on ADR 0007, which
 `T-20260821-if-stale-watches-the-head-file-which-git` reserves for the disposition-evidence
 successor to ADR 0006.
+
+## Amendment, 2026-09-12 — `on-hold` is not plannable, and there is a fourth partition
+
+The paragraph above asked for evidence before treating `on-hold` differently. **The evidence
+arrived, and it is that parking a task did nothing at all.**
+
+The operator parked `T-20260826-a-verified-claim-about-the-tree-has-no-a` on 2026-09-09 (commit
+`5103188`). It had been rank 1 at score 20.000 in the plan committed at `80b95fc` earlier the same
+day, while still `created`. On 2026-09-11 `kit-plan.sh --next 12` still put it first, and on
+2026-09-12 it was still first. The planner drops only closed states, and this ADR classed `on-hold`
+as open — so the operator's only way to say *not now* was invisible to the one tool that decides
+what gets worked on next. A session taking the top of the plan would start the parked task.
+
+**The decision: `on-hold` is open and is not plannable.** Those are different questions, and one
+boolean cannot carry both — the same argument this ADR already makes for `is_closed` against
+`is_measured`. So there is a **fourth partition**, `kit_state_plannable`, holding `created`,
+`planned` and `in-progress`; the table under *The three partitions* above is superseded by this
+count, not by its contents.
+
+**What this deliberately does not do: it does not class `on-hold` as closed.** That was the cheap
+fix and it is worse than the defect. `kit-plan.sh`'s edge queries filter on `is_closed`, so closing
+`on-hold` would drop the parked task's `depends_on` edges and land its dependents in **layer 0** —
+scheduled ahead of the thing they are waiting for, silently, with the plan looking healthy. A parked
+task therefore keeps its row and its edges, and is *withheld* in the layering instead, together with
+everything transitively behind it, through the path an unfiled blocker already uses.
+
+**Parking is reported as its own cause.** The withheld notice names its reason out loud — *blocked
+by an id with no task file* — so counting parked work into it would have made the plan assert an
+unfiled blocker about work somebody set aside on purpose. Parked tasks carry their own count, their
+own `#parked` header in the plan file, their own `plan_parked:<goal>` row, and wording that says
+this is not an error. `kit-status.sh` labels a parked task and says how many tasks wait on it, since
+that tail is invisible from the task itself.
+
+`kit_plan_digest` partitions on plannable too, so parking and un-parking each mark the plan stale.
+On the closed partition they did not: the parked task stayed in the hash, and a plan that no longer
+matched the backlog still compared fresh.
+
+Filed as `T-20260912-kit-plan-treats-on-hold-as-plannable-so-`, reviewed and reproduced in a fresh
+repository before any fix was written.

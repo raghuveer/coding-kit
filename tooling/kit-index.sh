@@ -1119,6 +1119,11 @@ if [ -d "$PLANS_DIR" ]; then
       $1=="#goal"        { goal=$2;     next }
       $1=="#created"     { created=$2;  next }
       $1=="#withheld"    { withheld=$2; next }
+      # Parked tasks and what waits behind them, withheld on purpose rather than by a data error.
+      # Carried in the file for the same reason `#withheld` is: `meta` is rebuilt from scratch by
+      # this script, so a count written straight to it survives until the next reindex and no
+      # further -- the defect closed in #93 this morning, not repeated here.
+      $1=="#parked"      { parkedn=$2;  next }
       # The plan travels between machines and kit versions through git, so these two are
       # CHECKED rather than skipped as comments. A file written by a kit that reordered
       # plan_item would otherwise be read positionally by an older one -- rank landing silently
@@ -1176,6 +1181,8 @@ if [ -d "$PLANS_DIR" ]; then
                  q(g[i]), q(t[i]), l[i], r[i], s[i], c[i]
         if (withheld != "")
           printf "INSERT OR REPLACE INTO meta VALUES(\047plan_withheld:%s\047,\047%s\047);\n", q(goal), q(withheld)
+        if (parkedn != "")
+          printf "INSERT OR REPLACE INTO meta VALUES(\047plan_parked:%s\047,\047%s\047);\n", q(goal), q(parkedn)
         # THE CLUSTERING SELF-CHECK, made once and here. The rows carry their cluster already, so
         # this costs one pass over an array that is in memory regardless -- against a rule that
         # previously lived in two scripts and disagreed with itself the first time a real
@@ -1220,7 +1227,8 @@ for _st in $(kit_state_vocab); do
   _cl=0; for _c in $(kit_state_closed);   do [ "$_st" = "$_c" ] && _cl=1; done
   _ac=0; for _a in $(kit_state_activity); do [ "$_st" = "$_a" ] && _ac=1; done
   _me=0; for _m in $(kit_state_measured); do [ "$_st" = "$_m" ] && _me=1; done
-  printf "INSERT OR REPLACE INTO state_class VALUES('%s',%d,%d,%d);\n" "$_st" "$_cl" "$_ac" "$_me"
+  _pl=0; for _p in $(kit_state_plannable); do [ "$_st" = "$_p" ] && _pl=1; done
+  printf "INSERT OR REPLACE INTO state_class VALUES('%s',%d,%d,%d,%d);\n" "$_st" "$_cl" "$_ac" "$_me" "$_pl"
   # Identity row FIRST, so a canonical value always resolves through the alias table and every
   # reader can join it unconditionally rather than remembering to COALESCE.
   printf "INSERT OR REPLACE INTO state_alias VALUES('%s','%s');\n" "$_st" "$_st"

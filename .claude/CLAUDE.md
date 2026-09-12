@@ -54,6 +54,15 @@
   summary and stop.** A session certifying its own output is the one signature that carries no
   information, and this is the same rule as `Via:` for the same reason.
 
+- **Never narrate planning or tool selection.** Output findings, actions and results — not what
+  you are about to do, not what you need next, not a list of the calls you are considering. Turn
+  instructions ask an agent to work out its next steps *privately*; rendering that reasoning as
+  visible text is the failure, and it is not fixed by renaming it. Recorded because it happened
+  five times in one session on 2026-09-12, twice after the agent had stated it would stop and
+  once after it had renamed the prefix rather than dropped it. The operator asked whether
+  `/clear` or a restart would help: neither would, because the instruction being mis-executed is
+  re-injected every turn, which is why the correction belongs here instead.
+
 **For the operator, not the agent** — every instruction in this block is yours:
 
 - A finding that **cannot be judged at all** — the record does not say what it was — is marked

@@ -5,7 +5,7 @@ epic: planning
 tier: T2
 lang: bash
 paths: tooling/kit-checkpoint.sh, skills/checkpoint, skills/task-context
-state: open
+state: created
 ---
 
 ## PRIOR ART — read before writing anything (added 2026-08-12)

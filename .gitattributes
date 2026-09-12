@@ -47,3 +47,10 @@ commit-msg  text eol=lf
 # Neither has an extension, so nothing above matches them.
 LICENSE     text eol=lf
 NOTICE      text eol=lf
+
+# The trial runtime image definition, for the same reason as LICENSE and NOTICE above: it has no
+# extension, so nothing else here matches it -- and `git add` warned "LF will be replaced by CRLF
+# the next time Git touches it" in the very commit that added it, exactly as the *.json note
+# predicted for its own case. A Dockerfile's RUN line continuations are where CRLF actually
+# bites, and this file is read by a builder running on Linux.
+docs/trial-runtime/Dockerfile text eol=lf

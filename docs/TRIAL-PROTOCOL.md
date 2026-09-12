@@ -232,6 +232,7 @@ procedure that produced incomparable results.
 | Must match across compared trials | Why |
 |---|---|
 | the BTE definition | a different unit is a different measurement |
+| the runtime | a trial on the subject's own OS and one on the host measure different things; trial 1's findings included carriage returns and host paths, which are facts about Windows |
 | the agent set and capabilities | the cost question is about these agents |
 | the tier vocabulary and floors' *shape* | floors differ per subject; the ladder must not |
 | what counts as an escape | the escape rate is otherwise not one number |
@@ -279,11 +280,30 @@ mark wall-clock UNAVAILABLE — the same honesty §7 requires of a missing cost 
 run on different machines cannot have their wall-clock compared at all, and the fd trial's
 "six seconds" for co-change was measured before any of this was known.
 
+#### A CONTAINER MOVES THIS NUMBER, so it is part of the runtime rather than of the machine
+
+The 1,015 ms figure is a property of process creation on the Windows host. Running the kit
+inside a Linux container on the same machine is a different runtime with a different spawn cost,
+so the latency above is **not transferable** between them -- which is exactly why the runtime is
+recorded rather than assumed, and why a containerised trial may not be wall-clock-compared
+against a host-run one.
+
+Measure it where the kit actually ran, and record it beside the wall-clock figure:
+
+    # inside the runtime under test
+    s=$(date +%s%N); i=0; while [ $i -lt 50 ]; do /bin/true; i=$((i+1)); done
+    e=$(date +%s%N); echo "$(( (e-s)/50000000 )) ms per spawn"
+
+**This does not make a containerised figure comparable to a host one.** It makes the difference
+visible instead of silently attributing a machine's cost to the kit -- the same failure §2
+already records for the fd trial.
+
 ### Record every time
 
 | | |
 |---|---|
 | kit commit SHA | the exact tree that ran, both trials when comparing |
+| runtime | `uname -srm` from where the kit actually ran, plus the container image digest if any, plus the host OS. Prose does not compare; `6.6.87.2-microsoft-standard-WSL2` and an image digest do |
 | subject | language mix, size, commit count, age of history |
 | greenfield or brownfield | and whether history was truncated |
 | BTE by tier / scope / provenance / model | what `kit-status.sh` emits |
@@ -464,6 +484,7 @@ kit ran and produced no output.
 
 Question:              <the one written at pre-flight>
 Kit SHA:               <sha>        Time-box: <hours>    Actual: <hours>
+Runtime:               <uname -srm>   image <digest or NONE>   host <os>
 Unassessable crits:    <n from kit-preflight.sh --unassessable>   (previous trial: <n>)
 Superseded crits:      <n from kit-preflight.sh --superseded>     (previous trial: <n>)
 Subject:               <languages, size, commits, age>   Greenfield/brownfield: <which>

@@ -733,6 +733,35 @@ REVISE (blind), APPROVED** after the fix.
   denominator, not a clean result**: no `Via:` was written and no task closed. The session proposed
   `Via: kit`, caveated that rungs 1–3 were not satisfied; the operator has not decided it.
 
+**AMENDED 2026-09-12 — THE ABSENT DENOMINATOR WAS HIDING AN ESCAPE.** Measured after the trial
+closed, in a container runtime built for the purpose — the one thing this trial could not do.
+Identical command and scope at both commits:
+
+| commit | `cargo check -p highper-gateway --lib` |
+|---|---|
+| `05c56eb` — this trial's base, and the subject's `master` | **exit 0**, 2m 37s, **0** error diagnostics |
+| `ab74d4c` — this trial's own commit | **exit 101**, `error[E0597]` at `registry.rs:77` |
+
+**The change this trial produced does not compile, and the tree it landed on does.** Three reviews
+passed it — rung 4, rung 5 blind, and a re-review after the fix — and the outcome was
+recorded COMPLETE.
+
+The mechanism, from the compiler's own note rather than inferred: `self.last_update` is a DashMap,
+so `.get()` returns `Option<Ref<'_, String, Instant>>` — a temporary holding a borrow, created
+in the block's **tail expression**. A tail temporary is dropped *after* the block's locals, so the
+`Ref` outlives the guard it borrows from and its destructor could run against freed memory.
+
+**This is the escape the escape rate could not show.** `0 / 1 all` reads as *nothing escaped*; what
+it meant was *no denominator exists*. A defect that three reviews missed and that rung 1 would have
+caught in seconds is exactly the population escape rate exists to count — and it was invisible
+because rungs 1 and 2 were never satisfied and no task closed. Both halves of that are now filed:
+`T-20260912-a-declared-rung-whose-tooling-fails-has-` (a declared rung that fails has no
+disposition, so work completes unverified) and
+`T-20260912-the-baseline-records-that-the-subject-is` (the baseline records state without cause).
+
+**NOT a subject defect.** `ab74d4c` exists only in the trial copy, which has no remote and was never
+pushed. The subject's `master` is `05c56eb`, and it compiles.
+
 **The baseline's free oracle was not tested.** The Baseline says a run that does not notice the test
 target failing to compile is a finding about the kit. This run gave the kit no chance to notice it
 independently: the reviewer prompts supplied the fact — rung 4 writes *"per the task's stated facts:
@@ -825,7 +854,7 @@ documented behaviour; K6 is about the step being unreachable, not the line.
 
 | | defect | where | state |
 |---|---|---|---|
-| S1 | UC12.A: `get_upstreams` refreshed on every call while `last_update` was written and never read | `registry.rs:40-41`; `ROADMAP.md:454-456` | **patch: `format-patch-ab74d4c.txt`.** Its tests are written and **not run**: the `--lib` target does not compile at `05c56eb`, and the crate does not build on Windows |
+| S1 | UC12.A: `get_upstreams` refreshed on every call while `last_update` was written and never read | `registry.rs:40-41`; `ROADMAP.md:454-456` | **patch: `format-patch-ab74d4c.txt`.** Its tests are written and **not run**: the `--lib` target does not compile at `05c56eb`, and the crate does not build on Windows. **AMENDED 2026-09-12: the patch itself does not compile** — `error[E0597]` at `registry.rs:77`, measured against a parent that compiles clean. It is this trial's escape, not a subject defect; see Findings |
 | S2 | `watch_service` panics its backup task on `refresh_interval = 0` | `registry.rs:145` | found by review (#1), fixed in the same patch |
 | S3 | `Cargo.lock` is stale against `highper-gateway/Cargo.toml:158` (`async-graphql-value`), so any cargo command without `--locked` rewrites it | notes, 13:40–13:44Z | not applied |
 | S4 | `protoc` is an undeclared build dependency under `--all-features` (`etcd-client v0.14.1`), alongside `cmake` (Baseline finding 1) | `logs/container-check.log` | not applied. *Whether it contributes to the red `Check` job is unverified* |

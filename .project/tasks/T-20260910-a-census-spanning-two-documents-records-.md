@@ -4,7 +4,7 @@ title: A census spanning two documents records a manifest source that contradict
 epic: reporting
 tier: T2
 lang: python
-state: created
+state: completed
 ---
 
 ## Intent

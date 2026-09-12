@@ -316,6 +316,34 @@ already records for the fd trial.
 | wall-clock and API time | separately |
 | **n** | on every figure, in the figure |
 
+#### Three disciplines the 2026-09-09 trial had to correct mid-run
+
+Not VOID conditions — §3's bar is *no result*, and each of these was caught and corrected while
+the trial was still running, by the trialist rather than by a reader afterwards. They are here
+because the next trialist will not remember them unprompted.
+
+**Probe side effects inside the copy.** `cargo` rewrote `Cargo.lock`, and `nerdctl -v name:/path`
+bind-mounted cwd-relative host directories — 2.2 GB of them — instead of named volumes. Run
+`git status --short` before every `kit-index.sh`: a non-empty tree means the index you are about
+to read is not the one you think. The 2026-09-09 session did exactly this and it caught both.
+
+**Every timestamp comes from `date -u` in the same command that makes the observation.** Estimated
+stamps on that trial ran ahead of the clock and had to be corrected at 13:44:22Z. A recorded time
+that was guessed is not evidence, and it is indistinguishable from one that was measured.
+
+**Do not spend the free oracle before the run.** The subject's baseline holds defects the kit has
+not been told about, and each one is a chance to observe whether the kit finds it independently —
+which is the only unpaid signal a trial gets. On 2026-09-09 the reviewer prompts carried the
+`signals.rs` compile failure straight out of the baseline section, so the kit was never given the
+chance and the record cannot say whether it would have taken it.
+
+**This one has no mechanical detection, and that is stated rather than papered over.** §3 refuses
+conditions nobody can check, and a real check here needs the reviewer prompts kept as evidence and
+compared against the baseline facts — nothing currently captures them. Until something does, the
+discipline is: reviewer prompts carry no baseline defect, or the report lists every baseline fact
+that was supplied to an agent, by name.
+
+
 **Tool-use counts are not currently obtainable.** Revision 1 asked for them and asserted a
 five-use threshold, and no tool in the kit counts tool uses. If your harness reports them,
 record them and say which harness; otherwise record that they were unavailable rather than
@@ -329,12 +357,15 @@ Each of these produced a wrong answer on a real run. A trial that hits one is no
 result — it is **no result**. Revision 1 stated the conditions without saying how to notice
 them, which made three of five undetectable in practice.
 
-**Six conditions as of 2026-09-09.** The sixth differs from the other five in a way worth
-naming: they all leave a trace a suspicious reader can find — a path outside the worktree, a
-dirty tree, a denial in a tool log, a `rejected` gap row. **The sixth leaves none.** A
-structurally blind review is well-formed, confidently worded, and complete on its face; the
-only thing wrong with it is what it was never shown. So it is the one condition that must be
-checked *before* the review rather than doubted afterwards.
+**Seven conditions as of 2026-09-12.** Six were found by 2026-09-09; the seventh — a reading
+taken inside the session — was written up on 2026-09-12 from that same trial.
+
+**One of them differs from all the others in a way worth naming.** The rest leave a trace a
+suspicious reader can find: a path outside the worktree, a dirty tree, a denial in a tool log,
+a `rejected` gap row, a spend row older than the session. **A structurally blind review leaves
+none.** It is well-formed, confidently worded, and complete on its face; the only thing wrong
+with it is what it was never shown. So it is the one condition that must be checked *before*
+the review rather than doubted afterwards.
 
 | Condition | Detection you can actually run |
 |---|---|
@@ -344,6 +375,7 @@ checked *before* the review rather than doubted afterwards.
 | **A permission denial inside a subagent degrades into a partial read.** | Check the tool log for denials. An agent that discloses one is salvageable; assume an undisclosed denial happened if its tool count is far below its peers on the same task. |
 | **A per-file review is STRUCTURALLY BLIND to a defect whose halves live in different files.** Proved 2026-09-09: a reviewer was given `tooling/kit-guard.sh` and a ground-truth check asked whether it found the documented gap that the guard matcher omits `Bash`. It returned **zero** -- and could not have returned anything else, because the matcher is in `hooks/hooks.json` and the reviewer was handed only the script. Unlike every row above, this one produces a **confident, well-formed, complete-looking review**: 7 findings, 7/7 valid vocabulary, no correction loop. Nothing about the output says it was blind. | Before believing a review of `F` found nothing of a class, list what could hold the other half:<br><br>`git grep -lF "$(basename F)" -- . ':!docs' ':!.project' ':!*.md' \| grep -v "^F$"`<br><br>Every file that NAMES `F` is a place a defect about `F` can be half-written. On `kit-guard.sh` this returns 6 files and `hooks/hooks.json` is one of them. Either include them in the prompt, or record them in **Not exercised** by name. The unfiltered form returns 24 here and is unusable, which is why the pathspecs are part of the check rather than an optimisation. |
 | **A reviewer that returns nothing may not have reviewed nothing.** An empty `{"findings":[]}` records as `reason=empty` — *"looked and found nothing"*. | `sqlite3 .project/index.db "SELECT json_extract(payload,'$.reason') AS reason, COUNT(*) FROM event WHERE kind='finding-gap' GROUP BY 1"`. Any `rejected` row is a review whose findings were lost. Confirm the reviewer received a prompt before believing any zero. |
+| **A reading taken inside the session omits the turn that produced it.** Main-loop spend is written at each `Stop`, so a status read mid-session reports the PREVIOUS turn's row. Measured 2026-09-09: 6,902.9 kBTE read against 10,259.6 actually spent — a third of the cost missing from the headline figure. | After the session closes, the index's `spend.at` for the main transcript must equal the last `spend` event for it in `events.ndjson`:<br><br>`sqlite3 .project/index.db "SELECT MAX(at) FROM spend WHERE scope='main';"` against `grep -o '"kind":"spend","at":"[^"]*"' .project/events.ndjson | tail -1`<br><br>If they differ, reindex before reading anything. Verified runnable against this repository. |
 
 **The last detection was itself undetectable, and that is a fourth instance of this section's
 own failure.** It read `SELECT reason, COUNT(*) FROM … kind='finding-gap'`, with a literal
@@ -397,6 +429,14 @@ is not.**
 the guard blocks those outside the project root. **It does not see Bash at all** — no `git push`,
 no `rm`, no redirect. So non-destructiveness is a procedure *you* enforce; the removed remote is
 what makes the procedure hold when the guard cannot.
+
+**This is not hypothetical, and the rule above predicted it.** On 2026-09-09 a session wrote logs
+and reply extracts to the harness scratchpad *after* `kit-guard` refused a `Write` there — the
+guard did its job, and `Bash` walked around it, exactly as the paragraph above says it can. The
+breach was self-reported at 14:05:06Z; nothing would otherwise have found it. So: the opening
+prompt names a temp location INSIDE the copy — the gitignored `.project/` — and at copy-back you
+list every file the transcript wrote outside the copy root. A guard that cannot see the most
+common tool is a guard whose coverage has to be checked by hand.
 
 **Hooks go in the copy, never the subject.** Revision 1 banned hooks in the subject while
 requiring every metric that `kit-init.sh` produces, and `kit-init.sh` installs `commit-msg` and

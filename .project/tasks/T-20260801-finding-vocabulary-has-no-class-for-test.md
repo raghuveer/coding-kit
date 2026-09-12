@@ -3,7 +3,7 @@ id: T-20260801-finding-vocabulary-has-no-class-for-test
 title: Finding vocabulary is unreachable below the opus tier and lacks a test-coverage class
 epic: feedback-loop
 tier: T2
-state: open
+state: created
 ---
 
 ## Intent

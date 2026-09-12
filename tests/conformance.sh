@@ -3085,11 +3085,11 @@ if step "the state vocabulary has one home and its aliases actually bind"; then
 # attempt, which is a green check that cannot fail (docs/LESSONS.md section 1) inside the step
 # written to prevent exactly that.
 ( . "$KIT/tooling/kit-lib.sh"
-  for _get in kit_state_vocab kit_state_closed kit_state_activity kit_state_measured kit_state_legacy; do
+  for _get in kit_state_vocab kit_state_closed kit_state_activity kit_state_measured kit_state_plannable kit_state_legacy; do
     command -v "$_get" >/dev/null 2>&1 || { echo "  $_get is not defined"; exit 1; }
     [ -n "$($_get)" ] || { echo "  $_get is empty"; exit 1; }
   done
-  for _get in kit_state_vocab kit_state_closed kit_state_activity kit_state_measured; do
+  for _get in kit_state_vocab kit_state_closed kit_state_activity kit_state_measured kit_state_plannable; do
     V=$($_get)
     n=$(grep -rlF "$V" "$KIT/tooling" "$KIT/tests" 2>/dev/null | wc -l | tr -d ' ')
     [ "$n" = 1 ] || { echo "  '$V' appears in $n file(s), expected 1"; exit 1; }
@@ -4564,6 +4564,99 @@ check $? "degenerate clustering withholds packs, keeps the ordering, and a raise
 rm -rf "$cl2"
 fi
 
+
+if step "a parked task and everything behind it leave the plan, named as parked rather than blocked"; then
+# docs/adr/0008 left this open -- "both are open, both are plannable, and no evidence here says
+# they should differ" -- and asked for evidence. The evidence was that parking changed nothing: a
+# task parked on 2026-09-09 was rank 1 before parking and still rank 1 two days later.
+#
+# THE TAIL IS TWO LEVELS DEEP ON PURPOSE. T-Q and T-R wait on the parked T-P, and T-S waits on
+# T-Q, so "everything behind it" is a real assertion rather than a restatement of the root. T-Z
+# waits on nothing and must survive, or "withheld" would quietly come to mean "planned nothing" --
+# the failure kit-plan.sh:304-308 already warns about for the unfiled-blocker path.
+#
+# MUTATIONS, each of which must take this step red:
+#   (a) drop the `!plannable[...]` seeding in kit-plan.sh   -> T-P returns to the plan
+#   (b) put `on-hold` in kit_state_closed instead           -> the depends_on edge is dropped and
+#       T-Q/T-R plan at layer 0, ahead of the thing they wait on. The un-park assertions at the
+#       end are what catch this one, and they are why this step does not stop at "it is absent".
+#   (c) restore kit_plan_digest's closed filter             -> parking leaves the plan "fresh"
+pk="$WORK.parked"; rm -rf "$pk"; mkdir -p "$pk/src"
+( cd "$pk" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+  inplan() { awk -F'\t' -v t="$1" '$2==t{f=1} END{exit !f}' .project/plans/default.tsv; }
+
+  printf -- '---\nid: T-P\ntitle: p\ntier: T2\nstate: created\n---\nb\n'  > .project/tasks/T-P.md
+  printf -- '---\nid: T-Q\ntitle: q\ntier: T2\nblocked_by: T-P\n---\nb\n' > .project/tasks/T-Q.md
+  printf -- '---\nid: T-R\ntitle: r\ntier: T2\nblocked_by: T-P\n---\nb\n' > .project/tasks/T-R.md
+  printf -- '---\nid: T-S\ntitle: s\ntier: T2\nblocked_by: T-Q\n---\nb\n' > .project/tasks/T-S.md
+  printf -- '---\nid: T-Z\ntitle: z\ntier: T1\n---\nb\n'                  > .project/tasks/T-Z.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-plan.sh"  >/dev/null 2>&1
+
+  # BEFORE, or the assertion after parking proves nothing: all five are planned, in dependency order.
+  [ "$(Q "SELECT COUNT(*) FROM plan_item WHERE goal_id='default';")" = 5 ] || exit 1
+
+  # Park it. Frontmatter alone is not enough -- state resolves from the LAST TRANSITION EVENT
+  # (kit-index.sh:1262) -- so the transition travels as a trailer, which is how a person does it too.
+  sed -i.bak 's/^state: created/state: on-hold/' .project/tasks/T-P.md && rm -f .project/tasks/T-P.md.bak
+  git add -A && git commit -q --no-verify -m "chore: park p
+
+Task-Id: T-P
+Tier: T2
+Task-Status: on-hold"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  # STALE. On the closed partition the parked task stayed in the digest, so a plan that no longer
+  # matched the backlog still compared fresh and nothing told anyone to replan.
+  [ "$(Q "SELECT COUNT(*) FROM meta WHERE key='plan_stale:default';")" = 1 ] || exit 1
+
+  bash "$KIT/tooling/kit-plan.sh" >"$PWD/p.out" 2>"$PWD/p.err"
+
+  # The root and all three behind it are out of the PLAN ROWS -- not merely past --next's LIMIT,
+  # which is the weaker thing an `--next` assertion would have proved (kit-plan.sh:618).
+  for t in T-P T-Q T-R T-S; do
+    [ "$(Q "SELECT COUNT(*) FROM plan_item WHERE task_id='$t';")" = 0 ] || exit 1
+    inplan "$t" && exit 1
+  done
+  [ "$(Q "SELECT COUNT(*) FROM plan_item WHERE task_id='T-Z';")" = 1 ] || exit 1
+
+  # COUNTED, AND ATTRIBUTED TO THE RIGHT CAUSE. The withheld line names its cause out loud --
+  # "blocked by an id with no task file" -- so a parked task counted into it would assert an
+  # unfiled blocker about work somebody set aside on purpose. That line must not appear at all.
+  grep -q '^# 4 of 5 open task(s) parked' p.out || exit 1
+  grep -q 'blocked by an id with no task file' p.out && exit 1
+  # Named under its root, so the one task to un-park is not buried in its own tail.
+  grep -q 'parked — 4/5 open task(s) are held out of the plan on purpose' p.err || exit 1
+  grep -qE '^  T-P ' p.err || exit 1
+
+  # The report says so too, with the size of the tail -- invisible from the task itself.
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -qE '^- T-P .*\*\*parked\*\*, 2 waiting' STATUS.generated.md || exit 1
+
+  # UN-PARK, AND THE ORDER SURVIVES. This is the assertion that catches mutation (b): if on-hold
+  # were classed closed, kit-plan's edge query would have dropped `depends_on` while T-P was
+  # parked, and nothing above would have noticed -- absence looks the same either way. Here the
+  # tail must come back BEHIND its root, which only holds if the edge was never lost.
+  git commit -q --allow-empty --no-verify -m "chore: unpark p
+
+Task-Id: T-P
+Tier: T2
+Task-Status: in-progress"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-plan.sh"  >/dev/null 2>&1
+  [ "$(Q "SELECT COUNT(*) FROM plan_item WHERE goal_id='default';")" = 5 ] || exit 1
+  [ "$(Q "SELECT layer FROM plan_item WHERE task_id='T-P';")" = 0 ] || exit 1
+  [ "$(Q "SELECT layer FROM plan_item WHERE task_id='T-Q';")" = 1 ] || exit 1
+  [ "$(Q "SELECT layer FROM plan_item WHERE task_id='T-S';")" = 2 ] || exit 1
+  exit 0 )
+check $? "a parked task and everything behind it leave the plan, named as parked rather than blocked"
+rm -rf "$pk"
+fi
 if step "a small backlog keeps its packs, and the cluster facts survive a reindex"; then
 # The step above is the case where the planner and the report AGREE: a genuinely degenerate
 # cluster, withheld by both. THIS is the case where they disagreed, and the one the 2026-09-09

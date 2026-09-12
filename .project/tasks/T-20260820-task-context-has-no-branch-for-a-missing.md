@@ -5,6 +5,7 @@ epic: planning
 tier: T2
 lang: markdown
 paths: skills/task-context/SKILL.md, tooling/kit-plan.sh
+blocked_by: T-20260820-kit-plan-computes-the-ordering-before-re
 state: open
 ---
 

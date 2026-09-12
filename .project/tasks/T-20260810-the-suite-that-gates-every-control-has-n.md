@@ -5,7 +5,7 @@ epic: validation
 tier: T1
 lang: bash
 paths: .claude/project-profile.md, templates/project-profile.md
-state: open
+state: created
 ---
 
 ## Intent
@@ -55,6 +55,18 @@ adopting projects have the same asymmetry between their code and the tests that 
 - [ ] A task filed below that floor is reported as below it, proving the rule can fire rather
       than merely existing.
 - [ ] `templates/project-profile.md` carries the equivalent rule for adopting projects.
+
+**Folded in 2026-09-12 from `T-20260810-commands-lint-does-not-cover-the-tests-d`**, which was
+filed the same day and named by its own notes as *"the same omission seen from two directions --
+the test surface is absent from the tier rules and from the lint command"*:
+
+- [ ] `commands.lint` covers every `*.sh` tracked in the repo, including `tests/`, and does not
+      silently skip the directory it gates.
+- [ ] Introducing a deliberate syntax error in `tests/conformance.sh` makes the declared lint
+      command fail.
+- [ ] The command still exits 0 on a clean tree, on both GNU and BSD userlands.
+- [ ] `templates/project-profile.md` carries the same improved form, since every adopting project
+      inherits this gap from the template.
 
 ## Notes
 

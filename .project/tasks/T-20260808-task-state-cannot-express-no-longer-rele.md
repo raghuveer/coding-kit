@@ -37,20 +37,30 @@ is not.
 
 ## Acceptance criteria
 
-- [ ] One new value, defined in ONE place, with the existing ones. Whatever it is called, the
+- [x] One new value, defined in ONE place, with the existing ones. Whatever it is called, the
       distinction it must preserve is attempt-versus-work: `abandoned` = we stopped;
-      the new one = it should not be done.
+      the new one = it should not be done. **Met by ADR 0008:** `cancelled` is in
+      `kit_state_vocab` and `tooling/kit-lib.sh:154` defines it as *"NO LONGER RELEVANT -- a
+      judgement about the WORK"*, against `abandoned` for a dropped attempt.
 - [ ] Every consumer that partitions open from closed is updated deliberately, not by grep:
       the state derivation in `kit-index.sh`, the open/closed counts, escape rate by tier, the
       tier-floor report, and `kit-plan.sh`'s ordering. Each one should be asked whether the new
       state belongs on the closed side of ITS question — they may not all answer the same way.
-- [ ] A conformance case asserts the trailer validator accepts it, and asserts that a task in
-      the new state is excluded from the escape-rate denominator. That second assertion is the
-      one with teeth.
+- [ ] A conformance case asserts that a task in the state is excluded from the escape-rate
+      denominator. **This is what remains, and it is the assertion with teeth.** The other half is
+      done: the trailer validator accepts the value, reading `kit_state_vocab`
+      (`tooling/kit-trailers.sh:190`), and `tests/conformance.sh:3135` asserts `cancelled` is
+      closed and unmeasured in `state_class` -- which is the mechanism, not the report.
 - [ ] `docs/` states the distinction in the words above, so the next person filing does not
       have to infer it from the vocabulary list.
 
 ## Notes
+
+**Trimmed 2026-09-12 (Wave 0), verified against the tree rather than assumed.** What is already
+true: the value exists with one home; `state_class` records it closed and unmeasured; the trailer
+validator accepts it; `kit-task.sh --state cancelled` is covered by `tests/conformance.sh:3614`.
+What remains: the end-to-end assertion that a `cancelled` task leaves the escape-rate denominator,
+and the `docs/` wording. Left open on purpose -- the remaining half is the half with teeth.
 
 Raised 2026-08-08 from the operator's description of adopting the kit onto existing projects:
 the inventory needs new, completed, not relevant, and yet-to-start, and completed includes work

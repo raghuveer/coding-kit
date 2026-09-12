@@ -520,11 +520,14 @@ case "$CL_MIN"   in ''|*[!0-9]*) kit_warn "cluster.min_tasks must be a whole num
 CL_BIG=$(sq "$DB" "SELECT COALESCE(MAX(c),0) FROM (SELECT COUNT(*) c FROM plan_item
                     WHERE goal_id='$GOAL_SQL' GROUP BY cluster);")
 CL_TOT=$(sq "$DB" "SELECT COUNT(*) FROM plan_item WHERE goal_id='$GOAL_SQL';")
-CL_PCT=0
-[ "${CL_TOT:-0}" -gt 0 ] && CL_PCT=$(( CL_BIG * 100 / CL_TOT ))
-sqlite3 "$DB" "INSERT OR REPLACE INTO meta VALUES('cluster_largest_pct:$GOAL_SQL','$CL_PCT');" ||
-  kit_warn "could not record the cluster distribution; kit-status.sh will not report it"
-if [ "$CL_PCT" -gt "$CL_SHARE" ] && [ "${CL_TOT:-0}" -ge "$CL_MIN" ]; then
+# READ BACK, not recomputed. Both keys were written straight to `meta` from here, and `meta`
+# is rebuilt from scratch by kit-index.sh -- which re-derived neither, so the facts lasted until
+# the next reindex and no further. kit-index.sh now derives them from `plan_item` and these same
+# two knobs on every build, immediately above at :449; this reads that one answer. The two
+# counts are still queried because the warning names them, but they decide nothing.
+CL_PCT=$(sq "$DB" "SELECT COALESCE((SELECT value FROM meta WHERE key='cluster_largest_pct:$GOAL_SQL'),0);")
+CL_HELD=$(sq "$DB" "SELECT COUNT(*) FROM meta WHERE key='cluster_packs_withheld:$GOAL_SQL';")
+if [ "${CL_HELD:-0}" != 0 ]; then
   kit_warn "clustering degenerated: one cluster holds $CL_BIG of $CL_TOT tasks (${CL_PCT}%, cap ${CL_SHARE}%)"
   kit_warn "  Packs are WITHHELD rather than written. The ordering is unaffected — layers come"
   kit_warn "  from topology and ranks from score, and both are still correct."
@@ -535,11 +538,7 @@ if [ "$CL_PCT" -gt "$CL_SHARE" ] && [ "${CL_TOT:-0}" -ge "$CL_MIN" ]; then
   # looking current — a withheld artefact that is still being served is not withheld, and it is
   # the exact orphaned-pack state ADR 0004 spent a critical closing.
   rm -rf "$ROOT/$STATE_DIR/packs/$GOAL_SLUG"
-  sqlite3 "$DB" "INSERT OR REPLACE INTO meta VALUES('cluster_packs_withheld:$GOAL_SQL','1');" ||
-    kit_warn "could not record that packs were withheld; status will report them as merely missing"
   PACKS_OK=0
-else
-  sqlite3 "$DB" "DELETE FROM meta WHERE key='cluster_packs_withheld:$GOAL_SQL';" 2>/dev/null
 fi
 
 if [ "$PACKS_OK" = 1 ]; then

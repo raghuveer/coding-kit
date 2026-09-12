@@ -868,11 +868,19 @@ esac
 # The cluster-size distribution. It was absent, so a 70-of-85 cluster could only be found by
 # querying plan_item by hand — which is how it went unnoticed while the packs built from it were
 # being proposed as the subject of an ROI experiment.
-q "SELECT substr(key,21)||' '||value FROM meta WHERE key LIKE 'cluster_largest_pct:%';" | tr -d '\r' |
-while IFS=' ' read -r _g _pct; do
+# The withhold decision is READ, not re-made. A literal 60 here ignored `cluster.max_share`,
+# ignored `cluster.min_tasks` -- the floor that keeps a small backlog from being called
+# degenerate -- and ignored the recorded flag, so a first adoption with one task was handed its
+# pack and told in the same report that packs were withheld. Measured on the 2026-09-09
+# highper-gateway trial; it hits every brownfield first run, where the backlog is small by
+# definition. Goal ids are validated to [A-Za-z0-9._-] by the plan reader, so they hold no space.
+q "SELECT substr(m.key,21)||' '||m.value||' '||
+          (SELECT COUNT(*) FROM meta w WHERE w.key='cluster_packs_withheld:'||substr(m.key,21))
+     FROM meta m WHERE m.key LIKE 'cluster_largest_pct:%';" | tr -d '\r' |
+while IFS=' ' read -r _g _pct _held; do
   [ -n "$_g" ] || continue
   printf '\n> **Largest cluster in `%s` holds %s%% of its planned tasks.**' "$_g" "$_pct"
-  if [ "${_pct:-0}" -gt 60 ]; then
+  if [ "${_held:-0}" != 0 ]; then
     printf ' Packs are **withheld** —\n'
     printf '> a pack built from a cluster that size names most of the repository, which is worse\n'
     printf '> than no pack. The ordering is unaffected: layers come from topology and ranks from\n'

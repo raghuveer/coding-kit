@@ -4564,6 +4564,55 @@ check $? "degenerate clustering withholds packs, keeps the ordering, and a raise
 rm -rf "$cl2"
 fi
 
+if step "a small backlog keeps its packs, and the cluster facts survive a reindex"; then
+# The step above is the case where the planner and the report AGREE: a genuinely degenerate
+# cluster, withheld by both. THIS is the case where they disagreed, and the one the 2026-09-09
+# highper-gateway trial hit: a backlog BELOW cluster.min_tasks, where the planner writes the pack
+# and kit-status.sh called it withheld anyway, because it re-decided with a literal 60 instead of
+# reading the decision. It also asserts what a plain reindex used to erase.
+cl3="$WORK.clustsmall"; rm -rf "$cl3"; mkdir -p "$cl3"
+( cd "$cl3" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  # ONE task: 100% of the backlog in one cluster, which is what every fresh adoption looks like.
+  # cluster.min_tasks is left at its default on purpose — the default is the case that shipped
+  # wrong, and a fixture that lowers it would not reproduce the defect at all.
+  printf -- '---\nid: T-S1\ntitle: s1\ntier: T2\nepic: solo\n---\nb\n' > .project/tasks/T-S1.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-plan.sh"  >/dev/null 2>&1
+
+  # The planner wrote the pack: one task is under the floor, whatever its share.
+  [ "$(Q "SELECT value FROM meta WHERE key='cluster_largest_pct:default';")" = 100 ] || exit 1
+  [ "$(Q "SELECT COUNT(*) FROM meta WHERE key='cluster_packs_withheld:default';")" = 0 ] || exit 1
+  [ -d .project/packs/default ] || exit 1
+
+  # And the report must not contradict it.
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'Packs are \*\*withheld\*\*' STATUS.generated.md && exit 1
+  grep -q 'Largest cluster in `default` holds 100%' STATUS.generated.md || exit 1
+
+  # THE FACTS SURVIVE A PLAIN REINDEX. Written straight to `meta` they were re-derived by
+  # nothing, so every rebuild erased them and withheld packs were then reported as merely missing.
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  [ "$(Q "SELECT value FROM meta WHERE key='cluster_largest_pct:default';")" = 100 ] || exit 1
+
+  # THE WITHHOLD DECISION SURVIVES ONE TOO. Lower the floor so this same backlog degenerates,
+  # then rebuild: the decision must still be readable, which is what the direct meta write lost.
+  sed -i.bak 's|^cluster.hub_cap:.*|&\ncluster.min_tasks: 1|' .claude/project-profile.md && rm -f .claude/project-profile.md.bak
+  bash "$KIT/tooling/kit-plan.sh"  >/dev/null 2>&1
+  [ "$(Q "SELECT value FROM meta WHERE key='cluster_packs_withheld:default';")" = 1 ] || exit 1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  [ "$(Q "SELECT value FROM meta WHERE key='cluster_packs_withheld:default';")" = 1 ] || exit 1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'Packs are \*\*withheld\*\*' STATUS.generated.md || exit 1
+  exit 0 )
+check $? "a small backlog keeps its packs, and the cluster facts survive a reindex"
+rm -rf "$cl3"
+fi
+
 if step "the pre-flight surfaces the blind spot its own criticals box excludes"; then
 # AC5 of T-20260813. `--criticals` excludes unassessable findings on purpose — leaving them in
 # would make the gate permanently unsatisfiable, since they cannot be judged from what survives.

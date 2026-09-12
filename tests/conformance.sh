@@ -2657,6 +2657,97 @@ check $? "spend capture is judged from the event log, not from whatever the last
 rm -rf "$pf" "$sp"
 fi
 
+
+if step "a reply already in hand is recorded, and a refused one still leaves a gap"; then
+# In plugin mode a reviewer is an Agent-tool subagent: there is no command that reads a prompt on
+# stdin and writes a reply to stdout, so `--cmd` has no satisfiable value and the retry loop has
+# no caller shape. Measured on the 2026-09-09 highper-gateway trial -- 11 of 11 findings landed
+# only because a human typed `kit-finding.sh --json`, which is the intervention acceptance
+# criterion 1 forbids.
+#
+# THE LOAD-BEARING ASSERTION IS THE REFUSED REPLY, NOT THE ACCEPTED ONE. `kit-finding.sh --json`
+# already records a good reply, so a test that only checked that would pass against the door not
+# existing at all. What it does NOT do is leave a row when it refuses -- the refused findings
+# exist only in the reply, and silence there is the open circuit this task is named after.
+#
+# THE GAP HAS EXACTLY ONE OWNER, and this step asserts the count rather than its existence for
+# that reason. `kit-finding.sh`'s emit() already records a `rejected` gap when a batch is refused,
+# so a door that writes its own produces TWO rows for one refused review -- the double-gap shape
+# round 5 of this task recorded as a minor, and which was reintroduced here and caught by this
+# step before it shipped. Asserting `>= 1` would have passed against both the duplicate and the
+# silence; only the exact count separates them.
+#
+# MUTATIONS, each of which must take this step red on its own:
+#   (a) write a gap in the --reply-file path too   -> two rows for one refusal, grej becomes 2
+#   (b) remove emit()'s gap in kit-finding.sh      -> refusal goes silent, grej becomes 0
+#   (c) accept --cmd and --reply-file together     -> ambiguity about which reply is real
+#   (d) accept an empty --reply-file               -> records nothing and exits 0
+rf="$WORK.replyfile"; rm -rf "$rf"; mkdir -p "$rf/src"
+( cd "$rf" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-h\ntitle: h\ntier: T2\n---\nb\n' > .project/tasks/T-h.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+
+  # A compliant reply, as an Agent-tool subagent would have returned it.
+  printf '%s' '{"verdict":"REVISE","narrative":"n","findings":[{"class":"fail-open","severity":"major","lang":"bash","summary":"recorded through the reply-in-hand door with no command to run"}]}' > good.json
+  bash "$KIT/tooling/kit-review-record.sh" --task T-h --agent implementation-reviewer \
+    --reply-file good.json >/dev/null 2>&1
+  okrc=$?
+
+  # A reply the validator refuses: severity outside the vocabulary. The recorder rejects the
+  # whole batch -- and the GAP is what this door adds over calling the recorder directly.
+  printf '%s' '{"verdict":"REJECT","narrative":"n","findings":[{"class":"fail-open","severity":"Catastrophic","summary":"an unknown severity, so the whole batch is refused"}]}' > bad.json
+  bash "$KIT/tooling/kit-review-record.sh" --task T-h --agent tester \
+    --reply-file bad.json >/dev/null 2>&1
+  badrc=$?
+
+  # An EMPTY file is not an empty review. A reviewer that found nothing returns {"findings":[]},
+  # which records a gap meaning exactly that; an empty file means the caller has nothing.
+  : > empty.json
+  bash "$KIT/tooling/kit-review-record.sh" --task T-h --agent tester \
+    --reply-file empty.json >/dev/null 2>&1
+  emptyrc=$?
+
+  # ... and that distinction must hold: the genuine empty review still records its own gap.
+  printf '%s' '{"findings":[]}' > none.json
+  bash "$KIT/tooling/kit-review-record.sh" --task T-h --agent documenter \
+    --reply-file none.json >/dev/null 2>&1
+  nonerc=$?
+
+  # Exactly one door. Both, or neither, is a usage error before anything is written.
+  bash "$KIT/tooling/kit-review-record.sh" --task T-h --agent tester \
+    --cmd 'true' --reply-file good.json >/dev/null 2>&1
+  bothrc=$?
+  bash "$KIT/tooling/kit-review-record.sh" --task T-h --agent tester >/dev/null 2>&1
+  neitherrc=$?
+
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  rows=$(Q "SELECT COUNT(*) FROM finding;")
+  summ=$(Q "SELECT summary FROM finding WHERE agent='implementation-reviewer';")
+  grej=$(Q "SELECT COUNT(*) FROM event WHERE kind='finding-gap' AND payload LIKE '%\"reason\":\"rejected\"%';")
+  gemp=$(Q "SELECT COUNT(*) FROM event WHERE kind='finding-gap' AND payload LIKE '%\"reason\":\"empty\"%';")
+  # The gap must name WHICH review, not merely exist: a count alone cannot tell a refused
+  # tester review from a refused anything-else.
+  gwho=$(Q "SELECT COUNT(*) FROM event WHERE kind='finding-gap' AND payload LIKE '%\"agent\":\"tester\"%' AND payload LIKE '%\"reason\":\"rejected\"%';")
+
+  [ "$okrc"      = 0 ] || exit 1     # a good reply records and exits clean
+  [ "$badrc"     = 1 ] || exit 1     # a refused reply fails, and does not pretend otherwise
+  [ "$emptyrc"   = 2 ] || exit 1     # an empty FILE is a usage error, not an empty review
+  [ "$nonerc"    = 0 ] || exit 1     # an empty REVIEW is a measurement and records fine
+  [ "$bothrc"    = 2 ] || exit 1     # both doors is ambiguous
+  [ "$neitherrc" = 2 ] || exit 1     # neither door leaves nothing to do
+  [ "$rows" = 1 ] || exit 1          # only the compliant reply became a row
+  [ "$grej" = 1 ] || exit 1          # THE ASSERTION THIS STEP EXISTS FOR
+  [ "$gwho" = 1 ] || exit 1          # and it names the review that was refused
+  [ "$gemp" = 1 ] || exit 1          # the genuine empty review is still its own kind of gap
+  case "$summ" in *"reply-in-hand door"*) ;; *) exit 1 ;; esac
+  exit 0 )
+check $? "a reply already in hand is recorded, and a refused one still leaves a gap"
+rm -rf "$rf"
+fi
 if step "a refused review is retried with the diagnostics, boundedly"; then
 # The contract asks a reviewer for one JSON object. Across four live runs it was ignored three
 # times, and each time a human read the diagnostics and repaired the reply by hand -- the

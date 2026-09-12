@@ -4,6 +4,7 @@ title: An accelerator authoring template and self check
 epic: accelerators
 tier: T1
 paths: templates, agents
+blocked_by: T-20260731-accelerator-line-budget-and-eviction
 state: open
 ---
 

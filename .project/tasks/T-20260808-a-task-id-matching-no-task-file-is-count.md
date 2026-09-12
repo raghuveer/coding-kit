@@ -5,7 +5,7 @@ epic: validation
 tier: T3
 lang: bash
 paths: tooling/kit-index.sh, tooling/kit-status.sh, tooling/kit-plan.sh, tooling/kit-trailers.sh
-state: open
+state: completed
 ---
 
 ## Intent

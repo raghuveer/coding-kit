@@ -4,7 +4,7 @@ title: Reviewer agents cannot run the tools their instructions require
 epic: agent-contracts
 tier: T2
 lang: markdown
-state: open
+state: created
 ---
 
 ## Intent

@@ -4,7 +4,7 @@ title: Promote the ownership boundary and measurement guards
 epic: measurement
 tier: T1
 paths: README.md, templates/project-profile.md, docs
-state: open
+state: created
 ---
 
 ## Intent

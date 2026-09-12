@@ -5,7 +5,7 @@ epic: measurement
 tier: T2
 lang: bash
 paths: tooling/kit-charter.sh, docs/CHARTER.md
-state: created
+state: completed
 ---
 
 ## Intent
@@ -82,9 +82,10 @@ claim would have meant hardening a check that already works.
       assertion about its numbers would restate the query it already runs, which is the
       green-but-meaningless shape. The one thing worth asserting that does NOT restate a query is
       that a row is never silently omitted; that needs a fixture and is not written.
-- [ ] The judgements in §4 — *"not yet written, and that is a point in an iterative process rather
+- [x] The judgements in §4 — *"not yet written, and that is a point in an iterative process rather
       than a gap"* — are out of scope and stay prose. Recorded as a criterion so the boundary is
-      explicit rather than assumed, and left open because nothing enforces it.
+      explicit rather than assumed, and left open because nothing enforces it. **Ticked 2026-09-12
+      as recorded rather than done:** it asserts a boundary, and no check can fire on it.
 
 ## Notes
 

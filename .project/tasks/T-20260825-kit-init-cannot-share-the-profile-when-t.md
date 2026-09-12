@@ -35,26 +35,38 @@ through a different door, and arriving on day one rather than on day two.
 
 ## Acceptance criteria
 
-- [ ] `kit-init.sh` **detects** that the profile path is ignored before it claims success. The
+- [x] `kit-init.sh` **detects** that the profile path is ignored before it claims success. The
       check is `git check-ignore -q <path>`, which is the authority — pattern-matching
       `.gitignore` by hand would reproduce git's precedence rules badly and is how this class of
       bug gets a second life.
-- [ ] When it is ignored, the run says so **loudly and specifically**, naming the file and the
+- [x] When it is ignored, the run says so **loudly and specifically**, naming the file and the
       fact that the printed "commit this" instruction will fail. A warning that says "check your
       gitignore" is not this criterion.
-- [ ] The negation is offered rather than applied silently: `kit-init.sh` already edits
+- [x] The negation is offered rather than applied silently: `kit-init.sh` already edits
       `.gitignore`, so adding a `!.claude/project-profile.md` negation is within what it does —
       but **an un-negatable case must still be reported rather than half-fixed.** Git cannot
       re-include a file if a parent *directory* is excluded, so `.claude/` requires negating the
       directory too, and a naive negation line will look correct and do nothing.
-- [ ] Whatever it does, the exit status reflects it. Exiting 0 while the stated next step cannot
+- [x] Whatever it does, the exit status reflects it. Exiting 0 while the stated next step cannot
       be performed is the defect, and it is not fixed by better wording alone.
-- [ ] `INSTALL.md` covers the case, because an adopter reading the docs before running anything
+- [x] `INSTALL.md` covers the case, because an adopter reading the docs before running anything
       should not have to discover it from a failed `git add`.
-- [ ] Mutation proof: a fixture repo whose `.gitignore` carries `.claude/` fails the check, and
+- [x] Mutation proof: a fixture repo whose `.gitignore` carries `.claude/` fails the check, and
       removing the check makes it pass.
 
 ## Notes
+
+**Trimmed 2026-09-12 (Wave 0), each criterion checked against the tree.** `kit-init.sh:196-200`
+detects the ignored path with `git check-ignore` and prints *"ADOPTION IS INCOMPLETE: git is
+ignoring files the team is supposed to share"*, naming the blocked paths; `:208-220` offers the
+re-include idiom rather than applying it; `:227` exits 1; `INSTALL.md:167-177` covers the case for
+an adopter reading first; and `tests/conformance.sh:552` asserts the message, so removing the check
+fails the step.
+
+**What remains is a different task.** The printed remedy is hard-coded to `.claude/` even when the
+blocked path is `.project/`, which is
+`T-20260911-kit-init-prints-the-claude-remedy-when-t`. The state is left for the operator rather
+than closed here.
 
 **Do not widen this into "the kit should own .gitignore".** It touches that file already and the
 scope here is one file it needs tracked. A task that grows into managing an adopter's ignore

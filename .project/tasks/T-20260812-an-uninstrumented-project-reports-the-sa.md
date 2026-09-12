@@ -5,7 +5,7 @@ epic: measurement
 tier: T2
 lang: bash
 paths: tooling/kit-status.sh
-state: open
+state: created
 ---
 
 ## Intent

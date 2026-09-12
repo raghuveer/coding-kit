@@ -5,7 +5,7 @@ epic: validation
 tier: T0
 lang: bash
 paths: .claude/project-profile.md, templates/project-profile.md
-state: open
+state: cancelled
 ---
 
 ## Intent
@@ -49,6 +49,12 @@ rather than a hardcoded list. Lint should match.
       inherits this gap from the template.
 
 ## Notes
+
+**Cancelled 2026-09-12 (Wave 0): folded into `T-20260810-the-suite-that-gates-every-control-has-n`,
+which carries these four criteria verbatim.** The work is not dropped -- it is tracked there. This
+task is cancelled rather than completed because, as a separate task, it should not be done: both
+were filed on 2026-08-10 against the same two files, and this one's own notes call them *"the same
+omission seen from two directions"*.
 
 Filed 2026-08-10 alongside `T-20260810-the-suite-that-gates-every-control-has-n`; both are the
 same omission seen from two directions — the test surface is absent from the tier rules and from

@@ -67,12 +67,24 @@ bash ${CLAUDE_PLUGIN_ROOT}/tooling/kit-review-record.sh \
 `--cmd` is the only place that knows how a reviewer is invoked here, so nothing about the
 harness or the model leaks into the kit.
 
-If you already have a reply in hand, record it directly:
+If you already have a reply in hand — **which is every review in plugin mode**, where a
+reviewer is an Agent-tool subagent and there is no command that reads stdin and writes stdout —
+record it through the same door the loop uses:
 
 ```sh
-bash ${CLAUDE_PLUGIN_ROOT}/tooling/kit-finding.sh \
-  --task <task-id> --agent <agent> --json  < reviewer-reply.json
+bash ${CLAUDE_PLUGIN_ROOT}/tooling/kit-review-record.sh \
+  --task <task-id> --agent <agent> --reply-file reviewer-reply.json
 ```
+
+That validates the reply, records it, and **leaves a `finding-gap` if it is refused** — so a
+review whose findings were rejected is still visible in the measurement. `kit-finding.sh --json`
+still works and is what this calls, but it records nothing when it refuses, and a refused review
+that leaves no row is the open circuit this whole path exists to close.
+
+**What `--reply-file` cannot do is retry.** A correction restates the original request, and a
+caller holding one finished reply has nothing to re-ask with. So in plugin mode the compliance
+half is yours: read the diagnostics, ask the reviewer again, record its next reply. Across five
+live rounds one model complied 3/3 and another 0/4, so expect to do this.
 
 A reviewer that found nothing returns `{"findings": []}`, which records a `finding-gap` — an
 empty review is a measurement, and it must not look like a review that never ran.

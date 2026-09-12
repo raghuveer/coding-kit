@@ -425,6 +425,64 @@ Six principles, because patching seven symptoms would leave the eighth.
 **Only the last block is harvested**, on the same reasoning as 5: a superseded draft is not a
 finding, and "last message wins" is the only rule that matches how a reviewer actually works.
 
+## 2026-09-12 — the reply-in-hand door, and what is left of this task
+
+**Two of the three acceptance criteria are already met, and were before today.** The task text
+above predates that and reads as though nothing works. Checked at source rather than assumed:
+
+- **AC2 — a review that records none is visible as a warning: MET.** `kit-status.sh:582-597`
+  splits `empty` from `rejected` and reports each with its own meaning — an empty review is
+  evidence, a refused batch is a hole — with a third count for gaps written before the reason
+  existed, named rather than folded into either.
+- **AC3 — rejected findings surfaced at the point of rejection: MET.**
+  `kit_findings.py --correction` returns the validator's own diagnostics, verbatim, at refusal.
+- **AC1 — findings reach the table without the operator remembering: HALF MET.** See below.
+
+**Also stale: round 3's C3.** It recorded that both skills instructed a `Findings (recordable)`
+format none of the rewritten contracts produces. Both skills now document `--json`, and all four
+agents return `{verdict, narrative, findings}`. That was fixed in a later round and the text
+above was never updated.
+
+### What actually remained, and it is narrower than the title
+
+`kit-review-record.sh` requires `--cmd`, whose contract is one line: *it reads a prompt on stdin
+and writes the reply to stdout.* **In plugin mode there is no such thing.** A reviewer is an
+Agent-tool subagent; there is no command to run, so `--cmd` has no satisfiable value and the
+retry loop has no caller shape at all. Measured on the 2026-09-09 trial: **11 of 11 findings
+landed only because a human typed `kit-finding.sh --json`** after each reviewer returned —
+precisely the intervention AC1 forbids.
+
+### `--reply-file`, and the half it cannot close
+
+The door takes a reply the orchestrator already holds and runs it through the same validation and
+the same recorder. On refusal it reports the diagnostics and exits non-zero, and the gap is
+recorded — by `kit-finding.sh`, which already owns it.
+
+**It cannot retry, and that is a property of the situation.** A correction restates the original
+request; `kit_findings.py --correction` requires `--original-file` and exits 2 without it; a
+caller holding one finished reply has nothing to re-ask with. So the RECORDING half of AC1 is now
+mechanical and the COMPLIANCE half is not: in plugin mode, reading the diagnostics and re-asking
+the reviewer is still the operator's. That is stated in `skills/verify-ladder/SKILL.md` at the
+point of use rather than left to be discovered, together with the measured reason to expect it
+— across five live rounds one model complied 3/3 and another 0/4.
+
+**This is deliberately not closed.** AC1 as written says *without the operator remembering*, and
+a skill instruction is a request, not a mechanism — the conclusion this task reached itself
+after four live runs. Option 2 was considered and rejected for that reason: a correction contract
+whose enforcement lives in a skill would satisfy the words while failing the argument.
+
+### The step caught a defect in the door before it shipped
+
+The first version of `--reply-file` wrote its own `rejected` gap. `kit-finding.sh`'s `emit()`
+already writes one (`kit-finding.sh:128-134`), so a refused reply produced **two rows for one
+review**. Measured: the recorder alone moves the gap count by exactly one.
+
+That is the double-gap shape round 5 recorded as a minor, reintroduced one file over —
+`docs/LESSONS.md` §4, filing the class without sweeping for it, in the same task whose history
+already records the complaint. The conformance step asserts the exact gap COUNT rather than its
+existence, which is the only assertion that separates the duplicate from the silence: `>= 1`
+would have passed against both.
+
 ## Notes
 
 Interacts with [[T-20260801-reviewer-agents-cannot-run-the-tools-the]]: even once

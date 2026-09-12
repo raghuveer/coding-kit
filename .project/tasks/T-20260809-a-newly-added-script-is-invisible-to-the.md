@@ -5,7 +5,7 @@ epic: portability
 tier: T1
 lang: bash
 paths: tests/conformance.sh, tooling/kit-init.sh
-state: open
+state: created
 ---
 
 ## Intent

@@ -553,6 +553,18 @@ if [ "${GAP:-0}" -gt 0 ]; then
   printf '> as free work.\n'
 fi
 
+# COUNTED, NOT FOLDED IN. These are stop firings for agents the harness never named and never
+# gave a transcript -- measured at 19 in one trial session against 3 real subagents, growing with
+# turns rather than with agents. Reported as unmeasured runs they made the cost table look full of
+# holes it did not have, which is the mirror of the failure the line above exists to prevent:
+# unmeasured must not read as free, and noise must not read as unmeasured.
+UNTRACKED=$(q "SELECT COUNT(*) FROM event WHERE kind='spend-untracked';")
+if [ "${UNTRACKED:-0}" -gt 0 ]; then
+  printf '\n> **%s stop firing(s) were not subagent runs** and are not counted above. Each named\n' "$UNTRACKED"
+  printf '> no agent and had no transcript; they track the number of turns, not the number of\n'
+  printf '> agents. They are recorded rather than dropped, so the distinction stays checkable.\n'
+fi
+
 # The findings equivalent, and the reason the loop is now closed rather than merely plumbed. A
 # reviewer that emitted findings none of which were recorded is the exact failure this section
 # exists to end: the table read zero and the README called it "nothing escaped". Emitted and

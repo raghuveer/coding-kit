@@ -111,9 +111,31 @@ if [ -n "$AGENT_ID" ]; then
     # name that holds someone else's cost -- but say so, because unmeasured must not read
     # as free. kit-status.sh counts these. The directory searched is deliberately not in the
     # message: it sits under the operator's home, and this log is committed.
-    grep -q "\"spend-gap\".*\"agent_id\":\"$AGENT_ID\"" "$EVENTS" 2>/dev/null || \
-    printf '{"task":"","kind":"spend-gap","at":"%s","agent":"%s","agent_id":"%s","session":"%s","reason":"no per-agent transcript found for this agent"}\n' \
-      "$NOW" "$(esc "$AGENT")" "$(esc "$AGENT_ID")" "$(esc "$SESSION")" \
+    #
+    # WHICH KIND, AND THE DISTINCTION IS THE WHOLE DEFECT. Measured twice -- 2026-08-22, and the
+    # 2026-09-11 highper-gateway trial -- the harness fires this hook for things that were never
+    # subagent runs: 19 firings, 19 distinct ids, every one with an EMPTY agent_type, none with a
+    # transcript anywhere under the harness home after the session closed, several mid-turn, and
+    # one before any subagent had been spawned at all. Against 3 real reviewers, all 3 measured.
+    #
+    # Recorded as `spend-gap` those made kit-status report "15 subagent run(s) unmeasured" for a
+    # session in which 3 of 3 real subagents WERE measured -- a number that grows with TURNS
+    # rather than with agents, and a warning people learn to skip.
+    #
+    # A NAMED agent with no transcript stays a gap and stays loud: that is a subagent run whose
+    # cost is genuinely missing. An UNNAMED one is still recorded -- nothing is dropped silently,
+    # the rule `via: unknown` and absent-versus-zero already set here -- but under its own kind,
+    # so it never inflates the unmeasured-subagent count. Neither kind is one the indexer acts
+    # on, so neither belongs in kit-event.sh's refusal list.
+    _KIND=spend-gap
+    _WHY="no per-agent transcript found for this agent"
+    if [ -z "$AGENT" ]; then
+      _KIND=spend-untracked
+      _WHY="stop fired for an unnamed agent with no transcript; not a subagent run"
+    fi
+    grep -q "\"$_KIND\".*\"agent_id\":\"$AGENT_ID\"" "$EVENTS" 2>/dev/null || \
+    printf '{"task":"","kind":"%s","at":"%s","agent":"%s","agent_id":"%s","session":"%s","reason":"%s"}\n' \
+      "$_KIND" "$NOW" "$(esc "$AGENT")" "$(esc "$AGENT_ID")" "$(esc "$SESSION")" "$_WHY" \
       >> "$EVENTS"
     exit 0
   fi

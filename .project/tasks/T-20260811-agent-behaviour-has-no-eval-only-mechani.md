@@ -55,3 +55,26 @@ described, because the register was written without knowing conformance existed.
 
 Distinct from `T-20260808-co-change-has-no-eval-harness-so-its-sco`, which evaluates co-change
 *scoring*. Both are wanted; neither replaces the other.
+
+**2026-09-11 — the same failure at 3 of 3, from the highper-gateway plugin-mode trial.** All three
+`coding-kit:implementation-reviewer` replies came back wrapped in a ` ```json ` fence, which
+`agents/implementation-reviewer.md:61` forbids. **0 of 3 complied**, and the third came back fenced
+even after an in-prompt reminder in capitals (`docs/TRIALS/2026-09-09-highper-gateway-plugin-mode/`,
+under `reviews/` and in the trial notes at 14:06:06Z).
+
+All three still landed, because `kit_findings.py:184-195` deliberately strips one fence. That
+tolerance is right for the recorder, and it also hides the violation from every current report.
+There are two ways to make it visible:
+
+- the recorder could count the fences it strips, since `unfence()` already knows whether it matched
+  — a small change in the portable core;
+- an eval could check the raw replies, which is what this task proposes.
+
+**Model:** the three subagent spend rows the hooks wrote for these reviewers (agent ids
+`ac7e0037f040926ff`, `aef898e5643e9c10b` and `a2e86f9d43dfeaf7b` in `events.ndjson`) are all
+`claude-sonnet-5`. That is n = 3 replies,
+from one agent in one session.
+
+A proposal, not a change to this task: the reply contract and the scenarios' pass rules are portable
+core, while the agent files under test are adapter content
+(`T-20260819-the-claude-adapter-is-16-files-but-nothi`).

@@ -156,7 +156,11 @@ sqlite3 -separator $'\t' "$DB" "
              SELECT e2.src FROM edge e2
               WHERE e2.rel='touches' AND e2.dst IN (
                 SELECT e3.dst FROM edge e3 WHERE e3.src=t.id AND e3.rel='touches'))),
-         COALESCE(t.epic,'')
+         COALESCE(t.epic,''),
+         -- Whether this task may be ORDERED, which is not whether it is open. The filter below
+         -- stays on is_closed deliberately: a parked task keeps its row and its edges here, and is
+         -- withheld in the END block instead. Dropping it in SQL would drop the edges with it.
+         COALESCE((SELECT sc.is_plannable FROM state_class sc WHERE sc.state = t.state), 1)
     FROM task t WHERE t.state NOT IN (SELECT state FROM state_class WHERE is_closed = 1) ORDER BY t.id;
   SELECT 'E', e.src, e.dst FROM edge e
    WHERE e.rel='depends_on'
@@ -213,7 +217,7 @@ function before(x, y,   bx, by) {
 
 $1=="N" {
   id=$2; n++; ids[n]=id; par[id]=id
-  tier[id]=$3; touch[id]=$4+0; esc[id]=$5+0; epic[id]=$6
+  tier[id]=$3; touch[id]=$4+0; esc[id]=$5+0; epic[id]=$6; plannable[id]=$7+0
   indeg[id]=0
   next
 }
@@ -280,6 +284,26 @@ END {
   # a plan that sequences around it is confidently wrong. Propagated to dependents, because
   # anything waiting on a task that cannot be scheduled cannot be scheduled either -- and the
   # ROOTS are what gets reported, since naming the whole tail would bury the one file to fix.
+  # PARKED FIRST, so a task that is both parked and behind an unfiled blocker is attributed to
+  # the deliberate cause rather than the accidental one -- and so the two counts below sum to the
+  # number actually withheld instead of double-counting it.
+  for (i=1; i<=n; i++) if (!plannable[ids[i]]) { parkedroot[ids[i]]=1; withheld[ids[i]]=1 }
+  changed=1
+  while (changed) {
+    changed=0
+    for (i=1; i<=n; i++) {
+      u=ids[i]; if (!(u in withheld) || !((u in parkedroot) || (u in parkedvia))) continue
+      m=split(adj[u], out, " ")
+      for (j=1; j<=m; j++) {
+        v=out[j]
+        if (v!="" && !(v in withheld)) {
+          withheld[v]=1; changed=1
+          parkedvia[v] = (u in parkedroot) ? u : parkedvia[u]
+        }
+      }
+    }
+  }
+
   for (i=1; i<=n; i++) if (ids[i] in unresdep) withheld[ids[i]]=1
   changed=1
   while (changed) {
@@ -293,14 +317,28 @@ END {
       }
     }
   }
-  nheld=0
+  nheld=0; nparked=0
   for (i=1; i<=n; i++) {
     id=ids[i]
     if (!(id in withheld)) continue
     placed[id]=0                        # the one gate the emission below already honours
+    # ATTRIBUTED TO ONE CAUSE EACH. kit-plan.sh:633 prints the withheld figure with its cause
+    # spelled out -- "blocked by an id with no task file" -- so a parked task counted into it
+    # would make that line assert an unfiled blocker about work somebody set aside on purpose.
+    if ((id in parkedroot) || (id in parkedvia)) { nparked++; continue }
     nheld++
     if (id in unresdep) printf "UNRESOLVED %s%s\n", id, unresdep[id] > "/dev/stderr"
   }
+  # Each parked root, with everything withheld behind it, so the one task to un-park is named
+  # rather than buried in its own tail -- the argument the unfiled-blocker path already makes.
+  for (i=1; i<=n; i++) {
+    id=ids[i]
+    if (!(id in parkedroot)) continue
+    line=""
+    for (j=1; j<=n; j++) if (parkedvia[ids[j]] == id) line = line " " ids[j]
+    printf "PARKED %s%s\n", id, line > "/dev/stderr"
+  }
+  if (nparked > 0) printf "PARKEDCOUNT %d %d\n", nparked, n > "/dev/stderr"
   # The MAGNITUDE, not just the trigger. Measured: 22 open tasks, one mistyped blocked_by, 20
   # tasks behind it -- one task planned, twenty-one gone, and the only thing said about it was
   # a single line naming the root. A plan that lost most of the backlog reads exactly like a
@@ -376,6 +414,18 @@ END {
   }
 }' > "$ROWS" 2>"$ERR"
 
+# NOT AN ERROR, and worded so nobody fixes it. The cycle and unfiled-blocker notices below
+# describe data faults; this one describes the operator getting what they asked for. Reported all
+# the same, because a plan that is quietly shorter than the backlog reads exactly like a backlog
+# that is nearly finished -- the argument kit-plan.sh:304-308 already makes for the other two.
+if grep -q '^PARKED ' "$ERR" 2>/dev/null; then
+  PKN=$(grep '^PARKEDCOUNT' "$ERR" | head -1 | awk '{print $2"/"$3}')
+  kit_warn "parked — ${PKN:-some} open task(s) are held out of the plan on purpose:"
+  grep '^PARKED ' "$ERR" | sed 's/^PARKED /  /' >&2
+  kit_warn "each parked task is named first, with anything waiting behind it. To plan one again,"
+  kit_warn "  move it off on-hold with a Task-Status: transition — editing frontmatter is not enough."
+fi
+
 if grep -q '^CYCLE' "$ERR" 2>/dev/null; then
   kit_warn "dependency cycle — these tasks are withheld from the plan, not reordered:"
   grep '^CYCLE' "$ERR" | sed 's/^CYCLE//' | tr ' ' '\n' | sed '/^$/d;s/^/  /' >&2
@@ -403,6 +453,7 @@ fi
 # it is a header line, derived by the indexer with everything else, so there is no second writer
 # whose failure could leave a stale count presented as current.
 HELDN=$(grep '^WITHHELDCOUNT' "$ERR" 2>/dev/null | head -1 | awk '{print $2" "$3}')
+PARKEDN=$(grep '^PARKEDCOUNT' "$ERR" 2>/dev/null | head -1 | awk '{print $2" "$3}')
 
 # ---- the plan, as text (ADR 0004, option D) ------------------------------------------
 # Assembled from the planner's own output, and NOT read back out of the database, because
@@ -427,6 +478,7 @@ PLAN_DIGEST=$(kit_plan_digest "$DB") || {
   printf '#created\t%s\n' "$PLAN_CREATED"
   printf '#tasks_digest\t%s\n' "$PLAN_DIGEST"
   [ -n "$HELDN" ] && printf '#withheld\t%s\n' "$HELDN"
+  [ -n "$PARKEDN" ] && printf '#parked\t%s\n' "$PARKEDN"
   printf '#columns\tgoal_id\ttask_id\tlayer\trank\tscore\tcluster\n'
   sort -t"$(printf '\t')" -k3,3n -k4,4n -k2,2 "$ROWS"
 } > "$PLAN_FILE" || {
@@ -632,6 +684,14 @@ HELDBACK=$(sqlite3 "$DB" "SELECT value FROM meta WHERE key='plan_withheld:$GOAL_
 case "${HELDBACK:-0 0}" in
   ''|'0 0') ;;
   *) printf '# %s of %s open task(s) withheld: blocked by an id with no task file.\n' ${HELDBACK} ;;
+esac
+
+# Its own line and its own cause. Folding parked tasks into the count above would have made that
+# line say "blocked by an id with no task file" about work the operator deliberately set aside.
+PARKEDBACK=$(sqlite3 "$DB" "SELECT value FROM meta WHERE key='plan_parked:$GOAL_SQL';" 2>/dev/null | tr -d '\r')
+case "${PARKEDBACK:-0 0}" in
+  ''|'0 0') ;;
+  *) printf '# %s of %s open task(s) parked: held out of the plan on purpose, not blocked.\n' ${PARKEDBACK} ;;
 esac
 
 # The display query decides the exit status, which it stopped doing when the read-back above was

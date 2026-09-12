@@ -4,7 +4,7 @@ title: SECURITY.md claims allowedTools enforces reviewer read-only and it does n
 tier: T2
 lang: bash
 paths: SECURITY.md, agents, tests, docs
-state: open
+state: created
 ---
 
 ## Intent

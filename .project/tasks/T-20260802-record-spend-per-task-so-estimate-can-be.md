@@ -3,6 +3,7 @@ id: T-20260802-record-spend-per-task-so-estimate-can-be
 title: Record spend per task so estimate can be compared to actual
 epic: measurement
 tier: T2
+blocked_by: T-20260801-validate-a-task-s-recorded-tier-against-
 state: open
 ---
 

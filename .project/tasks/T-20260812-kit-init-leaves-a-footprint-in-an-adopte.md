@@ -5,6 +5,7 @@ epic: components
 tier: T2
 lang: bash
 paths: tooling/kit-init.sh, docs/TRIAL-PROTOCOL.md
+blocked_by: T-20260912-paths-state-moves-the-state-directory-bu
 state: open
 ---
 

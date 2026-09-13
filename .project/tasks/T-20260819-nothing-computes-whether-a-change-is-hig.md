@@ -5,6 +5,7 @@ epic: agent-contracts
 tier: T2
 lang: bash
 paths: agents/security-reviewer.md, templates/project-profile.md, tooling/kit-status.sh
+blocked_by: T-20260808-make-the-security-assurance-cadence-a-po
 state: open
 ---
 

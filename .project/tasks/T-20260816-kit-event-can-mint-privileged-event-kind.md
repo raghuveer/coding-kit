@@ -4,6 +4,7 @@ title: kit-event can mint privileged event kinds that bypass every validator
 tier: T3
 lang: bash
 paths: tooling/kit-event.sh, tooling/kit-index.sh, tests/conformance.sh, SECURITY.md
+blocked_by: T-20260816-two-shell-writers-build-event-json-unesc
 state: open
 ---
 

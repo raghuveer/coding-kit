@@ -5,6 +5,7 @@ epic: validation
 tier: T2
 lang: markdown
 paths: docs/TRIAL-PROTOCOL.md, docs/TRIALS/TEMPLATE.md
+blocked_by: T-20260912-a-trial-runs-in-a-container-on-the-subje
 state: created
 ---
 

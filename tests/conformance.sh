@@ -5392,6 +5392,46 @@ check $? "runs, nothing-declared and does-not-run are three outcomes, not two"
 rm -rf "$rd"
 fi
 
+if step "a zero escape count says which zero it is"; then
+# The denominator side of this table has refused to read as clean since it was written: an
+# absent `via:kit` population is called out as "not a clean result". The NUMERATOR had no such
+# guard -- 0 escapes across every tier printed as a plain 0 and read as "nothing escaped", when
+# what it meant was that `Fixes-Escape-Of` appeared in 0 of 324 commits because CLAUDE.md never
+# mentioned it. kit-review-record.sh:226 names the identical confusion for findings.
+#
+# TWO ARMS, and the second is what makes the first more than a fixed string: the caveat must
+# DISAPPEAR the moment a real escape is recorded, or it becomes decoration that survives its
+# own cause.
+ez="$WORK.escapezero"; rm -rf "$ez"; mkdir -p "$ez/src"
+( cd "$ez" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-old\ntitle: old\ntier: T2\n---\nb\n' > .project/tasks/T-old.md
+  printf -- '---\nid: T-new\ntitle: new\ntier: T2\n---\nb\n' > .project/tasks/T-new.md
+  echo x > src/a; git add -A && git commit -q --no-verify -m "chore: seed"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q "No escape has ever been recorded" STATUS.generated.md ||
+    { echo "  arm 1: a zero numerator printed with no caveat"; exit 1; }
+
+  echo y > src/b; git add -A
+  git commit -q --no-verify -m "fix: the defect T-old should have caught
+
+Task-Id: T-new
+Tier: T2
+Fixes-Escape-Of: T-old"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  n=$(sqlite3 .project/index.db "SELECT COUNT(*) FROM event WHERE kind='escaped';" | tr -d '\015')
+  [ "$n" = 1 ] || { echo "  arm 2: the trailer recorded $n escape(s), wanted 1"; exit 1; }
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q "No escape has ever been recorded" STATUS.generated.md &&
+    { echo "  arm 2: the caveat survived a real escape being recorded"; exit 1; }
+  exit 0 )
+check $? "the caveat appears while nothing is recorded and goes when something is"
+rm -rf "$ez"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

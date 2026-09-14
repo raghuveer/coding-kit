@@ -358,6 +358,28 @@ if [ -n "$EMPTY_TIERS" ]; then
   printf '> `all` column is a measurement.\n'
 fi
 
+# THE NUMERATOR GETS THE SAME TREATMENT THE DENOMINATOR ALREADY HAD, and it did not until
+# 2026-09-14. The block above refuses to let an absent denominator read as a clean result; a
+# numerator of zero across EVERY population was printed as a plain `0` and read as "nothing
+# escaped". kit-review-record.sh:226 already names this exact confusion for findings -- "an
+# empty finding table reads as 'nothing escaped' when it means 'nothing was recorded'" -- and
+# escapes had the same hole one table over.
+#
+# Measured 2026-09-14: 0 `escaped` events, ever, against 200 tasks, 628 findings and 79
+# criticals. The cause was not subtle once looked for: `Fixes-Escape-Of` is read by
+# kit-trailers.sh and documented in README and HANDOFF, and appeared in 0 of 324 commits
+# because it was absent from CLAUDE.md, the one file a session actually reads.
+#
+# A ZERO WITH NO WRITER IS NOT A MEASUREMENT. This says which zero it is.
+_ESCN=$(q "SELECT COUNT(*) FROM event WHERE kind='escaped';")
+if [ "${_ESCN:-0}" = 0 ]; then
+  printf '\n> **No escape has ever been recorded here, so every numerator above is zero by\n'
+  printf '> construction.** That is not the same statement as "nothing escaped" and must not be\n'
+  printf '> read as one. An escape is recorded by a `Fixes-Escape-Of: <task-id>` trailer on the\n'
+  printf '> commit that fixes it; until one is written, this table measures the denominator only.\n'
+fi
+
+
 # The rest of the population, by value, WITH its escapes. Counting tasks alone was the older
 # shape and it is exactly the one that reads clean: "12 excluded" says nothing about whether
 # any of the twelve escaped. `unknown` is reported as itself and never folded into `manual` --

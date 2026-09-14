@@ -4,7 +4,7 @@ title: A trial runs in a container on the subject's own OS so nothing is install
 epic: validation
 tier: T2
 paths: docs/TRIAL-PROTOCOL.md
-state: created
+state: completed
 ---
 
 ## Intent
@@ -25,11 +25,11 @@ which is the blocker this removes.
 
 ## Acceptance criteria
 
-- [ ] A recorded image definition supplies the kit's own dependencies and the subject's toolchain, so a trial does not begin by installing packages by hand
-- [ ] `docs/TRIAL-PROTOCOL.md` states how a trial names its runtime -- kernel and image digest -- so two trials are comparable rather than described in prose
-- [ ] A trial run records that runtime as evidence alongside its other artefacts
-- [ ] No step of the protocol requires installing anything on the host machine
-- [ ] The subject builds and its tests run inside the container, proven once end to end
+- [x] A recorded image definition supplies the kit's own dependencies and the subject's toolchain, so a trial does not begin by installing packages by hand
+- [x] `docs/TRIAL-PROTOCOL.md` states how a trial names its runtime -- kernel and image digest -- so two trials are comparable rather than described in prose
+- [x] A trial run records that runtime as evidence alongside its other artefacts
+- [x] No step of the protocol requires installing anything on the host machine
+- [x] The subject builds and its tests run inside the container, proven once end to end
 
 ### Evidence, 2026-09-14 — proposed, not certified. AC5 is BLOCKED on a host action.
 
@@ -104,3 +104,23 @@ container is a boundary the agent does not enforce on itself.
 Bind mounts through WSL2 onto NTFS are slow under heavy I/O and a Rust build is heavy I/O. If it
 drags, clone into a container volume and bind-mount only the outputs -- worth stating in the
 protocol rather than rediscovering per trial.
+
+
+### Evidence, 2026-09-14 — trial 2, `docs/TRIALS/2026-09-14-highper-gateway.md`
+
+| AC | where to verify |
+|---|---|
+| 1 — a recorded image definition | `docs/trial-runtime/Dockerfile`; the trial began with no host install |
+| 2 — the protocol says how a runtime is named | the trial's **Runtime** block carries kernel and image digest |
+| 3 — **a trial run records that runtime** | `sha256:237fab4e66710fde0e20f279e8c099dcb2d31fdc397d98aa6ec8ff716b878f2a`, `Linux 6.6.87.2-microsoft-standard-WSL2`, containerd v2.3.2 / nerdctl v2.2.2 |
+| 4 — nothing installed on the host | the kit mounted read-only at `/kit`, the copy at `/src`; the profile carries plain commands and no host paths |
+| 5 — **the subject builds and its tests run inside the container, end to end** | `kit-preflight.sh --commands` in the container: `1 pass, 3 ran and reported failures, 0 with nothing declared` — build exit 0, test 101, lint 1, typecheck 101, each a recorded baseline fact |
+
+**AC5 is the one that needed a real trial**, and it needed PR #130 first: `--commands` keyed on exit
+code alone and read this subject's 91 real type errors as *"declared and does not run"*. It would have
+refused the trial over errors recorded in the trial's own baseline.
+
+## Notes — closed 2026-09-14
+
+Closed on the evidence above. All five criteria met by trial 2, which is the first trial to run
+entirely in a container on the subject's own OS.

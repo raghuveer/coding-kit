@@ -5,7 +5,7 @@ epic: feedback-loop
 tier: T3
 lang: python
 paths: tooling/kit_findings.py, tooling/schema.sql, tooling/kit-index.sh, tooling/kit-status.sh, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -31,10 +31,10 @@ duplicates.
 
 ## Acceptance criteria
 
-- [ ] A finding can name the earlier finding it carries over, and `kit-finding.sh --contract`
+- [x] A finding can name the earlier finding it carries over, and `kit-finding.sh --contract`
       documents the field. A reviewer that omits it still validates.
-- [ ] Reports count distinct defects and rounds separately, and say which one they are counting.
-- [ ] A conformance step records two rounds, where round 2 carries one finding over and adds one
+- [x] Reports count distinct defects and rounds separately, and say which one they are counting.
+- [x] A conformance step records two rounds, where round 2 carries one finding over and adds one
       new, and asserts: 3 rows, 2 distinct defects, 1 carry-over link.
 
 ### Evidence, 2026-09-14 — PR #126, and the only blocker that got its tier's review chain
@@ -57,6 +57,9 @@ says what the column does not fix; the behaviour is
 `T-20260914-every-finding-consumer-still-counts-rows`.
 
 ## Notes
+
+**Closed 2026-09-14 on the evidence block above: all three criteria met by PR #126, merged -- and the only one of the eight that got the review chain its tier requires.**
+
 
 Where the link lives decides the tier. A new event field has to be ingested into the `finding` table
 by `kit-index.sh`, which is why that file is in `paths` and why the task sits at its T3 floor.

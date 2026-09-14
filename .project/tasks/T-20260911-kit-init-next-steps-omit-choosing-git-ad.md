@@ -5,7 +5,7 @@ epic: adoption
 tier: T2
 lang: bash
 paths: tooling/kit-init.sh, INSTALL.md, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -27,10 +27,10 @@ history. The defect is that the choice is made by default rather than by the ado
 
 ## Acceptance criteria
 
-- [ ] On a repository with history, `kit-init.sh`'s next steps name `git.adopted_at`, both choices
+- [x] On a repository with history, `kit-init.sh`'s next steps name `git.adopted_at`, both choices
       and what each costs — or point at `INSTALL.md`'s section by name.
-- [ ] An empty repository is not told to choose one.
-- [ ] A conformance step asserts that the line appears after `kit-init.sh` on a fixture with commits,
+- [x] An empty repository is not told to choose one.
+- [x] A conformance step asserts that the line appears after `kit-init.sh` on a fixture with commits,
       and does not appear on a fixture without.
 
 ### Evidence, 2026-09-14 — PR #124, merged
@@ -50,6 +50,9 @@ its normal steps first. The latent crash is fixed too, rather than left as a pro
 guard.
 
 ## Notes
+
+**Closed 2026-09-14 on the evidence block above: all three criteria met by PR #124, merged.**
+
 
 Proposed at T1 and filed at T2, the floor `tooling/**` sets in this repository's profile.
 

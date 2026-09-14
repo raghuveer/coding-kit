@@ -4,7 +4,7 @@ title: The isolation check passes while the copy's own settings pre-approve git 
 epic: validation
 tier: T2
 paths: tooling/kit-preflight.sh, docs/TRIAL-PROTOCOL.md, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -38,17 +38,17 @@ while it is false.
 
 ## Acceptance criteria
 
-- [ ] `--isolated` reads the copy's Claude Code project settings (`.claude/settings.json` and
+- [x] `--isolated` reads the copy's Claude Code project settings (`.claude/settings.json` and
       `.claude/settings.local.json`) and **names** every allow rule that is unscoped for a command
       able to reach outside the copy (`Bash(git *)`, `Bash(git:*)`, `Bash(*)`), or that names an
       absolute path outside the copy.
-- [ ] It **fails** on them rather than warning. The check's whole job is to stand between an agent
+- [x] It **fails** on them rather than warning. The check's whole job is to stand between an agent
       and the subject, and a warning printed beside "isolated" reads as a pass.
-- [ ] Mutation proof: a fixture copy with `Bash(git *)` in a tracked `settings.local.json` fails;
+- [x] Mutation proof: a fixture copy with `Bash(git *)` in a tracked `settings.local.json` fails;
       the same copy without it passes; a rule scoped inside the copy passes.
-- [ ] The success line names what was checked, so "isolated" is never printed about a property
+- [x] The success line names what was checked, so "isolated" is never printed about a property
       the check did not test.
-- [ ] `TRIAL-PROTOCOL.md` §4 gains the step and says what it still cannot see: a permission rule is
+- [x] `TRIAL-PROTOCOL.md` §4 gains the step and says what it still cannot see: a permission rule is
       not a sandbox, and a prompted command can still be approved by a human.
 
 ### Evidence, 2026-09-14 — PR #121, merged
@@ -66,6 +66,9 @@ path. It was right; replaced with the fixture's own sibling directory, built at 
 both portable and the more faithful shape.
 
 ## Notes
+
+**Closed 2026-09-14 on the evidence block above: all five criteria met by PR #121, merged.**
+
 
 **Mitigated for the 2026-09-09 highper-gateway trial by hand**, recorded in that trial's §0b: the
 file was moved out of the copy, byte-identical, to

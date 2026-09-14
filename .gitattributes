@@ -54,3 +54,7 @@ NOTICE      text eol=lf
 # predicted for its own case. A Dockerfile's RUN line continuations are where CRLF actually
 # bites, and this file is read by a builder running on Linux.
 docs/trial-runtime/Dockerfile text eol=lf
+
+# The dependency map, for the same reason as the plan above: tab-separated and READ as data by
+# anyone auditing what `blocked_by:` does not carry. A CR would ride into the relation column.
+docs/dependency-map.tsv text eol=lf

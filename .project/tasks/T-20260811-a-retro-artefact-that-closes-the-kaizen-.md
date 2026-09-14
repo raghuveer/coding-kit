@@ -5,6 +5,7 @@ epic: reporting
 tier: T2
 lang: bash
 paths: tooling/kit-status.sh
+blocked_by: T-20260812-status-has-no-time-dimension-so-daily-ac
 state: open
 ---
 

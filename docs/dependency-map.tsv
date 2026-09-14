@@ -1,0 +1,193 @@
+# The relations between tasks that `blocked_by:` cannot carry. AUTHORED, not derived.
+#
+# `blocked_by:` in a task file is the ONE home for a blocking edge, because kit-plan.sh reads
+# it and nothing reads this file. Everything here is a relation that is real, was written in
+# prose, and is NOT an ordering constraint -- recorded so it stops being rediscovered, and so
+# the next reader can tell "we decided this is not a blocker" from "nobody looked".
+#
+# relation      meaning
+# ---------     -------
+# not-a-blocker the source task states in its own body that this is deliberately not a blocker
+# sequencing    an ordering the source argues for and did not declare; cheaper one way round
+# co-decide     two tasks whose answers must agree; declaring either direction would be wrong
+# subsumes      doing dst closes most of src as a side effect
+# split-from    deliberately split siblings, split so the cheap half is not held behind the dear one
+# file-conflict same file or same lines; a merge order, not a dependency
+# instance-of   src is one instance of the defect class dst names
+# umbrella-member  src is a design task whose scope covers dst; see DEPENDENCIES.md, open decision 1
+# related       context only -- the source cites dst to explain itself
+#
+# Rebuild the candidate set (every T- id in a body that is not in that file's blocked_by):
+#   see docs/DEPENDENCIES.md "How this was derived"
+src	dst	relation
+T-20260731-component-model-for-polyglot-and-moderni	T-20260811-a-scope-challenge-gate-before-the-adr-at	related
+T-20260801-finding-vocabulary-has-no-class-for-test	T-20260801-nothing-invokes-kit-finding-so-the-findi	sequencing
+T-20260801-kit-plan-has-no-notion-of-prerequisite-w	T-20260801-validate-a-task-s-recorded-tier-against-	sequencing
+T-20260801-nothing-invokes-kit-finding-so-the-findi	T-20260801-reviewer-agents-cannot-run-the-tools-the	sequencing
+T-20260801-nothing-invokes-kit-finding-so-the-findi	T-20260808-record-which-mechanism-produced-a-findin	related
+T-20260801-nothing-invokes-kit-finding-so-the-findi	T-20260809-a-task-id-containing-a-regex-metacharact	related
+T-20260801-nothing-invokes-kit-finding-so-the-findi	T-20260911-a-finding-recorded-by-hand-carries-no-ag	related
+T-20260801-reviewer-agents-cannot-run-the-tools-the	T-20260801-finding-vocabulary-has-no-class-for-test	related
+T-20260801-reviewer-agents-cannot-run-the-tools-the	T-20260808-an-agent-tools-entry-that-resolves-to-no	related
+T-20260808-an-agent-tools-entry-that-resolves-to-no	T-20260801-reviewer-agents-cannot-run-the-tools-the	related
+T-20260808-cluster-packs-are-generated-and-read-by-	T-20260731-accelerator-line-budget-and-eviction	related
+T-20260808-cluster-packs-are-generated-and-read-by-	T-20260817-a-touches-edge-is-never-checked-against-	related
+T-20260808-cluster-packs-are-generated-and-read-by-	T-20260817-task-context-reads-the-task-spec-at-step	related
+T-20260808-co-change-has-no-eval-harness-so-its-sco	T-20260731-validate-the-priority-weights-against-es	related
+T-20260808-make-the-security-assurance-cadence-a-po	T-20260731-component-model-for-polyglot-and-moderni	related
+T-20260808-make-the-security-assurance-cadence-a-po	T-20260825-a-security-rung-on-the-ladder-satisfied-	related
+T-20260808-parallel-task-execution-has-no-isolation	T-20260808-cluster-packs-are-generated-and-read-by-	related
+T-20260808-shrink-the-embedded-awk-surface-by-movin	T-20260808-decompose-kit-index-along-the-seam-it-al	split-from
+T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	T-20260731-component-model-for-polyglot-and-moderni	related
+T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	T-20260808-cluster-packs-are-generated-and-read-by-	related
+T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	T-20260817-a-cluster-pack-file-list-ignores-declare	related
+T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	T-20260820-task-context-has-no-branch-for-a-missing	related
+T-20260809-a-claim-audit-before-a-task-closes-names	T-20260809-lint-the-kit-for-untrusted-text-interpol	split-from
+T-20260809-lint-the-kit-for-untrusted-text-interpol	T-20260809-a-claim-audit-before-a-task-closes-names	split-from
+T-20260809-lint-the-kit-for-untrusted-text-interpol	T-20260809-a-task-id-containing-a-regex-metacharact	related
+T-20260809-one-json-reader-and-one-json-writer-at-t	T-20260801-nothing-invokes-kit-finding-so-the-findi	sequencing
+T-20260809-one-json-reader-and-one-json-writer-at-t	T-20260809-lint-the-kit-for-untrusted-text-interpol	related
+T-20260811-agent-behaviour-has-no-eval-only-mechani	T-20260808-co-change-has-no-eval-harness-so-its-sco	related
+T-20260811-agent-behaviour-has-no-eval-only-mechani	T-20260819-the-claude-adapter-is-16-files-but-nothi	related
+T-20260811-an-accelerator-authoring-template-and-se	T-20260731-cross-project-accelerator-aggregation	related
+T-20260811-harden-the-review-retry-loop-against-its	T-20260801-nothing-invokes-kit-finding-so-the-findi	related
+T-20260812-an-uninstrumented-project-reports-the-sa	T-20260812-status-has-no-time-dimension-so-daily-ac	related
+T-20260812-kit-init-leaves-a-footprint-in-an-adopte	T-20260811-selective-installer-with-per-project-com	related
+T-20260812-status-has-no-time-dimension-so-daily-ac	T-20260811-a-retro-artefact-that-closes-the-kaizen-	related
+T-20260812-status-has-no-time-dimension-so-daily-ac	T-20260811-restore-session-state-from-checkpoint-co	related
+T-20260812-the-profile-template-ships-no-tier-floor	T-20260810-the-suite-that-gates-every-control-has-n	instance-of
+T-20260814-a-deliberate-compromise-cannot-be-record	T-20260808-task-state-cannot-express-no-longer-rele	co-decide
+T-20260814-a-deliberate-compromise-cannot-be-record	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260814-a-fresh-adoption-reports-none-outstandin	T-20260814-the-absent-counter-notice-fires-on-every	related
+T-20260814-a-review-narrative-has-nowhere-to-live	T-20260814-a-reviewer-s-verdict-and-narrative-are-d	split-from
+T-20260814-a-reviewer-s-verdict-and-narrative-are-d	T-20260814-a-review-narrative-has-nowhere-to-live	split-from
+T-20260814-documents-and-adrs-are-produced-by-three	T-20260814-nothing-checks-that-a-finding-s-file-and	related
+T-20260814-documents-and-adrs-are-produced-by-three	T-20260815-security-md-claims-allowedtools-enforces	related
+T-20260814-one-entry-mechanism-brownfield-is-the-ge	T-20260815-ac6-modernization-delta-is-claimed-but-u	related
+T-20260814-the-absent-counter-notice-fires-on-every	T-20260812-the-empty-spend-notice-asserts-a-cause-i	instance-of
+T-20260814-the-absent-counter-notice-fires-on-every	T-20260814-a-fresh-adoption-reports-none-outstandin	related
+T-20260814-the-promotion-ladder-has-no-gate-so-an-a	T-20260808-co-change-has-no-eval-harness-so-its-sco	related
+T-20260815-ac6-modernization-delta-is-claimed-but-u	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260815-an-ingest-adapter-can-insert-a-task-row-	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260815-co-change-withheld-disabled-and-empty-ar	T-20260814-a-fresh-adoption-reports-none-outstandin	co-decide
+T-20260815-co-change-withheld-disabled-and-empty-ar	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260815-kit-task-sh-documents-a-confirm-gate-it-	T-20260809-a-claim-audit-before-a-task-closes-names	related
+T-20260815-kit-task-sh-documents-a-confirm-gate-it-	T-20260814-a-fresh-adoption-reports-none-outstandin	related
+T-20260815-security-md-claims-allowedtools-enforces	T-20260801-reviewer-agents-cannot-run-the-tools-the	related
+T-20260815-security-md-claims-allowedtools-enforces	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260815-the-entry-mechanism-has-never-produced-a	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260816-an-in-root-profile-write-gives-an-agent-	T-20260815-an-ingest-adapter-can-insert-a-task-row-	co-decide
+T-20260816-an-in-root-profile-write-gives-an-agent-	T-20260815-security-md-claims-allowedtools-enforces	related
+T-20260816-kit-event-can-mint-privileged-event-kind	T-20260815-security-md-claims-allowedtools-enforces	related
+T-20260816-kit-event-can-mint-privileged-event-kind	T-20260816-two-shell-writers-build-event-json-unesc	subsumes
+T-20260816-kit-guard-fails-open-on-notebookedit-bec	T-20260815-security-md-claims-allowedtools-enforces	related
+T-20260816-the-accelerator-export-leaks-project-tex	T-20260815-security-md-claims-allowedtools-enforces	related
+T-20260816-two-shell-writers-build-event-json-unesc	T-20260815-an-ingest-adapter-can-insert-a-task-row-	related
+T-20260816-two-shell-writers-build-event-json-unesc	T-20260815-security-md-claims-allowedtools-enforces	related
+T-20260817-a-cluster-pack-file-list-ignores-declare	T-20260817-a-touches-edge-is-never-checked-against-	related
+T-20260817-a-touches-edge-is-never-checked-against-	T-20260808-cluster-packs-are-generated-and-read-by-	instance-of
+T-20260817-an-octal-escape-in-globre-makes-kit-inde	T-20260731-remove-hex-escapes-from-awk-programs-so-	file-conflict
+T-20260817-an-octal-escape-in-globre-makes-kit-inde	T-20260817-kit-index-deletes-the-plan-so-task-conte	related
+T-20260817-kit-index-deletes-the-plan-so-task-conte	T-20260808-cluster-packs-are-generated-and-read-by-	related
+T-20260817-kit-index-deletes-the-plan-so-task-conte	T-20260817-one-shared-file-merges-two-whole-epics-s	related
+T-20260817-one-shared-file-merges-two-whole-epics-s	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	sequencing
+T-20260817-task-context-reads-the-task-spec-at-step	T-20260808-cluster-packs-are-generated-and-read-by-	related
+T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	T-20260808-cluster-packs-are-generated-and-read-by-	not-a-blocker
+T-20260818-relicense-from-mit-to-apache-2-0-while-s	T-20260808-make-the-security-assurance-cadence-a-po	related
+T-20260819-a-user-authored-data-model-is-design-inp	T-20260731-component-model-for-polyglot-and-moderni	related
+T-20260819-goals-are-the-milestone-mechanism-and-on	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260819-legacy-candidate-selection-is-unresearch	T-20260731-component-model-for-polyglot-and-moderni	related
+T-20260819-nothing-computes-whether-a-change-is-hig	T-20260819-researcher-carries-no-security-baseline-	related
+T-20260819-the-claude-adapter-is-16-files-but-nothi	T-20260808-cluster-packs-are-generated-and-read-by-	related
+T-20260819-the-claude-adapter-is-16-files-but-nothi	T-20260818-relicense-from-mit-to-apache-2-0-while-s	related
+T-20260819-vocabularies-live-in-shell-constants-so-	T-20260731-cross-project-accelerator-aggregation	sequencing
+T-20260819-vocabularies-live-in-shell-constants-so-	T-20260812-status-has-no-time-dimension-so-daily-ac	sequencing
+T-20260820-kit-plan-computes-the-ordering-before-re	T-20260801-kit-plan-has-no-notion-of-prerequisite-w	related
+T-20260820-kit-plan-computes-the-ordering-before-re	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	related
+T-20260820-kit-plan-computes-the-ordering-before-re	T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	related
+T-20260820-kit-plan-computes-the-ordering-before-re	T-20260820-task-context-has-no-branch-for-a-missing	related
+T-20260820-marking-findings-is-one-at-a-time-so-the	T-20260801-nothing-invokes-kit-finding-so-the-findi	related
+T-20260820-marking-findings-is-one-at-a-time-so-the	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	related
+T-20260820-task-context-has-no-branch-for-a-missing	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	related
+T-20260820-task-context-has-no-branch-for-a-missing	T-20260817-kit-index-deletes-the-plan-so-task-conte	related
+T-20260821-the-kit-does-not-measure-its-own-develop	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	related
+T-20260821-the-kit-does-not-measure-its-own-develop	T-20260819-the-claude-adapter-is-16-files-but-nothi	related
+T-20260822-a-task-has-no-authored-assignee-so-a-cla	T-20260808-parallel-task-execution-has-no-isolation	related
+T-20260822-a-task-has-no-authored-assignee-so-a-cla	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	not-a-blocker
+T-20260822-a-task-has-no-authored-assignee-so-a-cla	T-20260822-derived-owner-flips-to-whoever-committed	related
+T-20260822-a-truncated-slug-makes-two-different-tit	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	not-a-blocker
+T-20260822-a-truncated-slug-makes-two-different-tit	T-20260822-legacy-state-spellings-in-task-files-sho	related
+T-20260822-derived-owner-flips-to-whoever-committed	T-20260808-parallel-task-execution-has-no-isolation	related
+T-20260822-derived-owner-flips-to-whoever-committed	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	not-a-blocker
+T-20260822-derived-owner-flips-to-whoever-committed	T-20260822-a-task-has-no-authored-assignee-so-a-cla	related
+T-20260822-event-seq-is-ingest-order-so-a-commit-tr	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	not-a-blocker
+T-20260822-legacy-state-spellings-in-task-files-sho	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	not-a-blocker
+T-20260822-legacy-state-spellings-in-task-files-sho	T-20260822-derived-owner-flips-to-whoever-committed	related
+T-20260822-process-creation-costs-one-second-on-the	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	not-a-blocker
+T-20260822-the-overlay-is-scoped-to-modernization-i	T-20260731-component-model-for-polyglot-and-moderni	related
+T-20260822-the-overlay-is-scoped-to-modernization-i	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260825-kit-init-cannot-share-the-profile-when-t	T-20260811-team-mode-bootstrap-so-a-second-develope	related
+T-20260825-kit-init-cannot-share-the-profile-when-t	T-20260911-kit-init-prints-the-claude-remedy-when-t	related
+T-20260825-nothing-verifies-help-output-so-insertin	T-20260818-relicense-from-mit-to-apache-2-0-while-s	related
+T-20260825-reviewing-generated-code-is-not-the-same	T-20260808-make-the-security-assurance-cadence-a-po	related
+T-20260825-reviewing-generated-code-is-not-the-same	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	related
+T-20260825-reviewing-generated-code-is-not-the-same	T-20260819-researcher-carries-no-security-baseline-	related
+T-20260825-security-reviewer-cites-asvs-unversioned	T-20260808-make-the-security-assurance-cadence-a-po	related
+T-20260825-two-migration-md-mapping-rows-record-cap	T-20260811-restore-session-state-from-checkpoint-co	related
+T-20260826-the-trial-environment-is-recorded-as-pro	T-20260808-make-the-security-assurance-cadence-a-po	related
+T-20260826-the-trial-environment-is-recorded-as-pro	T-20260826-two-artefacts-carrying-one-fact-with-not	instance-of
+T-20260826-two-artefacts-carrying-one-fact-with-not	T-20260825-the-entry-proposal-format-does-not-state	related
+T-20260826-two-artefacts-carrying-one-fact-with-not	T-20260825-the-profile-template-does-not-say-the-ac	related
+T-20260826-two-artefacts-carrying-one-fact-with-not	T-20260825-two-migration-md-mapping-rows-record-cap	related
+T-20260827-an-unknown-frontmatter-key-is-discarded-	T-20260826-two-artefacts-carrying-one-fact-with-not	instance-of
+T-20260827-discovery-is-a-multi-session-phase-with-	T-20260826-two-artefacts-carrying-one-fact-with-not	instance-of
+T-20260828-census-diff-and-the-attribution-control-	T-20260828-claim-dispositions-so-feedback-on-a-cens	split-from
+T-20260828-claim-dispositions-so-feedback-on-a-cens	T-20260827-discovery-is-a-multi-session-phase-with-	related
+T-20260828-claim-dispositions-so-feedback-on-a-cens	T-20260828-census-diff-and-the-attribution-control-	split-from
+T-20260907-an-opt-in-adapter-for-structural-edges-s	T-20260817-a-touches-edge-is-never-checked-against-	related
+T-20260907-an-opt-in-adapter-for-structural-edges-s	T-20260825-a-security-rung-on-the-ladder-satisfied-	related
+T-20260908-the-contract-requires-a-production-calle	T-20260908-a-cited-range-that-still-contains-its-su	split-from
+T-20260909-209-of-621-findings-carry-no-language-so	T-20260909-handoff-section-11-asserts-invariants-by	split-from
+T-20260909-handoff-section-11-asserts-invariants-by	T-20260816-the-accelerator-export-leaks-project-tex	related
+T-20260909-handoff-section-11-asserts-invariants-by	T-20260826-two-artefacts-carrying-one-fact-with-not	instance-of
+T-20260909-handoff-section-11-asserts-invariants-by	T-20260909-209-of-621-findings-carry-no-language-so	split-from
+T-20260911-a-finding-recorded-by-hand-carries-no-ag	T-20260801-nothing-invokes-kit-finding-so-the-findi	related
+T-20260911-a-finding-recorded-by-hand-carries-no-ag	T-20260808-record-which-mechanism-produced-a-findin	related
+T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260809-a-claim-audit-before-a-task-closes-names	related
+T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260815-four-of-five-review-fixes-have-no-assert	related
+T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260821-the-fixed-commit-walk-spawns-one-git-per	related
+T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260822-process-creation-costs-one-second-on-the	related
+T-20260912-a-trial-runs-in-a-container-on-the-subje	T-20260912-trial-isolation-relies-on-a-file-tool-gu	related
+T-20260912-kit-plan-treats-on-hold-as-plannable-so-	T-20260808-task-state-cannot-express-no-longer-rele	related
+T-20260912-kit-plan-treats-on-hold-as-plannable-so-	T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	related
+T-20260912-paths-state-moves-the-state-directory-bu	T-20260812-kit-init-leaves-a-footprint-in-an-adopte	related
+T-20260912-paths-state-moves-the-state-directory-bu	T-20260908-kit-init-pins-less-for-an-adopter-than-t	file-conflict
+T-20260912-paths-state-moves-the-state-directory-bu	T-20260911-kit-init-prints-the-claude-remedy-when-t	file-conflict
+T-20260912-state-and-context-management-has-no-unif	T-20260808-cluster-packs-are-generated-and-read-by-	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260808-decompose-kit-index-along-the-seam-it-al	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260808-task-state-cannot-express-no-longer-rele	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260811-restore-session-state-from-checkpoint-co	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260817-a-cluster-pack-file-list-ignores-declare	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260817-a-touches-edge-is-never-checked-against-	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260817-task-context-reads-the-task-spec-at-step	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260819-vocabularies-live-in-shell-constants-so-	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260820-kit-plan-computes-the-ordering-before-re	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260820-task-context-has-no-branch-for-a-missing	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260821-if-stale-watches-the-head-file-which-git	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260822-derived-owner-flips-to-whoever-committed	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260822-legacy-state-spellings-in-task-files-sho	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260827-discovery-is-a-multi-session-phase-with-	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260911-kit-status-reports-spend-with-no-as-of-t	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260912-kit-plan-treats-on-hold-as-plannable-so-	umbrella-member
+T-20260912-state-and-context-management-has-no-unif	T-20260912-paths-state-moves-the-state-directory-bu	umbrella-member
+T-20260912-task-intent-is-free-form-and-the-two-tas	T-20260815-kit-task-sh-documents-a-confirm-gate-it-	file-conflict
+T-20260912-task-intent-is-free-form-and-the-two-tas	T-20260819-authoring-chain-depth-is-uniform-so-a-tr	related
+T-20260912-task-intent-is-free-form-and-the-two-tas	T-20260909-report-acceptance-criteria-per-task-so-d	file-conflict
+T-20260912-the-baseline-records-that-the-subject-is	T-20260826-the-trial-environment-is-recorded-as-pro	related
+T-20260912-the-baseline-records-that-the-subject-is	T-20260912-a-declared-rung-whose-tooling-fails-has-	related
+T-20260912-the-spend-price-vector-is-hard-coded-to-	T-20260912-the-transcript-reader-parses-one-vendor-	co-decide
+T-20260912-the-transcript-reader-parses-one-vendor-	T-20260819-the-claude-adapter-is-16-files-but-nothi	related
+T-20260912-the-transcript-reader-parses-one-vendor-	T-20260912-the-spend-price-vector-is-hard-coded-to-	co-decide
+T-20260912-trial-isolation-relies-on-a-file-tool-gu	T-20260911-kit-guard-refuses-the-harness-scratchpad	related
+T-20260912-trial-isolation-relies-on-a-file-tool-gu	T-20260911-the-isolation-check-passes-while-the-cop	related

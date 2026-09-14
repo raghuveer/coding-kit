@@ -53,7 +53,7 @@ verified BY this suite, so a suite that over-reports is the one defect with no b
 Deliberately out of scope: making CI use it. Ubuntu already runs the whole suite in ~45s, so there
 is nothing to win there -- the value is entirely the local Windows run.
 
-Related: `T-20260810-the-suite-that-gates-every-control-has-` -- the suite has no tier floor of its
+Related: `T-20260810-the-suite-that-gates-every-control-has-n` -- the suite has no tier floor of its
 own, which is the same observation from the other direction.
 
 Filed on the operator's instruction of 2026-09-12, after they challenged the cost of the serial

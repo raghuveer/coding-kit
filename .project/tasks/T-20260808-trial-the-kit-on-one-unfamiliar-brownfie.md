@@ -3,9 +3,35 @@ id: T-20260808-trial-the-kit-on-one-unfamiliar-brownfie
 title: Trial the kit on one unfamiliar brownfield polyglot project
 epic: validation
 tier: T2
-blocked_by: T-20260808-record-how-a-task-was-executed-so-kit-wo,T-20260808-a-repeatable-trial-protocol-for-running-,T-20260808-adoption-paths-for-an-empty-folder-and-f,T-20260813-nine-criticals-predate-summary-and-canno,T-20260819-a-finding-whose-subject-no-longer-exists
+blocked_by: T-20260808-record-how-a-task-was-executed-so-kit-wo, T-20260808-a-repeatable-trial-protocol-for-running-, T-20260808-adoption-paths-for-an-empty-folder-and-f, T-20260813-nine-criticals-predate-summary-and-canno, T-20260819-a-finding-whose-subject-no-longer-exists, T-20260912-a-declared-rung-whose-tooling-fails-has-, T-20260912-a-trial-runs-in-a-container-on-the-subje, T-20260912-the-baseline-records-that-the-subject-is, T-20260911-the-isolation-check-passes-while-the-cop, T-20260911-kit-status-reports-spend-with-no-as-of-t, T-20260911-a-finding-recorded-by-hand-carries-no-ag, T-20260911-a-carried-over-finding-is-recorded-as-a-, T-20260911-kit-init-next-steps-omit-choosing-git-ad
 state: open
 ---
+
+> **Blockers six to thirteen added 2026-09-13, and every one of them comes from trial 1's own
+> record.** The first five are all `completed`, so this task read as ready work while the run it
+> gates had already happened once and produced a result the record calls into question. Seven of
+> the eleven acceptance criteria below are still open.
+>
+> **The test applied was not "did trial 1 find this".** It found more. It was: *would trial 2
+> measure the wrong thing without it.*
+>
+> | | blocker | what it invalidates |
+> |---|---|---|
+> | 6 | `T-20260912-a-declared-rung-whose-tooling-fails-has-` | **the verdict.** Rungs 1 and 2 had tooling declared and failing — a state the ladder does not name — so three reviews passed a change that does not compile and the trial recorded COMPLETE |
+> | 7 | `T-20260912-a-trial-runs-in-a-container-on-the-subje` | **rungs 1–3, which never ran.** The subject is Linux-first and trial 1 ran on a Windows host where the crate does not build. This is the cause of blocker 6, not a separate wish |
+> | 8 | `T-20260912-the-baseline-records-that-the-subject-is` | **comparability with trial 1**, which is the reason to run a second trial on the same subject. One job's cause stood in for four for three days |
+> | 9 | `T-20260911-the-isolation-check-passes-while-the-cop` | **the isolation claim.** The copy pre-approved `Bash(git *)` against another checkout and `kit-preflight.sh --isolated` still returned 0 |
+> | 10 | `T-20260911-kit-status-reports-spend-with-no-as-of-t` | **every cost figure.** 6,902.9 kBTE reported against 10,259.6 spent — 33% low |
+> | 11 | `T-20260911-a-finding-recorded-by-hand-carries-no-ag` | **per-reviewer attribution.** 11 of 11 findings carry `agent_id: ""`; 3 of 3 spend rows carry one |
+> | 12 | `T-20260911-a-carried-over-finding-is-recorded-as-a-` | **every finding count.** 11 rows for 5 defects |
+> | 13 | `T-20260911-kit-init-next-steps-omit-choosing-git-ad` | **the central brownfield degradation.** The printed next steps omit `git.adopted_at`, so 97 of 98 commits carried no Task-Id, blast radius read UNKNOWN, and a half-day change was tiered T3 |
+>
+> **Four trial-1 defects were considered and deliberately left out**, with reasons, in
+> `docs/DEPENDENCIES.md`. The closest call is
+> `T-20260801-nothing-invokes-kit-finding-so-the-findi`: in plugin mode 11 of 11 findings landed
+> only by hand. Recording by hand is a documented procedure that worked, so it is not declared —
+> but if trial 2 must exercise the feedback loop rather than work around it, that is blocker
+> fourteen and it is the operator's call.
 
 > **Fifth blocker added 2026-08-21, and it is mechanical rather than argued.** §0's criticals
 > gate must read **zero** before this trial can honestly start. **The number is deliberately not

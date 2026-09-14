@@ -3,6 +3,7 @@ id: T-20260731-component-model-for-polyglot-and-moderni
 title: Component model for polyglot and modernization projects
 epic: components
 tier: T3
+blocked_by: T-20260819-legacy-candidate-selection-is-unresearch, T-20260822-the-overlay-is-scoped-to-modernization-i
 state: open
 ---
 

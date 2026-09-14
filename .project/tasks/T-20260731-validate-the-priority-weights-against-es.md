@@ -3,6 +3,7 @@ id: T-20260731-validate-the-priority-weights-against-es
 title: Validate the priority weights against escape data
 epic: measurement
 tier: T1
+blocked_by: T-20260912-kit-plan-treats-on-hold-as-plannable-so-
 state: open
 ---
 

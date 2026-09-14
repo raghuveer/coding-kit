@@ -4,6 +4,7 @@ title: AC6 modernization delta is claimed but untested
 tier: T3
 lang: bash
 paths: .project/tasks, docs, tests
+blocked_by: T-20260731-component-model-for-polyglot-and-moderni
 state: open
 ---
 

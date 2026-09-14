@@ -12,7 +12,7 @@
 |---|---|
 | Question | **On a brownfield subject that never fully adopted the kit, and whose baseline is red for four independently-named reasons, does the kit produce a change that the verify ladder can actually pass — and where it cannot, does the trial say so rather than record COMPLETE?** |
 | Kit SHA | `e6f47aada6403199339e6446b56702634c2e3824` |
-| Time-box / actual | **1 h**, then a recorded STOP / CONTINUE / RETRY, **cap 4 h** / **~60 min, one unit** |
+| Time-box / actual | **1 h**, then a recorded STOP / CONTINUE / RETRY, **cap 4 h** / **~60 min, two units, decision STOP** |
 | Subject | `highper-gateway`, Rust, **173 commits at `e588b53`**, 174 at the adoption commit `a6b3dcb` — the census read 174. The pre-flight recorded `169` and nothing produced that figure |
 | Greenfield / brownfield | **brownfield**, history not truncated |
 | Outcome | **two units completed; the gate held and the record did not.** `kit-entry.sh --check` refused 4 of 4 mutations, each naming its own cause. Two kit defects found, both in the *documented procedure* rather than in code |
@@ -356,6 +356,34 @@ pre-flight findings; the runtime digest; `kit-entry seconds=197` and the artefac
 co-change pairs and the 149 out-of-census files; the four `--check` refusals and their messages; the
 spend table; PR #130; and *"since 0.2.0 the kit is a plugin"*. **Nothing was UNVERIFIABLE** — every
 assigned claim was answerable from the two trees.
+
+## The 1-hour boundary — decision: STOP
+
+Recorded at the boundary, as §0 requires, rather than decided by running out of things to do.
+
+**STOP.** Two units are complete, both pushed, all four CI checks green on
+[PR #131](https://github.com/raghuveer/coding-kit/pull/131). The reason to stop is not the clock:
+
+- **the trial answered its question.** *Does the kit produce a change the verify ladder can pass, and
+  where it cannot, does the trial say so rather than record COMPLETE?* It said so — twice, in writing,
+  about itself. The Cost section records **unmeasurable** instead of an estimate, and the What-was-NOT
+  section names the ladder as unexercised rather than implying it ran.
+- **the next thing to do is not another unit, it is the backlog.** Three tasks were filed and one
+  blocker closed; all of them are now work, and doing kit work inside a trial contaminates the trial.
+- **the third unit available was auditing the audit**, which is where this stops being measurement.
+
+**No VOID condition fired.** The subject tree is clean, `--commands` never reported `CANNOT RUN`, and
+no kit defect blocked progress even once, let alone three times.
+
+**`T-20260912-a-trial-runs-in-a-container-on-the-subje` closes on this trial**, AC3 and AC5 in
+particular: the runtime is recorded above, and the subject built and ran its tests in the container
+end to end. It is the first trial to do so.
+
+### What trial 2 cost that trial 1 did not
+
+Trial 1 stopped at 35 minutes with the subject recorded as the single word *red*. Trial 2 spent its
+hour and came back with **five findings, three of them against its own record**. The difference is
+not effort — it is that this trial had a pre-flight, a mutation-proved gate, and a second reader.
 
 ## What was NOT exercised
 

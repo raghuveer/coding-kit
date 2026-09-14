@@ -270,7 +270,34 @@ case "${1:-}" in
       kit_warn "  from a dead hook and it is in kit-index.sh, not in the harness."
       exit 1
     fi
-    printf 'kit: spend capture is live -- %s event(s), %s row(s)\n' "$ev" "$rows"
+    # LIVE IS A PRESENT-TENSE CLAIM AND THE CHECK ASKED IT IN THE PAST TENSE. The two arms
+    # above fire on "nothing was ever recorded" and "recorded but never derived"; neither
+    # notices a recorder that worked for a month and then stopped. It stopped here on
+    # 2026-09-10 and this check went on reporting live, exit 0, across four days and 122
+    # commits -- green over a dead instrument, sitting on the one series every token figure
+    # in the project is computed from.
+    #
+    # The comparator is COMMITS SINCE THE LAST READING, deliberately not a clock: a wall-time
+    # threshold is a number nobody can defend and it fires on a repository that is merely
+    # quiet. Work landing with no reading beside it is the actual property.
+    #
+    # No harness name, no trailer key, nothing model-specific, so an adapter that records
+    # spend some other way is measured by this identically.
+    last=$(sqlite3 -noheader "$ROOT/$STATE_DIR/index.db" "SELECT MAX(at) FROM spend;" 2>/dev/null | tr -d '\r')
+    if [ -n "$last" ]; then
+      since=$(git -C "$ROOT" log --since="$last" --format=%H 2>/dev/null | grep -c '^.')
+      if [ "${since:-0}" -gt 0 ]; then
+        kit_warn "STOP -- the last spend reading is $last and $since commit(s) have landed since"
+        kit_warn "  Capture worked and then stopped, which neither check above can see. The"
+        kit_warn "  usual cause is a session whose project root is not this repository:"
+        kit_warn "  kit-spend.sh resolves its root from the session's directory and exits 0"
+        kit_warn "  in a repo that has not adopted the kit. Every figure derived from spend"
+        kit_warn "  is stale by that much."
+        exit 1
+      fi
+    fi
+    printf 'kit: spend capture is live -- %s event(s), %s row(s), last reading %s
+'       "$ev" "$rows" "${last:-none}"
     exit 0 ;;
 
   *) usage ;;

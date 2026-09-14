@@ -5118,6 +5118,44 @@ check $? "undeclared fails, declared passes, closed and unresolvable ends do not
 rm -rf "$rx"
 fi
 
+
+if step "spend capture that stopped is not reported as live"; then
+# The arm this proves did not exist until 2026-09-14, and its absence was not theoretical:
+# capture stopped in this repository on 2026-09-10 and `--spend` reported "spend capture is
+# live", exit 0, for four days and 122 commits. Both existing arms are past-tense -- "was
+# anything ever recorded", "was anything derived" -- and a recorder that worked and then died
+# passes both. Every token figure the project quotes is computed from that series.
+#
+# TWO ARMS, because only the pair distinguishes the check from a check that always fails:
+#   1. a reading with no commit after it        MUST pass  -- live is a real state
+#   2. one commit later, nothing re-recorded    MUST fail  -- and name the count
+sp="$WORK.spendlive"; rm -rf "$sp"; mkdir -p "$sp/src"
+( cd "$sp" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-s\ntitle: s\ntier: T2\n---\nb\n' > .project/tasks/T-s.md
+  echo x > src/a
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  # The commit lands BEFORE the reading, so arm 1 has a reading newer than every commit.
+  printf '{"type":"assistant","message":{"model":"m","usage":{"input_tokens":10,"cache_creation_input_tokens":0,"cache_read_input_tokens":100,"output_tokens":50}}}\n' > sess.jsonl
+  bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  bash "$KIT/tooling/kit-preflight.sh" --spend >/dev/null 2>&1
+  [ $? -eq 0 ] || { echo "  arm 1: a live recorder was reported as stale"; exit 1; }
+
+  # One commit, no new reading. Nothing else changes.
+  echo y > src/b; git add -A && git commit -q --no-verify -m "chore: work with no reading"
+  out=$(bash "$KIT/tooling/kit-preflight.sh" --spend 2>&1); rc=$?
+  [ $rc -eq 1 ] || { echo "  arm 2: work landed with no reading and --spend still exited $rc"; exit 1; }
+  printf '%s' "$out" | grep -q "1 commit(s) have landed since" ||
+    { echo "  arm 2: the count was not named in the report"; exit 1; }
+  exit 0 )
+check $? "a reading newer than every commit passes; one commit later it does not"
+rm -rf "$sp"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

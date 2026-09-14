@@ -99,6 +99,7 @@ KIT=${KIT:?set KIT to the kit checkout}
 WORK=${WORK:?set WORK to an empty scratch dir}
 
 SELECTED=''; PULLED=0
+
 if [ -n "$ONLY" ]; then
   _hit=$(printf '%s\n' "$STEP_TABLE" | while IFS='|' read -r _i _nm _ch; do
            printf '%s' "$_nm" | grep -Eiq -- "$ONLY" && printf '%s|%s|%s\n' "$_i" "$_nm" "$_ch"
@@ -5052,6 +5053,57 @@ grep -q 'STATUS.generated.md' "$KIT/tooling/kit-criteria.sh"
 gs=$?
 [ $gs -ne 0 ] || grep -qE 'WHY NOT A SECTION|gitignored' "$KIT/tooling/kit-criteria.sh"
 check $? "any mention of the generated file is the reasoning, not a write into it"
+fi
+
+if step "a reference written in prose fails until it is declared"; then
+# THE MUTATION IS THE POINT. docs/DEPENDENCIES.md audited 273 prose references by hand on
+# 2026-09-13 and the commit that did it said plainly that nothing stopped the next two hundred
+# tasks doing the same. A check that only ever passed on an already-audited backlog would be the
+# snapshot again wearing a control's clothes, so this step asserts the RED arm first and the
+# green arm only after the declaration exists.
+#
+# Four cases, and three of them are the ones that decide whether the control is usable:
+#   1. live -> live, undeclared        MUST fail. Without this the check is decoration.
+#   2. the same pair, declared         MUST pass. A row in the map is a decision, not a fix.
+#   3. live -> completed, undeclared   MUST pass. The planner cannot order against closed work.
+#   4. live -> no task file at all     MUST pass HERE. That is a different fault with its own
+#                                      report (kit-status) and its own task; merging the two
+#                                      would hand one remedy to two problems.
+rx="$WORK.refs"; rm -rf "$rx"; mkdir -p "$rx/src"
+( cd "$rx" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  mkdir -p docs
+  : > docs/dependency-map.tsv
+  w() { printf -- '---\nid: %s\ntitle: %s\ntier: T2\nstate: %s\n---\n%s\n' "$1" "$1" "$2" "$3" > ".project/tasks/$1.md"; }
+  w T-20260101-alpha created 'Body cites T-20260101-beta as context.'
+  w T-20260101-beta  created 'Nothing here.'
+  w T-20260101-gamma completed 'Closed work.'
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  bash "$KIT/tooling/kit-plan.sh" --check-refs >/dev/null 2>&1
+  [ $? -eq 1 ] || { echo "  case 1: an undeclared live reference did not fail"; exit 1; }
+
+  printf 'T-20260101-alpha\tT-20260101-beta\trelated\n' > docs/dependency-map.tsv
+  bash "$KIT/tooling/kit-plan.sh" --check-refs >/dev/null 2>&1
+  [ $? -eq 0 ] || { echo "  case 2: a declared reference still failed"; exit 1; }
+
+  w T-20260101-alpha created 'Body cites T-20260101-beta and also T-20260101-gamma.'
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-plan.sh" --check-refs >/dev/null 2>&1
+  [ $? -eq 0 ] || { echo "  case 3: a reference to completed work was required to be declared"; exit 1; }
+
+  w T-20260101-alpha created 'Body cites T-20260101-beta and T-20260101-nosuchtask.'
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  out=$(bash "$KIT/tooling/kit-plan.sh" --check-refs 2>&1); rc=$?
+  [ $rc -eq 0 ] || { echo "  case 4: an unresolvable id was failed here instead of reported"; exit 1; }
+  printf '%s' "$out" | grep -q '1 unresolvable' ||
+    { echo "  case 4: the unresolvable id was not counted in the report"; exit 1; }
+  exit 0 )
+check $? "undeclared fails, declared passes, closed and unresolvable ends do not"
+rm -rf "$rx"
 fi
 
 if [ -n "$ONLY" ]; then

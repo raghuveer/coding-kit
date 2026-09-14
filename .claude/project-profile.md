@@ -8,6 +8,9 @@
 paths.tasks:  .project/tasks
 paths.state:  .project
 paths.status: STATUS.generated.md
+# Where relations that are NOT orderings are recorded. `blocked_by:` stays the one home
+# for a blocking edge; this file carries everything else. See docs/DEPENDENCIES.md.
+paths.depmap: docs/dependency-map.tsv
 
 # Where written rationale lives. Both were referenced before they existed: adr-scribe.md said
 # "the project's ADR directory" and researcher.md "the project's design-input directory", and

@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Raghuveer Dendukuri
 # kit-plan.sh [--goal ID] [--next N] [--show] [--packs]
+# kit-plan.sh --check-refs    every task reference written in prose is declared somewhere
 #
 # Groups tasks by dependency, orders them by completion priority, and persists the
 # result. Two rules make this correct rather than merely plausible:
@@ -24,7 +25,7 @@ STATE_DIR=$(kit_cfg "$PROFILE" paths.state ".project")
 DB="$ROOT/$STATE_DIR/index.db"
 [ -f "$DB" ] || { kit_warn "no index; run kit-index.sh first"; exit 1; }
 
-GOAL="default"; NEXT=5; SHOW=0; PACKS_ONLY=0
+GOAL="default"; NEXT=5; SHOW=0; PACKS_ONLY=0; CHECK_REFS=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --goal) GOAL=${2:-default}; shift; shift ;;
@@ -37,10 +38,23 @@ while [ $# -gt 0 ]; do
     --packs) PACKS_ONLY=1; shift ;;
     --next) NEXT=${2:-5}; shift; shift ;;
     --show) SHOW=1; shift ;;
+    # The planner reads ONE edge type. This asks whether the edges it reads are all the
+    # edges the authors wrote -- see tooling/kit_refs.py and docs/DEPENDENCIES.md.
+    --check-refs) CHECK_REFS=1; shift ;;
     -h|--help) sed -n '4,16p' "$0"; exit 0 ;;
     *) kit_warn "unknown argument: $1"; exit 2 ;;
   esac
 done
+
+# Runs before any scoring: it asks about the INPUT to the ordering, not the ordering, and a
+# plan computed from incomplete edges is the artefact this check exists to prevent.
+# paths.depmap is a profile key rather than a constant -- an adopter may keep the map
+# anywhere, and the kit hardcodes no project's layout.
+if [ "$CHECK_REFS" = 1 ]; then
+  DEPMAP=$(kit_cfg "$PROFILE" paths.depmap "docs/dependency-map.tsv")
+  TASKS_DIR=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
+  exec python3 "$(dirname "$0")/kit_refs.py" --tasks "$ROOT/$TASKS_DIR" --db "$DB" --map "$ROOT/$DEPMAP"
+fi
 
 # Scoring weights. Declared in the profile so priority policy is a project decision,
 # not a constant buried in a script.

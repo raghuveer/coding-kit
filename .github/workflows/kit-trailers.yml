@@ -79,6 +79,17 @@ jobs:
       - name: Structure
         run: python3 validate.py
 
+      # The conformance suite proves the CONTROL works, on a fixture. This asks it of THIS
+      # repository's own backlog, which is the question that goes red when someone writes a
+      # dependency in prose tomorrow. docs/DEPENDENCIES.md audited 273 of them by hand once;
+      # without this step the audit decays from the first task filed after it.
+      - name: Every prose task reference is declared
+        run: |
+          set -eu
+          command -v sqlite3 >/dev/null || sudo apt-get -qq update && sudo apt-get -qq install -y sqlite3
+          bash tooling/kit-index.sh >/dev/null
+          bash tooling/kit-plan.sh --check-refs
+
   # The kit was built and tested on Windows through 0.5.1. Running one deterministic
   # fixture on a second platform is what found 0.5.2's timestamp defect -- neither platform
   # alone showed anything wrong, only the diff between them did. This keeps that property

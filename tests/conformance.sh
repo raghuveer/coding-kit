@@ -2551,6 +2551,31 @@ for a in "$KIT"/agents/*.md; do
   # The row that names this agent, then the tier in that row's second column.
   documented=$(grep -F "\`$nm\`" "$KIT/docs/MODELS.md" | grep '^|' |
                sed -n 's/^[^|]*|[^|]*| *`\([a-z]*\)` *|.*/\1/p' | head -1)
+  # A PINNED MODEL ID IS ALREADY CAUGHT HERE, and it is caught for the WRONG REASON, which is a
+  # defect this repository files against other checks routinely. Measured 2026-09-14 by mutation:
+  # pinning `model: claude-sonnet-5` in frontmatter alone reports the tier disagreement, which is
+  # correct and useful; pinning it in BOTH the frontmatter and the table reports "is not named in
+  # the MODELS.md table", because the extractor above matches [a-z]* and a hyphenated value simply
+  # fails to parse. Right outcome, wrong cause -- and the remedy a reader would follow from that
+  # message is "add a table row", which is not the fix.
+  #
+  # So the alias rule is asserted DIRECTLY and first. MODELS.md states it as a rule with a
+  # consequence: a full model ID "cannot be overridden by environment, it does not follow a version
+  # upgrade, and on Bedrock, Google Cloud's Agent Platform or Microsoft Foundry -- where the same
+  # model is addressed by an inference profile ARN, a version name or a deployment name -- it does
+  # not resolve at all."
+  #
+  # NO VENDOR LIST, deliberately. The test is the SHAPE of the value, not membership of a set of
+  # names: a tier alias is a bare lowercase word, and every way of pinning a product carries
+  # version or vendor detail -- `claude-sonnet-5`, `us.anthropic.claude-...`, `arn:aws:bedrock:...`,
+  # `gpt-4o`. A hardcoded {opus,sonnet,haiku} would be this kit's adapter vocabulary frozen into a
+  # control, and a second adapter with a different tier spelling would have to edit the check.
+  case "$declared" in
+    *[!a-z]*) echo "  $nm declares '$declared', which is not a tier alias -- a bare lowercase"
+              echo "    word like 'opus'. A pinned model id cannot be remapped by environment"
+              echo "    and does not resolve on Bedrock, Vertex or Foundry. See docs/MODELS.md."
+              drift=1; continue ;;
+  esac
   if [ -z "$documented" ]; then
     echo "  $nm is not named in the MODELS.md table"; drift=1
   elif [ "$declared" != "$documented" ]; then

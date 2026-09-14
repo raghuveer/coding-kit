@@ -172,6 +172,8 @@ T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260809-a-claim-audit-bef
 T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260815-four-of-five-review-fixes-have-no-assert	related
 T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260821-the-fixed-commit-walk-spawns-one-git-per	related
 T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260822-process-creation-costs-one-second-on-the	related
+T-20260912-a-trial-runs-in-a-container-on-the-subje	T-20260912-a-declared-rung-whose-tooling-fails-has-	co-decide
+T-20260912-a-trial-runs-in-a-container-on-the-subje	T-20260912-the-baseline-records-that-the-subject-is	related
 T-20260912-a-trial-runs-in-a-container-on-the-subje	T-20260912-trial-isolation-relies-on-a-file-tool-gu	related
 T-20260912-conformance-runs-on-one-core-so-the-only	T-20260810-the-suite-that-gates-every-control-has-n	related
 T-20260912-kit-plan-treats-on-hold-as-plannable-so-	T-20260808-task-state-cannot-express-no-longer-rele	related

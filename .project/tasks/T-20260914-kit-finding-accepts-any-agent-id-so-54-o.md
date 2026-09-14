@@ -56,15 +56,15 @@ someone looks, and five more were written during trial 2 before anyone did.
 
 ## Acceptance criteria
 
-- [ ] `kit-finding.sh` and `kit-review-record.sh` **refuse, or loudly warn on, an `--agent-id` that
+- [x] `kit-finding.sh` and `kit-review-record.sh` **refuse, or loudly warn on, an `--agent-id` that
       resolves to no spend row** at record time. Refusing outright may be wrong — the spend row can
       arrive after the finding — so the decision to make is whether this is a refusal or a warning
       that names the value it could not find.
-- [ ] The help text says **which** id is wanted, in words that distinguish it from the session id,
+- [x] The help text says **which** id is wanted, in words that distinguish it from the session id,
       and names where a caller gets it. `"the reviewer RUN"` does not, because both ids are per-run.
 - [ ] The 54 existing rows are dispositioned rather than left: either backfillable from the
       transcripts, or marked permanently unjoinable so the count stops reading as a live backlog.
-- [ ] A conformance step passes a well-formed id that matches nothing and asserts the new behaviour.
+- [x] A conformance step passes a well-formed id that matches nothing and asserts the new behaviour.
       Mutation-proved: remove the check and the step goes red.
 
 ## Notes
@@ -77,3 +77,19 @@ This is the instrument the operator asked for by name. With the join at 0/54, *"
 reviewer cost and what did it find"* remains unanswerable for every run in the repository — the
 original complaint — and it was not fixed by adding the column, recording values, or reporting the
 gap. **A column that is populated is not a column that joins.**
+
+### Evidence, 2026-09-14 — PR #132. AC3 deliberately NOT done.
+
+| AC | where to verify |
+|---|---|
+| 1 — refuse or loudly warn at record time | `kit_findings.py --check-agent-id`, wired into `kit-finding.sh` after `PY` is set. **Warns, never refuses**, and leaves the exit status alone — a reviewer's spend row is written by a Stop hook and can arrive after the finding, so refusing trades a silent non-join for a lost finding |
+| 2 — the help says WHICH id, distinguishably | `kit-finding.sh` header and `skills/verify-ladder/SKILL.md`: *"IT IS THE SUBAGENT ID, NOT THE SESSION ID"*, with why the session id cannot identify a run |
+| 3 — the 54 existing rows dispositioned | **NOT DONE.** Still 54. A separate change; the count on the status page is honest today and would stop being honest if this shipped as "closed" |
+| 4 — a conformance step, mutation-proved | three arms added to the existing step. **Three mutations, three failures, each on its own arm**: remove the check → arm 5; warn on everything → arm 4; drop the session diagnosis → arm 6 |
+
+**Found while doing AC2 and fixed here:** `kit-finding.sh -h` was `sed -n '4,8p' "$0"` — a hardcoded
+range that **had already outgrown itself**. `--vocab` and `--contract` are real flags documented in
+that same block and **neither had ever been printed by `--help`**. Nothing failed. The help block is
+now derived, with its own conformance step, mutation-proved by restoring the old range.
+
+**This task does not close.** AC3 is open and the 54 rows still join nothing.

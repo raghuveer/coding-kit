@@ -193,6 +193,33 @@ first_divergence() {  # <expected list> <flattened agent text>
   done
 }
 
+if step "--help prints every flag the usage block documents"; then
+# A HELP TEXT BOUND TO LINE NUMBERS IS WRONG SILENTLY. `kit-finding.sh -h` was
+# `sed -n '4,8p' "$0"` -- a hardcoded range that had already outgrown itself: `--vocab` and
+# `--contract` are real flags, documented in the same block, and neither had ever been printed
+# by --help. Nothing failed. The header then grew on 2026-09-14 and clipped again.
+#
+# Asserted against the FILE rather than against a list written here, so this cannot drift the
+# way the thing it is testing drifted. Every `# kit-finding.sh ...` usage line in the header
+# must appear in the --help output; a range that clips any of them goes red.
+h=$(bash "$KIT/tooling/kit-finding.sh" --help 2>&1)
+miss=""
+while IFS= read -r line; do
+  case "$h" in *"$line"*) ;; *) miss="$miss
+    $line" ;; esac
+done <<EOF
+$(awk '/^# kit-finding\.sh /{print} /^#$/{if(seen)exit} /^# kit-finding\.sh /{seen=1}' "$KIT/tooling/kit-finding.sh")
+EOF
+[ -z "$miss" ] || echo "  usage lines the --help output does not contain:$miss"
+# And the two flags that were invisible for the whole life of the old range, named explicitly:
+# a generic check that happened to pass while they were missing is what let this sit.
+case "$h" in *"--vocab"*) ;; *) echo "  --help does not mention --vocab"; miss=x ;; esac
+case "$h" in *"--contract"*) ;; *) echo "  --help does not mention --contract"; miss=x ;; esac
+[ -z "$miss" ]
+check $? "no usage line is clipped, --vocab and --contract included"
+fi
+
+
 if step "finding vocabulary has not drifted"; then
 # The reviewers have no Bash, so they cannot run `kit-finding.sh --vocab` and the lists are
 # inlined in their instructions. That is the only form they can use, and it is exactly the

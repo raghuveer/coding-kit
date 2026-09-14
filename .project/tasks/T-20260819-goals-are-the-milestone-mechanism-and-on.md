@@ -56,6 +56,36 @@ at adoption, and the kit currently decides entry mode once and never revisits it
 - [ ] A check that can fail, with two goals in the fixture — every existing conformance step
       builds a single-goal fixture, so this whole surface is currently unexercised.
 
+### Decision, 2026-09-14 — operator: a goal is a ROOT TASK plus its `blocked_by` closure
+
+AC1 asked what happens when two goals share a task, and the 2026-09-14 demonstration answered
+that today they share *everything*: `--goal` names a plan FILE and no membership exists anywhere.
+The operator's decision closes that question by deriving membership rather than declaring it.
+
+**A goal is named by one task, and contains that task plus everything reachable through
+`blocked_by`.** Nothing else selects into it.
+
+Three things recommended it over the alternatives, and they are worth keeping because the
+alternatives will look attractive again:
+
+- **No new frontmatter key.** A `goal:` field on every task would be a second place to say what
+  `blocked_by` already says, and this backlog carries nine instances of
+  `T-20260826-two-artefacts-carrying-one-fact-with-not`.
+- **No second vocabulary.** `blocked_by` is already the one edge `kit-plan.sh` reads. Membership
+  derived from it cannot drift from the ordering, because it *is* the ordering.
+- **The case already exists.** `T-20260808-trial-the-kit-on-one-unfamiliar-brownfie` plus its
+  13 blockers is exactly this shape, and it exists because a real milestone needed it rather
+  than because a design imagined one. AC1's own note asked for a real project with phases.
+
+**Two goals sharing a task is therefore legal and means what it says** — the task is reachable
+from both roots, and neither goal owns it. What must NOT follow is a second ordering for that
+task: the plan still holds one row per task per goal, and `plan_item`'s primary key already
+enforces it.
+
+**Not decided here, deliberately:** whether a closed goal withholds its members from the plan.
+That is `T-20260914-a-goal-state-is-a-label-the-planner-neve`, and it is a different question —
+this one is about what a goal CONTAINS, that one about what its state DOES.
+
 ## Notes
 
 Filed 2026-08-19 from an audit of `docs/design-input/2026-08-18-authoring-chain-and-review-economics.md`

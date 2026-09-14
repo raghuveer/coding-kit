@@ -39,6 +39,24 @@ returns nothing reads exactly like a join over data nobody recorded.
 - [ ] A check that can fail: a finding recorded with the harness id joins; one recorded with a
       label is reported, not silently dropped.
 
+### Decision, 2026-09-14 — operator: `agent_id` holds the HARNESS id
+
+`finding.agent_id` and `spend.agent_id` hold values from two spaces — operator-chosen run labels
+(`blind-second`, `design2`) against the harness's subagent id (`a070ab68df6ac0287`) — so 0 of 628
+findings join today.
+
+**The column holds the harness id.** That is the value `spend` carries, and joining to the
+reviewer run that produced a finding is the column's entire purpose: a label that cannot join
+answers no question the column was added for.
+
+**The 48 rows carrying labels are legacy, not errors.** They were recorded correctly against the
+convention of their day, and they are dispositioned as such rather than rewritten — the runs they
+name are gone, so no rewrite could recover the ids they would need.
+
+**`kit-status.sh` keeps reporting the two faults apart** — no id at all, versus an id matching no
+spend row. Collapsing them would hide exactly this defect class the next time it appears, and the
+second count is what made this one visible.
+
 ## Notes
 
 Filed 2026-09-14 while wiring `finding.agent_id`, at the operator's direction, before any fix.

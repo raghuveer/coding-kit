@@ -97,6 +97,7 @@ T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	T-20260808-cluster-packs-are
 T-20260818-relicense-from-mit-to-apache-2-0-while-s	T-20260808-make-the-security-assurance-cadence-a-po	related
 T-20260819-a-user-authored-data-model-is-design-inp	T-20260731-component-model-for-polyglot-and-moderni	related
 T-20260819-goals-are-the-milestone-mechanism-and-on	T-20260814-one-entry-mechanism-brownfield-is-the-ge	related
+T-20260819-goals-are-the-milestone-mechanism-and-on	T-20260914-a-goal-state-is-a-label-the-planner-neve	split-from
 T-20260819-legacy-candidate-selection-is-unresearch	T-20260731-component-model-for-polyglot-and-moderni	related
 T-20260819-nothing-computes-whether-a-change-is-hig	T-20260819-researcher-carries-no-security-baseline-	related
 T-20260819-the-claude-adapter-is-16-files-but-nothi	T-20260808-cluster-packs-are-generated-and-read-by-	related
@@ -206,4 +207,6 @@ T-20260912-the-transcript-reader-parses-one-vendor-	T-20260819-the-claude-adapte
 T-20260912-the-transcript-reader-parses-one-vendor-	T-20260912-the-spend-price-vector-is-hard-coded-to-	co-decide
 T-20260912-trial-isolation-relies-on-a-file-tool-gu	T-20260911-kit-guard-refuses-the-harness-scratchpad	related
 T-20260912-trial-isolation-relies-on-a-file-tool-gu	T-20260911-the-isolation-check-passes-while-the-cop	related
+T-20260914-a-goal-state-is-a-label-the-planner-neve	T-20260819-goals-are-the-milestone-mechanism-and-on	split-from
+T-20260914-a-goal-state-is-a-label-the-planner-neve	T-20260826-two-artefacts-carrying-one-fact-with-not	related
 T-20260914-nothing-checks-that-a-prose-task-referen	T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	related

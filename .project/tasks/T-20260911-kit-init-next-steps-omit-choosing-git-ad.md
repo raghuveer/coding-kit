@@ -5,7 +5,7 @@ epic: adoption
 tier: T2
 lang: bash
 paths: tooling/kit-init.sh, INSTALL.md, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -27,13 +27,32 @@ history. The defect is that the choice is made by default rather than by the ado
 
 ## Acceptance criteria
 
-- [ ] On a repository with history, `kit-init.sh`'s next steps name `git.adopted_at`, both choices
+- [x] On a repository with history, `kit-init.sh`'s next steps name `git.adopted_at`, both choices
       and what each costs — or point at `INSTALL.md`'s section by name.
-- [ ] An empty repository is not told to choose one.
-- [ ] A conformance step asserts that the line appears after `kit-init.sh` on a fixture with commits,
+- [x] An empty repository is not told to choose one.
+- [x] A conformance step asserts that the line appears after `kit-init.sh` on a fixture with commits,
       and does not appear on a fixture without.
 
+### Evidence, 2026-09-14 — PR #124, merged
+
+| AC | where to verify |
+|---|---|
+| 1 — on a repo with history, the next steps name `git.adopted_at`, both choices and what each costs | step 6, with the real commit count, and a pointer to INSTALL.md's section by name |
+| 2 — an empty repository is not told to choose one | guarded on `rev-parse --verify HEAD` |
+| 3 — a conformance step asserts the line appears with commits and not without | two arms |
+
+**The greenfield arm was VACUOUS in its first version and the mutation said so.** Mutating the
+guard to `if true` left it green — not because the assertion was loose, but because `kit-init.sh`
+runs under `set -euo pipefail`, so the mutant hit `git rev-list --count HEAD` with no HEAD and
+exited 128 **before printing anything**. An arm checking only for ABSENCE could not tell
+"correctly silent" from "died before it could speak". It now asserts the run exited 0 and printed
+its normal steps first. The latent crash is fixed too, rather than left as a property of the
+guard.
+
 ## Notes
+
+**Closed 2026-09-14 on the evidence block above: all three criteria met by PR #124, merged.**
+
 
 Proposed at T1 and filed at T2, the floor `tooling/**` sets in this repository's profile.
 

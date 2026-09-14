@@ -5,7 +5,7 @@ epic: measurement
 tier: T2
 lang: bash
 paths: tooling/kit-status.sh, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -25,15 +25,30 @@ nothing on the page said so. The reconciliation is from `events.ndjson` in
 
 ## Acceptance criteria
 
-- [ ] Every spend figure `kit-status.sh` prints carries, per scope, the time of the newest row it
+- [x] Every spend figure `kit-status.sh` prints carries, per scope, the time of the newest row it
       includes.
-- [ ] When `events.ndjson` holds a newer `spend` event for a transcript than the index does, the
+- [x] When `events.ndjson` holds a newer `spend` event for a transcript than the index does, the
       report says the index is behind, and by how long, instead of printing the older figure as
       current.
-- [ ] A conformance step appends a later spend row for a transcript after indexing and asserts that
+- [x] A conformance step appends a later spend row for a transcript after indexing and asserts that
       the behind-notice fires; after a rebuild, it asserts the notice does not fire.
 
+### Evidence, 2026-09-14 — PR #123, merged
+
+| AC | where to verify |
+|---|---|
+| 1 — every spend figure carries, per scope, the time of the newest row | an **As of** block per scope in `kit-status.sh` |
+| 2 — when `events.ndjson` is newer than the index, the report says so and by how much | a notice naming both timestamps. Asked in the order `kit-preflight.sh --spend` asks it: the event log before the index |
+| 3 — a conformance step appends a later row after indexing, asserts the notice fires, and asserts it does not after a rebuild | three arms, mutation-proven; the third is what stops the notice becoming decoration |
+
+**Found in the making:** the first version's `sed` carried doubled backslashes, so the capture
+group never matched, `_EVLAST` came out empty and the guard **could never fire** — a notice that
+was unreachable rather than wrong. Arm 2 caught it before the commit.
+
 ## Notes
+
+**Closed 2026-09-14 on the evidence block above: all three criteria met by PR #123, merged.**
+
 
 The protocol side of the same finding is methodology M1 in the trial record: read the final figure
 after the session closes. This task is the kit's side — whoever reads the figure should be able to

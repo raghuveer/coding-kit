@@ -5,7 +5,7 @@ epic: feedback-loop
 tier: T3
 lang: python
 paths: tooling/kit_findings.py, tooling/schema.sql, tooling/kit-index.sh, tooling/kit-status.sh, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -31,13 +31,35 @@ duplicates.
 
 ## Acceptance criteria
 
-- [ ] A finding can name the earlier finding it carries over, and `kit-finding.sh --contract`
+- [x] A finding can name the earlier finding it carries over, and `kit-finding.sh --contract`
       documents the field. A reviewer that omits it still validates.
-- [ ] Reports count distinct defects and rounds separately, and say which one they are counting.
-- [ ] A conformance step records two rounds, where round 2 carries one finding over and adds one
+- [x] Reports count distinct defects and rounds separately, and say which one they are counting.
+- [x] A conformance step records two rounds, where round 2 carries one finding over and adds one
       new, and asserts: 3 rows, 2 distinct defects, 1 carry-over link.
 
+### Evidence, 2026-09-14 — PR #126, and the only blocker that got its tier's review chain
+
+| AC | where to verify |
+|---|---|
+| 1 — a finding can name the earlier one it carries over, `--contract` documents it, omission still validates | `carries_over`, optional, on the contract; round 1 of the conformance fixture omits it on purpose |
+| 2 — reports count distinct defects and rounds separately, and say which | `kit-status.sh` prints both with the labels, and counts a dangling link apart |
+| 3 — a conformance step: two rounds, one carried over, one new → 3 rows, 2 defects, 1 link | exactly that, plus a dangling-link arm and a pre-column arm both reviewers asked for |
+
+**Two reviewers, the second blind, both REVISE.** They converged on four findings and rung 5 found
+three more. Without them the column would have shipped **permanently empty**: no reviewer prompt
+mentioned the field, the by-hand door had no flag — and that is the door all 11 findings of the
+motivating trial came through — and a pre-column index printed a confident claim with a blank
+count.
+
+**Rung 5 also caught a `false-rationale` in this change's own schema comment**, which justified
+the column by accelerator seeding and escape rate while both still count rows. The comment now
+says what the column does not fix; the behaviour is
+`T-20260914-every-finding-consumer-still-counts-rows`.
+
 ## Notes
+
+**Closed 2026-09-14 on the evidence block above: all three criteria met by PR #126, merged -- and the only one of the eight that got the review chain its tier requires.**
+
 
 Where the link lives decides the tier. A new event field has to be ingested into the `finding` table
 by `kit-index.sh`, which is why that file is in `paths` and why the task sits at its T3 floor.

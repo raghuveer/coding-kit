@@ -24,7 +24,7 @@ are recorded as decisions, not converted.
 | task files carrying `blocked_by:` | 17 | 26 |
 | blocking edges | 23 | 42 |
 | open tasks the plan holds in layer 1, gated | 7 | 15 |
-| non-blocking relations recorded anywhere | 0 | 171 |
+| non-blocking relations recorded anywhere | 0 | 187 |
 
 Nineteen edges were added: **11** promoted from prose across the backlog, and **8** on
 `T-20260808-trial-the-kit-on-one-unfamiliar-brownfie`, which is what the second brownfield trial
@@ -166,12 +166,66 @@ Four ids appear in bodies and resolve to no task file. Three are benign and one 
 3. **The ninth trial-2 blocker** — whether trial 2 must exercise the findings loop or may record by
    hand again. See the list above.
 
-## What would make this maintainable
+## The invariant — 2026-09-14
 
-This audit is a snapshot, and the next twenty tasks will write dependencies in prose exactly as the
-last two hundred did. The mechanical form is already specified in
-`docs/design-input/2026-08-18-the-plan-is-the-unreviewed-artefact.md`: extract every `T-\d{8}-`
-reference from a body, require it to appear in `blocked_by:` or in this map, and fail otherwise.
+The section that stood here said the mechanical form was *"a check that can fail, it is
+deterministic, and it is not built"*. It is built: `tooling/kit_refs.py`, reached as
 
-That is a check that can fail, it is deterministic, and it is not built. It is **proposed, not
-filed** — filing is the operator's.
+    kit-plan.sh --check-refs
+
+It extracts every `T-20\d{6}-` reference from a task body, drops the file's own id and anything
+already in its `blocked_by:`, and requires what remains to appear in `blocked_by:` or in this map.
+It runs in CI on every push — once on a fixture, in `tests/conformance.sh`, and once against this
+repository's own backlog.
+
+**Three exclusions, each because the fault it names has a different remedy.**
+
+| excluded | why | who owns it |
+|---|---|---|
+| a reference that resolves to no task file | a typo or a rename, not an undeclared relation | `kit-status.sh`, and `T-20260808-a-task-id-matching-no-task-file-is-count` |
+| a reference whose target is closed | the planner cannot order against finished work | nobody; it is not a defect |
+| the relation's *kind* | recording `related` is a decision; the check asks that one was made, not which | the author |
+
+**The control is mutation-proven, not merely green.** With the comparison disabled, the fixture's
+undeclared reference passes and the conformance step goes red — case 1 of four. The other three
+assert that a declared pair passes, that a closed target needs no declaration, and that an
+unresolvable id is counted in the report rather than failed.
+
+### What the invariant found that the hand audit did not
+
+Running it against the backlog the audit had just finished produced **15 undeclared references**.
+That is the useful result, and it is worth being precise about why a careful pass missed them.
+
+**Eight are the parked cluster.** The audit narrowed to both ends `open`/`created`. One task —
+`T-20260826-a-verified-claim-about-the-tree-has-no-a` — is `on-hold`, and eight references have it
+at one end or the other. ADR 0008 is explicit that a parked task *"keeps its dependency edges and
+still blocks what waits on it"*, so excluding it was the narrowing being wrong rather than the
+audit being careless. **The check uses `is_closed = 0`, read from the index's own `state_class`
+table**, so it inherits ADR 0008's partition instead of re-spelling it.
+
+**Seven were judged in prose and never written down**, which is the exact failure this file exists
+to end. Two of them are the sharpest:
+
+- `T-20260808-trial-the-kit-on-one-unfamiliar-brownfie` → `T-20260801-nothing-invokes-kit-finding-so-the-findi`.
+  The audit called this *"the closest call"* and the potential ninth trial-2 blocker, argued it for
+  a paragraph, and recorded no row. Now `not-a-blocker` — a refusal, which is a result.
+- `T-20260912-conformance-runs-on-one-core-so-the-only` → `T-20260810-the-suite-that-gates-every-control-has-n`.
+  The audit **fixed** this reference, which was one character short of its target, and then never
+  declared the edge the fix had made resolvable.
+
+All 15 were judged from the paragraph carrying the reference, one at a time, the same way the first
+175 were: 9 `related`, 2 `split-from`, 1 `instance-of`, 1 `sequencing`, 1 `co-decide`, 1
+`not-a-blocker`.
+
+**It then caught the sixteenth immediately, and the sixteenth was this work's own task.**
+`T-20260914-nothing-checks-that-a-prose-task-referen` cites
+`T-20260818-nothing-reviews-the-plan-so-a-wrong-orde` in a paragraph about what the check
+deliberately does not do, and declared nothing. The prediction in the commit that opened this file
+— that the next tasks would write dependencies in prose exactly as the last two hundred did — was
+falsified by the first task filed after it, inside the change that built the check. Recorded as
+`related`.
+
+**The unresolvable count reads 0 and that is not a contradiction** with the four broken references
+in the section above. Both task files carrying the live ones are `completed`, so the check does not
+read them; the third was an ellipsis in this document rather than in a task, and the fourth was the
+typo, now fixed.

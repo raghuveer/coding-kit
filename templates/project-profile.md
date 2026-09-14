@@ -15,6 +15,9 @@
 paths.tasks:  .project/tasks
 paths.state:  .project
 paths.status: STATUS.generated.md
+# Where relations that are NOT orderings are recorded. `blocked_by:` stays the one home
+# for a blocking edge; this file carries everything else. See docs/DEPENDENCIES.md.
+paths.depmap: docs/dependency-map.tsv
 
 # Where written rationale lives. Point these at whatever your project already uses; the kit
 # reads them, it does not impose the layout. Agents refer to "the project's ADR directory"

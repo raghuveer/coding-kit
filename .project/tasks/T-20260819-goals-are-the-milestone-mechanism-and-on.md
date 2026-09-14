@@ -35,6 +35,15 @@ at adoption, and the kit currently decides entry mode once and never revisits it
 - [ ] A second goal can be planned, packed and worked without the first being disturbed —
       demonstrated, not asserted. Two goals sharing a task is the interesting case, and what
       happens then must be decided rather than discovered.
+      **Demonstrated 2026-09-14, and the answer is that they share EVERYTHING.** A fixture with
+      three tasks, `default` and `trial-2`, indexed: `plan_item` holds `T-a,T-b,T-c` under each.
+      `--goal` names a plan FILE and there is no membership anywhere, so a second goal is a
+      second full ordering of the same backlog rather than a subset of it. The states are
+      genuinely independent (`default: in-progress`, `trial-2: completed`) and the packs are
+      written per goal, so the mechanism carries a milestone's identity — it just does not carry
+      its scope. **This criterion is therefore not met and is now blocked on a decision rather
+      than on an experiment:** what SELECTS a task into a goal. Discovered while auditing
+      `#goal_state`; the ordering half of that is `T-20260914-a-goal-state-is-a-label-the-planner-neve`.
 - [ ] `kit-status.sh` reports per goal. Today every figure is implicitly `default`, so a second
       goal would silently merge into aggregate counts and no one would see it.
 - [ ] The **project's entry mode is derived, not fixed at adoption** — the predicate above run on

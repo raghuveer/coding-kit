@@ -19,9 +19,46 @@
 | Subject | *languages, size, commit count, age of history* |
 | Greenfield / brownfield | *and whether history was truncated* |
 | Outcome | COMPLETE \| ABORTED (*cause*) \| VOID (*condition*) |
-| Baseline before the kit | build pass/fail, tests pass/fail, duration |
+| Baseline before the kit | *one line per check, with its CAUSE — see the Baseline section below. `build pass, tests fail` is not a baseline* |
 | Instruments verified live | spend rows > 0, findings row landed |
 | Copy isolation verified | `git remote -v` printed nothing |
+
+## Baseline before the kit
+
+Taken **before adoption**, because it cannot be reconstructed afterwards. **One row per check,
+and every failing row carries its cause** — the error codes or advisory ids, and the command that
+produced them.
+
+| check | command | exit | seconds | cause, if it failed |
+|---|---|---|---|---|
+| build | | | | |
+| tests | | | | |
+| lint | | | | |
+| typecheck | | | | |
+| advisories | | | | |
+
+**`build pass/fail, tests pass/fail` was the old shape of this section and it is the defect it
+replaces.** On 2026-09-09 that shape reported one subject as red, and a later reading found the
+release build **passed** while three CI jobs failed for three unrelated reasons — so one job's
+cause stood in for four, and the aggregate word was what got quoted.
+
+**Where the subject has its own CI, record each job separately.** An aggregate verdict hides
+which half is broken, and a second trial cannot then tell a new failure from an old one.
+
+| CI job | verdict | cause |
+|---|---|---|
+| | | |
+
+**A cause you did NOT verify is written as unverified, by name, here and everywhere it is
+repeated.** Not in a footnote, not only in the working notes. The 2026-09-09 notes flagged their
+inference honestly and the record above them did not, and the record is what gets read — an
+unverified cause carried into a later section as established is how a guess becomes a fact.
+Use the literal word **unverified** so it survives being quoted.
+
+**The commands are the ones the subject's own CI runs**, not ones invented for the trial. Where
+they differ — a narrower feature set, a single package instead of the workspace — say which was
+used and why, because three different commands give three different answers to "is this subject
+green" and the report must name the one it means.
 
 ## Cost
 

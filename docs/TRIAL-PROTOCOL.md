@@ -152,9 +152,26 @@ Stop unless every box is ticked. Record the answers; they are part of the result
           bash tooling/kit-preflight.sh --isolated <copy>
 
       Zero, or stop. §4 has the reasoning and the same check.
-- [ ] **Baseline recorded before the kit touches anything**: does the subject build, do its
-      tests pass, how long do they take. A subject whose tests already fail is a valid trial
-      subject, but only if you knew that first — otherwise the kit gets blamed for it.
+- [ ] **Baseline recorded before the kit touches anything**, and recorded with **causes**: one
+      row per check — command, exit, seconds, and for every failure the error codes or advisory
+      ids that produced it. A subject whose tests already fail is a valid trial subject, but only
+      if you knew that first, and only if you knew WHY — otherwise the kit gets blamed for it,
+      or a later run cannot tell an old failure from a new one.
+
+      **`build pass/fail, tests pass/fail` is not a baseline, and this is measured rather than
+      asserted.** On 2026-09-09 that shape recorded one subject as red; a later reading found
+      the release build **passed** and three CI jobs failing for three unrelated reasons. One
+      job's cause stood in for four, and the aggregate word is what got quoted afterwards.
+
+      **Where the subject has its own CI, record each job's verdict separately**, and use the
+      commands that CI runs rather than ones invented for the trial. Where they differ, say
+      which was used: a narrower feature set or a single package gives a different answer to
+      "is this subject green", and the report must name the one it means.
+
+      **A cause you did not verify is written `unverified`, by name, wherever it appears.** The
+      2026-09-09 notes flagged their inference honestly and the record above them did not — and
+      the record is what gets read. An unverified cause repeated in a later section as
+      established is how a guess becomes a fact.
 - [ ] **The runtime is built and its digest recorded**, for any subject whose toolchain is not
       already on the host — which is every subject the host does not develop in natively.
 
@@ -547,6 +564,11 @@ disarms a control in the *next* trial rather than its own.
 **Disputed findings.** Where the subject's owner disagrees that a finding is real, record it as
 disputed with both positions and do not resolve it in the trial report. The trial measures
 whether the kit *produced* the finding; whether it is correct is the owner's call.
+
+**The baseline carries a cause per failing check, not a verdict.** §0 takes it in that shape and
+the template holds it; a report that compresses it back to `build pass, tests fail` cannot be
+compared against the next trial on the same subject, which is the comparison §2 exists to make
+legitimate.
 
 **State every rung's disposition, in the report, next to the outcome.** One line per rung:
 `satisfied`, `unavailable` (with the compensating control and the raised tier), or

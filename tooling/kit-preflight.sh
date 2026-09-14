@@ -285,7 +285,35 @@ case "${1:-}" in
     # spend some other way is measured by this identically.
     last=$(sqlite3 -noheader "$ROOT/$STATE_DIR/index.db" "SELECT MAX(at) FROM spend;" 2>/dev/null | tr -d '\r')
     if [ -n "$last" ]; then
-      since=$(git -C "$ROOT" log --since="$last" --format=%H 2>/dev/null | grep -c '^.')
+      # AN UNANSWERABLE QUESTION IS NOT A PASS, and as first written this arm broke its own rule.
+      # `git log --since=<garbage>` prints nothing and the count came out 0, so a malformed
+      # timestamp SILENTLY DISABLED the check -- the same green-over-nothing shape the arm exists
+      # to catch, reproduced inside it. `last` comes from the index, which comes from events an
+      # adapter or a hand edit may have written, so "it is always well formed" is an assumption
+      # rather than a guarantee.
+      #
+      # Exit 2, matching --isolated: the property could not be evaluated, which is neither a pass
+      # nor a failure of the property.
+      case "$last" in
+        [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9]Z) ;;
+        *) kit_warn "the last spend reading is not a timestamp this check can compare: '$last'"
+           kit_warn "  The comparison cannot be made, so this is NOT a pass. Fix the reading in"
+           kit_warn "  $STATE_DIR/events.ndjson, or rebuild the index if only the table is wrong."
+           exit 2 ;;
+      esac
+      # A repository with no commits at all is a real state and a real pass: nothing has landed
+      # since the reading because nothing has landed. Asked separately so it is not confused with
+      # the next case, where git fails for a reason that leaves the question unanswered.
+      if git -C "$ROOT" rev-parse --verify -q HEAD >/dev/null 2>&1; then
+        _log=$(git -C "$ROOT" log --since="$last" --format=%H 2>/dev/null); _rc=$?
+        if [ "$_rc" != 0 ]; then
+          kit_warn "git log failed here, so the comparison could not be made -- NOT a pass"
+          exit 2
+        fi
+        since=$(printf '%s' "$_log" | grep -c '^.')
+      else
+        since=0
+      fi
       if [ "${since:-0}" -gt 0 ]; then
         kit_warn "STOP -- the last spend reading is $last and $since commit(s) have landed since"
         kit_warn "  Capture worked and then stopped, which neither check above can see. The"

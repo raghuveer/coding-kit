@@ -1344,7 +1344,7 @@ sp="$WORK.supersede"; rm -rf "$sp"; mkdir -p "$sp/.claude" "$sp/.project/tasks" 
     { printf '    ^ a finding whose subject file is absent accepted --superseded\n' >&2; exit 1; }
   exit 0 )
 check $? "superseded needs a matching marker in the subject; live and deleted subjects refused"
-rm -rf "$sp"
+rm -rf "$sp" "$sp.empty"
 fi
 
 if step "a failed build leaves the previous index alone and keeps saying so"; then
@@ -5138,6 +5138,12 @@ if step "spend capture that stopped is not reported as live"; then
 #   1. a reading with no commit after it        MUST pass  -- live is a real state
 #   2. one commit later, nothing re-recorded    MUST fail  -- and name the count
 sp="$WORK.spendlive"; rm -rf "$sp"; mkdir -p "$sp/src"
+# A second fixture with NO COMMITS, for arm 4. kit-init.sh writes the profile; nothing commits it.
+rm -rf "$sp.empty"; mkdir -p "$sp.empty"
+( cd "$sp.empty" && git init -q -b main 2>/dev/null && git config user.email a@b.c &&
+  git config user.name T && bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1 &&
+  printf '{"type":"assistant","message":{"model":"m","usage":{"input_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":1,"output_tokens":1}}}
+' > sess.jsonl ) >/dev/null 2>&1
 ( cd "$sp" || exit 1
   git init -q -b main 2>/dev/null
   git config user.email a@b.c; git config user.name T
@@ -5167,6 +5173,24 @@ sp="$WORK.spendlive"; rm -rf "$sp"; mkdir -p "$sp/src"
   [ $rc -eq 1 ] || { echo "  arm 2: work landed with no reading and --spend still exited $rc"; exit 1; }
   printf '%s' "$out" | grep -q "1 commit(s) have landed since" ||
     { echo "  arm 2: the count was not named in the report"; exit 1; }
+
+  # ARM 3 -- A READING THE COMPARATOR CANNOT PARSE MUST NOT PASS. As first shipped this arm
+  # broke its own rule: `git log --since=<garbage>` prints nothing, the count came out 0, and a
+  # malformed timestamp silently disabled the whole check. Exit 2, never 0: the property could
+  # not be evaluated, which is not the same as holding.
+  sed -i.bak 's/"at":"[0-9][^"]*"/"at":"not-a-timestamp"/' .project/events.ndjson
+  rm -f .project/events.ndjson.bak
+  rm -f .project/index.db
+  bash "$KIT/tooling/kit-preflight.sh" --spend >/dev/null 2>&1
+  [ $? -eq 2 ] || { echo "  arm 3: an unparseable reading did not report as unanswerable"; exit 1; }
+
+  # ARM 4 -- NO COMMITS AT ALL IS A REAL PASS, not an error. Nothing has landed since the reading
+  # because nothing has landed. Asked separately from arm 3 so a repository that is merely new is
+  # never confused with one whose reading is corrupt.
+  cd "$sp.empty" || exit 1
+  bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-preflight.sh" --spend >/dev/null 2>&1
+  [ $? -eq 0 ] || { echo "  arm 4: a repository with no commits was not a pass"; exit 1; }
   exit 0 )
 check $? "a reading newer than every commit passes; one commit later it does not"
 rm -rf "$sp"

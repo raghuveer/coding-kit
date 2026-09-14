@@ -33,6 +33,18 @@ nothing on the page said so. The reconciliation is from `events.ndjson` in
 - [ ] A conformance step appends a later spend row for a transcript after indexing and asserts that
       the behind-notice fires; after a rebuild, it asserts the notice does not fire.
 
+### Evidence, 2026-09-14 — PR #123, merged
+
+| AC | where to verify |
+|---|---|
+| 1 — every spend figure carries, per scope, the time of the newest row | an **As of** block per scope in `kit-status.sh` |
+| 2 — when `events.ndjson` is newer than the index, the report says so and by how much | a notice naming both timestamps. Asked in the order `kit-preflight.sh --spend` asks it: the event log before the index |
+| 3 — a conformance step appends a later row after indexing, asserts the notice fires, and asserts it does not after a rebuild | three arms, mutation-proven; the third is what stops the notice becoming decoration |
+
+**Found in the making:** the first version's `sed` carried doubled backslashes, so the capture
+group never matched, `_EVLAST` came out empty and the guard **could never fire** — a notice that
+was unreachable rather than wrong. Arm 2 caught it before the commit.
+
 ## Notes
 
 The protocol side of the same finding is methodology M1 in the trial record: read the final figure

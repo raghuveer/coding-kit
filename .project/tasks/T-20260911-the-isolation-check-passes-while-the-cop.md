@@ -51,6 +51,20 @@ while it is false.
 - [ ] `TRIAL-PROTOCOL.md` §4 gains the step and says what it still cannot see: a permission rule is
       not a sandbox, and a prompted command can still be approved by a human.
 
+### Evidence, 2026-09-14 — PR #121, merged
+
+| AC | where to verify |
+|---|---|
+| 1 — `--isolated` reads the copy's settings and NAMES every unscoped or outside-reaching rule | matched on rule SHAPE, not a command list: a bare wildcard argument, plus any absolute path not inside the copy, POSIX and Windows spellings both. `Bash(*)` reaches further than `Bash(git *)` and a name list would miss it |
+| 2 — it FAILS rather than warns | exit 1. A warning beside the word "isolated" reads as a pass |
+| 3 — mutation proof: `Bash(git *)` fails, without it passes, scoped inside the copy passes | four conformance arms; arm 4 is what stops it refusing everything, because an unsatisfiable gate gets waived |
+| 4 — the success line names what was checked | prints "no remote, no shared object store, no permission rule reaching outside it", and says outright it cannot see a human approving a prompt |
+| 5 — §4 gains the step and says what it still cannot see | `docs/TRIAL-PROTOCOL.md` §0, with the 2026-09-11 reproduction and the sentence that a permission rule is not a sandbox |
+
+**Caught in the making:** `validate.py` rejected the first version of arm 3 for a baked absolute
+path. It was right; replaced with the fixture's own sibling directory, built at runtime, which is
+both portable and the more faithful shape.
+
 ## Notes
 
 **Mitigated for the 2026-09-09 highper-gateway trial by hand**, recorded in that trial's §0b: the

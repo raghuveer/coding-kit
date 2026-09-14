@@ -5272,6 +5272,65 @@ check $? "set, preserved across a replan, normalised from a legacy spelling, ref
 rm -rf "$gs"
 fi
 
+
+if step "a finding joins the reviewer run that produced it, or is reported as unjoinable"; then
+# THE FLAG EXISTED AND THE COLUMN DID NOT. kit-finding.sh has accepted --agent-id since it was
+# written and kit_findings.py puts it in the event -- 550 of 628 events in this repository carry
+# the key -- but `finding` had no agent_id column, so the indexer had nowhere to store it and the
+# value was dropped on every rebuild. The 2026-09-09 trial diagnosed this as a documentation gap,
+# which was half of it: the door was undocumented AND the destination did not exist.
+#
+# THREE ARMS, because "unjoinable" is two different faults and one number hides the second:
+#   1. id supplied and matching a spend row  -> the join returns the row
+#   2. no id at all                          -> counted as carrying no agent id
+#   3. id supplied matching NOTHING          -> counted separately. Not a missing label: it is
+#      two id SPACES, which is what this repository's own history shows -- operator run labels
+#      on findings against harness subagent ids on spend. "Pass the flag" is the wrong remedy.
+fa="$WORK.findagent"; rm -rf "$fa"; mkdir -p "$fa/src" "$fa/sess/subagents"
+( cd "$fa" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-f\ntitle: f\ntier: T2\n---\nb\n' > .project/tasks/T-f.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+
+  # A reviewer run, recorded the way kit-spend.sh records one.
+  printf '{"type":"assistant","message":{"model":"m","usage":{"input_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":1,"output_tokens":9}}}\n' > sess/subagents/agent-R1.jsonl
+  printf '{"agentType":"implementation-reviewer","spawnDepth":1}' > sess/subagents/agent-R1.meta.json
+  # --transcript is the SESSION file; kit-spend.sh finds the agent transcript beside it under
+  # subagents/, which is the shape the spend step earlier in this file already proves. Handing
+  # it the subagent file directly records nothing, silently -- which is how arm 1 first failed.
+  printf '{"type":"assistant","message":{"model":"m","usage":{"input_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":1,"output_tokens":1}}}\n' > sess.jsonl
+  bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" \
+    --agent-id R1 --agent implementation-reviewer >/dev/null 2>&1
+
+  F() { bash "$KIT/tooling/kit-finding.sh" --task T-f --agent implementation-reviewer \
+          --class fail-open --severity major --lang bash --summary "$1" ${2:+--agent-id "$2"} >/dev/null 2>&1; }
+  F "attributed to a real run" R1
+  F "recorded with no run at all"
+  F "attributed to a run nobody recorded" ghost-run
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  joined=$(Q "SELECT COUNT(*) FROM finding f JOIN spend s ON s.agent_id=f.agent_id WHERE f.agent_id='R1';")
+  [ "$joined" = 1 ] || { echo "  arm 1: a finding with a real run id did not join ($joined)"; exit 1; }
+  none=$(Q "SELECT COUNT(*) FROM finding WHERE COALESCE(agent_id,'')='';")
+  [ "$none" = 1 ] || { echo "  arm 2: findings with no id counted $none, wanted 1"; exit 1; }
+  orph=$(Q "SELECT COUNT(*) FROM finding f WHERE COALESCE(f.agent_id,'')<>'' AND NOT EXISTS
+              (SELECT 1 FROM spend s WHERE s.agent_id=f.agent_id);")
+  [ "$orph" = 1 ] || { echo "  arm 3: findings with an unmatched id counted $orph, wanted 1"; exit 1; }
+
+  # The report must SAY both, or the counts are invisible where anyone reads them.
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q "1 of 3 carry no agent id" STATUS.generated.md ||
+    { echo "  arm 2: kit-status did not report the unattributed count"; exit 1; }
+  grep -q "1 carry one that matches no spend row" STATUS.generated.md ||
+    { echo "  arm 3: kit-status did not report the unmatched count separately"; exit 1; }
+  exit 0 )
+check $? "the run id reaches the table, joins, and both unjoinable faults are counted apart"
+rm -rf "$fa"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

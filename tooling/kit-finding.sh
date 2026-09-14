@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Raghuveer Dendukuri
-# kit-finding.sh --task ID --agent NAME --json     < one reviewer JSON object   [the main door]
+# kit-finding.sh --task ID --agent NAME [--agent-id ID] --json  < reviewer JSON   [the main door]
+#   --agent-id is the reviewer RUN, and it is what lets a finding join the spend row of the
+#   agent that produced it. --agent is the ROLE and cannot do that: a T3 chain runs three
+#   reviewers sharing one role and one task. Omitted, the finding is recorded and reported
+#   as unattributed rather than silently reading as attributed.
 # kit-finding.sh --task ID --agent NAME --class CLASS --severity SEV --summary TEXT
 #                [--lang L] [--domain D] [--pattern P] [--model M]
 # kit-finding.sh --vocab                           prints the accepted vocabularies

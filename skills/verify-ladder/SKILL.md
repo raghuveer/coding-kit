@@ -73,8 +73,22 @@ record it through the same door the loop uses:
 
 ```sh
 bash ${CLAUDE_PLUGIN_ROOT}/tooling/kit-review-record.sh \
-  --task <task-id> --agent <agent> --reply-file reviewer-reply.json
+  --task <task-id> --agent <agent> --agent-id <agent-id> --reply-file reviewer-reply.json
 ```
+
+**`--agent-id` is the reviewer RUN and it is not optional in practice.** `--agent` is the role,
+and a T3 chain runs three reviewers sharing one role and one task, so the role cannot answer
+"what did *this* reviewer cost and what did it find" -- one question about one run, and one of
+the two readings a trial exists to take. In plugin mode the value is the Agent-tool subagent's
+id, the same one `kit-spend.sh` records from `<session>/subagents/agent-<id>.jsonl`; that is
+what makes the two rows join.
+
+Omit it and the finding is still recorded -- losing a finding to a missing label would be the
+worse trade -- but `kit-status.sh` reports it as unattributed rather than letting it read as
+attributed. On the 2026-09-09 trial **all 11 findings** were recorded through this door while
+all 3 reviewer spend rows carried an id, so not one finding could be traced to the reviewer
+that produced it.
+
 
 That validates the reply, records it, and **leaves a `finding-gap` if it is refused** — so a
 review whose findings were rejected is still visible in the measurement. `kit-finding.sh --json`

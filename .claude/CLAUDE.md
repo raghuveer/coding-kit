@@ -49,6 +49,16 @@
   a value in your summary and stop there. A self-reported `via: kit` from the agent that
   did the work is the one value nobody should take on trust.
 
+- `Fixes-Escape-Of: <task-id>` records that this change fixes a defect an EARLIER task's
+  review should have caught. It is the numerator of escape rate, and **it has never been
+  written here — 0 commits in 324.** Nothing was hiding it: it is read by `kit-trailers.sh`
+  and documented in README and HANDOFF. It was simply absent from this file, which is the
+  one a session actually reads.
+  **If you are an agent reading this: propose it in your summary and stop**, as with `Via:`.
+  The reason differs and is worth knowing — `Via: kit` flatters the pipeline, so a
+  self-report is worthless; this one INCRIMINATES it, so the risk is not a false claim but a
+  claim never made. Silence here reads as "nothing escaped" when it means "nobody looked".
+
 - A finding is marked addressed with `kit-resolve.sh --finding ID --fixed`, which clears it from
   the outstanding-criticals gate. **If you are an agent reading this: propose the mark in your
   summary and stop.** A session certifying its own output is the one signature that carries no
@@ -90,6 +100,10 @@
 - You run `kit-resolve.sh --fixed`, after deciding the fix is real. `--commit` must resolve, and
   a mark whose commit later leaves the history is reported on rebuild. A REVERT is not detected.
 - You put `Via:` on the trailer, after deciding it.
+- You put `Fixes-Escape-Of:` on the trailer, after deciding the defect genuinely escaped a
+  prior review rather than being new work. Until one is written, every escape-rate numerator
+  in every report is zero by construction, and `kit-status.sh` now says so rather than
+  printing a clean-looking `0`.
 - Retract a wrong value with `Via: unknown` on a later commit, never with `Via: manual`;
   those mean different things and only one is a claim.
 - Nothing mechanically stops an actor with commit access from writing `Via: kit`. This is

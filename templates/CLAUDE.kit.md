@@ -18,10 +18,24 @@
   **If you are an agent reading this: do not write `Via:` on your own commits.** Propose
   a value in your summary and stop there. A self-reported `via: kit` from the agent that
   did the work is the one value nobody should take on trust.
+- `Fixes-Escape-Of: <task-id>` records that this change fixes a defect an EARLIER task's
+  review should have caught. It is the numerator of escape rate, and **it has never been
+  written here — 0 commits in 324.** Nothing was hiding it: it is read by `kit-trailers.sh`
+  and documented in README and HANDOFF. It was simply absent from this file, which is the
+  one a session actually reads.
+  **If you are an agent reading this: propose it in your summary and stop**, as with `Via:`.
+  The reason differs and is worth knowing — `Via: kit` flatters the pipeline, so a
+  self-report is worthless; this one INCRIMINATES it, so the risk is not a false claim but a
+  claim never made. Silence here reads as "nothing escaped" when it means "nobody looked".
+
 
 **For the operator, not the agent** — every instruction in this block is yours:
 
 - You put `Via:` on the trailer, after deciding it.
+- You put `Fixes-Escape-Of:` on the trailer, after deciding the defect genuinely escaped a
+  prior review rather than being new work. Until one is written, every escape-rate numerator
+  in every report is zero by construction, and `kit-status.sh` now says so rather than
+  printing a clean-looking `0`.
 - Retract a wrong value with `Via: unknown` on a later commit, never with `Via: manual`;
   those mean different things and only one is a claim.
 - Nothing mechanically stops an actor with commit access from writing `Via: kit`. This is

@@ -4,7 +4,7 @@
 #goal	default
 #created	2026-08-17T02:49:19Z
 #goal_state	in-progress
-#tasks_digest	2291989466-12509
+#tasks_digest	2402910628-12509
 #parked	7 158
 #columns	goal_id	task_id	layer	rank	score	cluster
 default	T-20260808-make-the-security-assurance-cadence-a-po	0	1	11.000	5
@@ -33,19 +33,19 @@ default	T-20260819-legacy-candidate-selection-is-unresearch	0	23	4.000	2
 default	T-20260809-a-deleted-task-file-is-indistinguishable	0	24	3.000	2
 default	T-20260809-a-folded-git-trailer-loses-its-continuat	0	25	3.000	2
 default	T-20260809-a-task-id-containing-a-regex-metacharact	0	26	3.000	2
-default	T-20260819-the-claude-adapter-is-16-files-but-nothi	0	27	3.000	2
-default	T-20260826-two-artefacts-carrying-one-fact-with-not	0	28	3.000	2
-default	T-20260912-a-fix-commit-can-weaken-an-existing-test	0	29	3.000	2
-default	T-20260912-conformance-runs-on-one-core-so-the-only	0	30	3.000	2
-default	T-20260801-nothing-invokes-kit-finding-so-the-findi	0	31	2.000	2
-default	T-20260808-parallel-task-execution-has-no-isolation	0	32	2.000	2
-default	T-20260809-a-claim-audit-before-a-task-closes-names	0	33	2.000	2
-default	T-20260811-agent-behaviour-has-no-eval-only-mechani	0	34	2.000	2
-default	T-20260811-harden-the-review-retry-loop-against-its	0	35	2.000	2
-default	T-20260811-scan-the-harness-configuration-as-an-att	0	36	2.000	2
-default	T-20260811-selective-installer-with-per-project-com	0	37	2.000	2
-default	T-20260814-nothing-checks-that-a-finding-s-file-and	0	38	2.000	2
-default	T-20260818-relicense-from-mit-to-apache-2-0-while-s	0	39	2.000	2
+default	T-20260826-two-artefacts-carrying-one-fact-with-not	0	27	3.000	2
+default	T-20260912-a-fix-commit-can-weaken-an-existing-test	0	28	3.000	2
+default	T-20260912-conformance-runs-on-one-core-so-the-only	0	29	3.000	2
+default	T-20260801-nothing-invokes-kit-finding-so-the-findi	0	30	2.000	2
+default	T-20260808-parallel-task-execution-has-no-isolation	0	31	2.000	2
+default	T-20260809-a-claim-audit-before-a-task-closes-names	0	32	2.000	2
+default	T-20260811-agent-behaviour-has-no-eval-only-mechani	0	33	2.000	2
+default	T-20260811-harden-the-review-retry-loop-against-its	0	34	2.000	2
+default	T-20260811-scan-the-harness-configuration-as-an-att	0	35	2.000	2
+default	T-20260811-selective-installer-with-per-project-com	0	36	2.000	2
+default	T-20260814-nothing-checks-that-a-finding-s-file-and	0	37	2.000	2
+default	T-20260818-relicense-from-mit-to-apache-2-0-while-s	0	38	2.000	2
+default	T-20260819-the-claude-adapter-is-16-files-but-nothi	0	39	2.000	2
 default	T-20260820-marking-findings-is-one-at-a-time-so-the	0	40	2.000	2
 default	T-20260821-a-fix-mark-citing-no-commit-is-an-exclus	0	41	2.000	2
 default	T-20260825-confirm-a-finding-before-surfacing-it-so	0	42	2.000	2

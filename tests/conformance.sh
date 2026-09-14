@@ -5464,6 +5464,58 @@ fi
 check $bad "cause per check, per-CI-job verdicts, and unverified named as such"
 fi
 
+
+if step "a brownfield adopter is told to decide git.adopted_at, and a greenfield one is not"; then
+# INSTALL.md makes choosing git.adopted_at the FIRST step of a brownfield adoption, because the
+# key decides what the kit believes about every commit predating it. kit-init.sh's printed next
+# steps never mentioned it, so the documented step existed and the command that starts adoption
+# never led to it.
+#
+# On the 2026-09-09 trial the session followed the printed order exactly and left it unset. The
+# first status read "Trailer discipline degraded. 97 of 98 non-trivial commits carry no Task-Id"
+# -- which is what INSTALL.md predicts for the unset case, in as many words. Leaving it unset is
+# a legitimate choice; the defect is that it got made BY DEFAULT rather than by the adopter.
+#
+# TWO ARMS, and the second is the load-bearing one. A line that always prints is not guidance,
+# it is noise in the one place an adopter reads carefully -- an empty repository has no earlier
+# history to have a policy about.
+ad="$WORK.adoptedat"; rm -rf "$ad"
+mkdir -p "$ad/withhistory" "$ad/empty"
+( cd "$ad/withhistory" || exit 1
+  git init -q -b main 2>/dev/null; git config user.email a@b.c; git config user.name T
+  echo x > f; git add -A; git commit -q --no-verify -m one
+  out=$(bash "$KIT/tooling/kit-init.sh" 2>&1)
+  printf '%s' "$out" | grep -q 'git.adopted_at' ||
+    { echo "  arm 1: a repo with history was not told to decide git.adopted_at"; exit 1; }
+  # Both choices AND their costs, or the adopter cannot decide -- the criterion is explicit that
+  # naming the key alone is not enough.
+  printf '%s' "$out" | grep -q 'unset' ||
+    { echo "  arm 1: the unset choice and its cost are not named"; exit 1; }
+  printf '%s' "$out" | grep -q 'INSTALL.md' ||
+    { echo "  arm 1: the reader is not pointed at the fuller explanation"; exit 1; }
+  exit 0 )
+r1=$?
+( cd "$ad/empty" || exit 1
+  git init -q -b main 2>/dev/null; git config user.email a@b.c; git config user.name T
+  out=$(bash "$KIT/tooling/kit-init.sh" 2>&1); rc=$?
+  # SILENCE AND DEATH LOOK ALIKE, and the first version of this arm could not tell them apart.
+  # Measured: mutating the guard to `if true` makes kit-init.sh exit 128 on an empty repository
+  # -- `set -euo pipefail` plus `git rev-list --count HEAD` with no HEAD -- so it printed nothing,
+  # and an arm that only checked for absence went GREEN over a crash. Assert the run worked and
+  # said its normal piece first; only then does absence mean anything.
+  [ $rc -eq 0 ] ||
+    { echo "  arm 2: kit-init.sh failed on an empty repository (rc=$rc)"; exit 1; }
+  printf '%s' "$out" | grep -q 'copy templates/github-trailer-gate.yml' ||
+    { echo "  arm 2: the normal next steps did not print, so absence proves nothing"; exit 1; }
+  printf '%s' "$out" | grep -q 'adopted_at' &&
+    { echo "  arm 2: an empty repository was asked to choose between two histories it has not got"; exit 1; }
+  exit 0 )
+r2=$?
+[ "$r1" = 0 ] && [ "$r2" = 0 ]
+check $? "named with its costs where there is history, silent where there is none"
+rm -rf "$ad"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

@@ -58,6 +58,30 @@ the one section 3 does not carry.
 - [ ] A CHECK THAT CAN FAIL: a conformance step asserting the skill names all three dispositions and that section 3 carries the profile condition -- the same shape as the existing step asserting section 0 calls the superseded count
 - [ ] Rung 3's existing behaviour is preserved. Declaring an undeclared rung unavailable and raising the tier worked correctly on trial 1 and must keep working
 
+### Evidence, 2026-09-14 — PR #117, open and UNREVIEWED
+
+**The boxes above are deliberately unticked, and there is a second reason here.** Beyond the
+usual one — a session must not certify its own output — this is T3, and **the review chain the
+tier asks for has not run.** The session was directed not to spawn agents. The tier is claimed
+on consequence rather than a floor (this is the control that decides whether every other
+control ran), so the missing chain matters more here than it would elsewhere.
+
+| AC | addressed by | where to verify |
+|---|---|---|
+| 1 — a third disposition, distinct from `unavailable` | named **`unsatisfiable`** | `skills/verify-ladder/SKILL.md` `## Satisfaction`, now three numbered dispositions, with the distinction from an ordinary failing check stated |
+| 2 — it blocks a completion claim | `## Completion` rewritten | it enumerated two states and permitted the third by omission; now says an unsatisfiable rung blocks, and inside a trial the outcome is VOID rather than COMPLETE |
+| 3 — §3 carries the profile-change condition with a detection | added | `docs/TRIAL-PROTOCOL.md` §3, seven conditions become eight. Detection `git -C <subject> log --oneline <preflight-sha>..HEAD -- .claude/project-profile.md`, run here and empty on an unchanged profile |
+| 4 — pre-flight proves every `commands.*` RUNS before the clock starts (M5) | `kit-preflight.sh --commands` | three outcomes matching the ladder's three dispositions; wired into §0 as a subject box |
+| 5 — a COMPLETE report states each rung's disposition | added | §6 Reporting: one line per rung, and a reader must not reach the outcome without passing them |
+| 6 — a check that can fail | conformance step, mutation-proven | asserts the ladder names it and blocks, §3 carries the condition, and `--commands` separates three outcomes on a fixture. Collapsing them to two takes it red |
+| 7 — rung 3's existing behaviour preserved | unchanged and stated | the `unavailable` clause is untouched; the ladder says in as many words that trial 1's rung-3 path was correct and still is |
+
+**A finding from building it, not in the criteria:** `commands.build: # none -- nothing is
+compiled` handed to a shell **runs and exits 0**. A pre-flight that executed the declared value
+blindly would report the rung satisfiable while nothing is declared — the same conflation the
+ladder gap is about, one layer down in the control meant to catch it. The arm separates them and
+the mutation that collapses them is the one that takes conformance red.
+
 ## Notes
 
 **On the tier, stated plainly because it is an argument rather than a floor.** No

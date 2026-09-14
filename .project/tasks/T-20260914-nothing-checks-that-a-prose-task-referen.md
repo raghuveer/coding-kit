@@ -32,6 +32,23 @@ The mechanical form was specified a month earlier, in
       reference passes and the conformance step goes red.
 - [x] It runs in CI against this repository's own backlog, not only against a fixture.
 
+### Evidence, 2026-09-14
+
+Six criteria, all ticked **at filing time, by the change that implemented them** — this task was
+filed alongside its own implementation rather than ahead of it, so the boxes record what shipped
+rather than a self-assessment made afterwards. Delivered by PR #108, merged as `bf60490`.
+
+**The state is still `created` and that is the operator's call**, not an oversight: ADR 0010
+makes the transition to `completed` a validation rather than an author's claim.
+
+Two things worth carrying that the criteria do not:
+
+- **It fired twice on the changes that wrote it.** 15 undeclared references on its first run
+  against a backlog audited by hand hours earlier, then a 16th inside its own commit, then three
+  more in the filing PR two changes later.
+- **It cannot stop a lazy declaration**, only an undeclared one — `related` is always available.
+  Reviewing the map's contents is `T-20260818-nothing-reviews-the-plan-so-a-wrong-orde`.
+
 ## Notes
 
 Filed 2026-09-14 at the operator's direction, with the implementation in the same change. The 15

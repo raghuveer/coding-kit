@@ -64,6 +64,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # The backlog check below runs kit-index.sh, which reads git history: task state is
+          # influenced by Task-Status trailers and fix marks resolve against commits. On the
+          # default depth-1 clone that index is DEGRADED, and it said so out loud the first
+          # time -- "39 fix mark(s) name a commit that is not in this history", and 186 live
+          # references where the real backlog has 166. It failed safe, checking more than
+          # exists rather than less, but a later check in this job that trusted the same index
+          # would not be so lucky.
+          fetch-depth: 0
       - name: Scripts parse
         run: bash -n tooling/*.sh tooling/commit-msg templates/*.sh
       - name: Exec bits survive a fresh clone

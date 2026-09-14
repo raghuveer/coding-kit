@@ -5196,6 +5196,57 @@ check $? "a reading newer than every commit passes; one commit later it does not
 rm -rf "$sp"
 fi
 
+
+if step "a goal's state is text in the plan and survives a replan"; then
+# goal.state has been in schema.sql since the beginning, reserved and UNWRITTEN, with a comment
+# saying every rebuild resets it to 'open' and that the condition for using it is a TEXT SOURCE
+# first -- because a table nothing can rebuild from text is the second source of truth ADR 0004
+# exists to avoid. This is that text source, and these are the four things that make it one.
+#
+#   1. set, and it reaches the derived row
+#   2. REPLANNED WITH NO FLAG, and it is still there -- the whole point. A planner that reset it
+#      would silently reopen every milestone anyone had closed, which is the sqlite defect moved
+#      into the text rather than fixed.
+#   3. a legacy spelling normalises through the SAME state_alias table task states use, which is
+#      the argument for reusing the task vocabulary instead of inventing one for milestones
+#   4. an unaccepted value is REFUSED, at both doors -- the planner where the operator sees it,
+#      and the indexer because a committed plan file is untrusted input parsed into SQL
+gs="$WORK.goalstate"; rm -rf "$gs"; mkdir -p "$gs/src"
+( cd "$gs" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-g\ntitle: g\ntier: T2\n---\nb\n' > .project/tasks/T-g.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  G() { sqlite3 .project/index.db "SELECT state FROM goal WHERE id='default';" | tr -d '\015'; }
+
+  bash "$KIT/tooling/kit-plan.sh" --goal-state in-progress >/dev/null 2>&1
+  grep -q "^#goal_state	in-progress$" .project/plans/default.tsv ||
+    { echo "  1: the plan file does not carry the state"; exit 1; }
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  [ "$(G)" = "in-progress" ] || { echo "  1: derived row is [$(G)], wanted in-progress"; exit 1; }
+
+  bash "$KIT/tooling/kit-plan.sh" >/dev/null 2>&1
+  grep -q "^#goal_state	in-progress$" .project/plans/default.tsv ||
+    { echo "  2: a replan with no flag dropped the state"; exit 1; }
+
+  bash "$KIT/tooling/kit-plan.sh" --goal-state done >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  [ "$(G)" = "completed" ] || { echo "  3: legacy 'done' derived as [$(G)], wanted completed"; exit 1; }
+
+  bash "$KIT/tooling/kit-plan.sh" --goal-state bogus >/dev/null 2>&1
+  [ $? -eq 2 ] || { echo "  4: the planner accepted an unaccepted state"; exit 1; }
+  # The indexer must refuse it on its own, not trust that the planner already did.
+  sed -i.bak 's/^#goal_state	done$/#goal_state	bogus/' .project/plans/default.tsv; rm -f .project/plans/default.tsv.bak
+  out=$(bash "$KIT/tooling/kit-index.sh" 2>&1)
+  printf '%s' "$out" | grep -q "goal_state" ||
+    { echo "  4: the indexer loaded a plan file carrying an unaccepted state"; exit 1; }
+  exit 0 )
+check $? "set, preserved across a replan, normalised from a legacy spelling, refused at both doors"
+rm -rf "$gs"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

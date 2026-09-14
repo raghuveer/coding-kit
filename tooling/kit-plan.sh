@@ -3,6 +3,7 @@
 # Copyright 2026 Raghuveer Dendukuri
 # kit-plan.sh [--goal ID] [--next N] [--show] [--packs]
 # kit-plan.sh --check-refs    every task reference written in prose is declared somewhere
+# kit-plan.sh [--goal ID] --goal-state STATE     record a milestone's state, in the plan text
 #
 # Groups tasks by dependency, orders them by completion priority, and persists the
 # result. Two rules make this correct rather than merely plausible:
@@ -25,7 +26,7 @@ STATE_DIR=$(kit_cfg "$PROFILE" paths.state ".project")
 DB="$ROOT/$STATE_DIR/index.db"
 [ -f "$DB" ] || { kit_warn "no index; run kit-index.sh first"; exit 1; }
 
-GOAL="default"; NEXT=5; SHOW=0; PACKS_ONLY=0; CHECK_REFS=0
+GOAL="default"; NEXT=5; SHOW=0; PACKS_ONLY=0; CHECK_REFS=0; GOAL_STATE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --goal) GOAL=${2:-default}; shift; shift ;;
@@ -41,6 +42,7 @@ while [ $# -gt 0 ]; do
     # The planner reads ONE edge type. This asks whether the edges it reads are all the
     # edges the authors wrote -- see tooling/kit_refs.py and docs/DEPENDENCIES.md.
     --check-refs) CHECK_REFS=1; shift ;;
+    --goal-state) GOAL_STATE=${2:-}; shift; shift ;;
     -h|--help) sed -n '4,16p' "$0"; exit 0 ;;
     *) kit_warn "unknown argument: $1"; exit 2 ;;
   esac
@@ -55,6 +57,30 @@ if [ "$CHECK_REFS" = 1 ]; then
   TASKS_DIR=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
   exec python3 "$(dirname "$0")/kit_refs.py" --tasks "$ROOT/$TASKS_DIR" --db "$DB" --map "$ROOT/$DEPMAP"
 fi
+
+# A MILESTONE'S STATE IS TEXT, and this is where it is decided. ADR 0004: the plan file is the
+# source and every column of `goal` is derived from it. `goal.state` has been in the schema,
+# reserved and unwritten, since the beginning -- with a comment saying the condition for using it
+# is a text source first, because a table nothing can rebuild from text is the second source of
+# truth this design exists to avoid. This is that text source.
+#
+# NO SECOND VOCABULARY. A goal state is one of the task states, validated against the same
+# accepted spellings and normalised through the same state_alias table. Inventing open/closed for
+# goals beside created/planned/in-progress/on-hold/completed/cancelled/abandoned for tasks is
+# exactly the drift ADR 0008 and kit-lib.sh's own comments keep filing.
+#
+# REFUSED, NOT REWRITTEN, and refused HERE as well as in the indexer: this is where the operator
+# can see it, and kit-index.sh refuses it again because a plan file is untrusted input that a
+# session parses into SQL. Two acceptors, one list -- kit_state_written().
+if [ -n "$GOAL_STATE" ]; then
+  _ok=0; for _s in $(kit_state_written); do [ "$GOAL_STATE" = "$_s" ] && _ok=1; done
+  if [ "$_ok" = 0 ]; then
+    kit_warn "--goal-state must be one of: $(kit_state_written)"
+    kit_warn "  refused rather than rewritten: a state nobody declared is not a state."
+    exit 2
+  fi
+fi
+
 
 # Scoring weights. Declared in the profile so priority policy is a project decision,
 # not a constant buried in a script.
@@ -150,6 +176,14 @@ PLAN_FILE="$PLANS/$GOAL_SLUG.tsv"
 # creation time and ignores later ones. Re-stamping it would make two runs of the same plan
 # differ in a column nobody changed.
 PLAN_CREATED=$(awk -F'\t' '$1=="#created"{print $2; exit}' "$PLAN_FILE" 2>/dev/null | tr -d '\r')
+# PRESERVED ACROSS REPLANS, exactly as #created is, and for the same reason: the planner
+# recomputes an ordering, it does not decide whether a milestone is finished. A replan that
+# reset this would silently reopen every goal anyone had closed -- which is the defect
+# goal.state already has in sqlite, moved into the text rather than fixed.
+PLAN_GOAL_STATE=$(awk -F'\t' '$1=="#goal_state"{print $2; exit}' "$PLAN_FILE" 2>/dev/null | tr -d '\r')
+# Absent on the command line, the committed value stands. Absent from the file too, a goal is
+# `open` -- the legacy spelling the schema already defaults to, which resolves to `created`.
+GOAL_STATE=${GOAL_STATE:-${PLAN_GOAL_STATE:-open}}
 [ -n "$PLAN_CREATED" ] || PLAN_CREATED=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # Temp files via mktemp, honouring TMPDIR, cleaned by trap. A fixed /tmp/name.$$ is
@@ -490,6 +524,8 @@ PLAN_DIGEST=$(kit_plan_digest "$DB") || {
   printf '#version\t1\n'
   printf '#goal\t%s\n' "$GOAL"
   printf '#created\t%s\n' "$PLAN_CREATED"
+  printf '#goal_state	%s
+' "$GOAL_STATE"
   printf '#tasks_digest\t%s\n' "$PLAN_DIGEST"
   [ -n "$HELDN" ] && printf '#withheld\t%s\n' "$HELDN"
   [ -n "$PARKEDN" ] && printf '#parked\t%s\n' "$PARKEDN"

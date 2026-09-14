@@ -3,7 +3,8 @@
 #version	1
 #goal	default
 #created	2026-08-17T02:49:19Z
-#tasks_digest	2849048732-12441
+#goal_state	in-progress
+#tasks_digest	4237830813-12441
 #parked	7 157
 #columns	goal_id	task_id	layer	rank	score	cluster
 default	T-20260808-make-the-security-assurance-cadence-a-po	0	1	11.000	5
@@ -94,14 +95,14 @@ default	T-20260817-a-touches-edge-is-never-checked-against-	0	85	3.000	4
 default	T-20260811-restore-session-state-from-checkpoint-co	0	86	2.000	4
 default	T-20260817-task-context-reads-the-task-spec-at-step	0	87	2.000	4
 default	T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	0	88	2.000	4
-default	T-20260819-goals-are-the-milestone-mechanism-and-on	0	89	2.000	4
-default	T-20260822-a-task-has-no-authored-assignee-so-a-cla	0	90	2.000	4
-default	T-20260822-a-truncated-slug-makes-two-different-tit	0	91	2.000	4
-default	T-20260822-derived-owner-flips-to-whoever-committed	0	92	2.000	4
-default	T-20260912-task-intent-is-free-form-and-the-two-tas	0	93	2.000	4
-default	T-20260914-a-goal-state-is-a-label-the-planner-neve	0	94	2.000	4
-default	T-20260914-nothing-checks-that-a-prose-task-referen	0	95	2.000	4
-default	T-20260801-kit-plan-has-no-notion-of-prerequisite-w	0	96	1.000	4
+default	T-20260822-a-task-has-no-authored-assignee-so-a-cla	0	89	2.000	4
+default	T-20260822-a-truncated-slug-makes-two-different-tit	0	90	2.000	4
+default	T-20260822-derived-owner-flips-to-whoever-committed	0	91	2.000	4
+default	T-20260912-task-intent-is-free-form-and-the-two-tas	0	92	2.000	4
+default	T-20260914-a-goal-state-is-a-label-the-planner-neve	0	93	2.000	4
+default	T-20260914-nothing-checks-that-a-prose-task-referen	0	94	2.000	4
+default	T-20260801-kit-plan-has-no-notion-of-prerequisite-w	0	95	1.000	4
+default	T-20260819-goals-are-the-milestone-mechanism-and-on	0	96	1.000	4
 default	T-20260822-legacy-state-spellings-in-task-files-sho	0	97	1.000	4
 default	T-20260912-paths-state-moves-the-state-directory-bu	0	98	6.000	18
 default	T-20260911-kit-init-next-steps-omit-choosing-git-ad	0	99	5.000	18

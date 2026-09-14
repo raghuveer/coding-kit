@@ -209,4 +209,5 @@ T-20260912-trial-isolation-relies-on-a-file-tool-gu	T-20260911-kit-guard-refuses
 T-20260912-trial-isolation-relies-on-a-file-tool-gu	T-20260911-the-isolation-check-passes-while-the-cop	related
 T-20260914-a-goal-state-is-a-label-the-planner-neve	T-20260819-goals-are-the-milestone-mechanism-and-on	split-from
 T-20260914-a-goal-state-is-a-label-the-planner-neve	T-20260826-two-artefacts-carrying-one-fact-with-not	related
+T-20260914-finding-run-ids-and-spend-run-ids-are-tw	T-20260911-a-finding-recorded-by-hand-carries-no-ag	split-from
 T-20260914-nothing-checks-that-a-prose-task-referen	T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	related

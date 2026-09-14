@@ -123,7 +123,24 @@ CREATE TABLE event (
 CREATE TABLE finding (
   id         TEXT PRIMARY KEY,
   task_id    TEXT,
-  agent      TEXT NOT NULL,
+  agent      TEXT NOT NULL,      -- the ROLE that produced it: implementation-reviewer, ...
+  agent_id   TEXT,                  -- WHICH RUN produced it, so a finding joins to the spend row
+                                    -- of the reviewer that emitted it. The role cannot do that:
+                                    -- three reviewers in one chain share a role and a task, and
+                                    -- "what did this reviewer cost and what did it find" is one
+                                    -- question about one run.
+                                    --
+                                    -- kit-finding.sh has accepted --agent-id since it was
+                                    -- written and kit_findings.py puts it in the event -- 550 of
+                                    -- 628 events here carry the key. Nothing could read it back:
+                                    -- there was no column, so the flag wrote to a field the
+                                    -- indexer had nowhere to store. Measured on the 2026-09-09
+                                    -- trial as 11 findings with no attribution, and diagnosed
+                                    -- there as a documentation gap, which was half of it.
+                                    --
+                                    -- EMPTY IS A REAL READING, not a default: it means the
+                                    -- recorder did not supply one, and kit-status.sh reports the
+                                    -- count as unjoinable rather than letting it read as attributed.
   model      TEXT,
   tier       TEXT,
   lang       TEXT,                  -- seeds the technology accelerator

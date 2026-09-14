@@ -205,6 +205,40 @@ prevent.
       were tuned against **one** backlog on 2026-08-19 and are seeded values by the kit's own
       doctrine — this is the first chance to earn or refute them.
 
+### Decision, 2026-09-14 — operator: `commands.*` matches the subject's OWN CI
+
+Three commands give three different answers to *"is this subject green"*, measured the same day
+on `highper-gateway` in the trial runtime:
+
+| command | exit | what it is |
+|---|---|---|
+| `cargo build --release -p highper-gateway` | 0 | one package, default features. What trial 1 used |
+| `cargo test --workspace --lib -- --test-threads=4` | 101 | 972 pass, 2 fail, both causes named |
+| `cargo check --workspace --all-features` | 101 | 91 errors, all under `highper-gateway/` |
+
+**The trial declares what the subject's own `ci.yml` runs** — `--workspace --all-features` for
+check, `--workspace --lib` for test — not the narrower commands trial 1 happened to use.
+
+Two reasons, and the second is the one that matters:
+
+1. `docs/TRIAL-PROTOCOL.md` §0 now requires the baseline to use *"the commands the subject's own
+   CI runs, rather than ones invented for the trial"*, and says that where they differ the report
+   must name which was used.
+2. **Choosing the narrower command would make rung 1 green by selection.** That is the shape this
+   repository keeps filing findings about — a measurement improved by measuring less. A red rung
+   with a named cause is a first-class outcome since
+   `T-20260912-a-declared-rung-whose-tooling-fails-has-`, and it is the honest one here.
+
+**Consequence, stated so it is not discovered mid-trial:** rung 1 and rung 2 will both be RED at
+the start of trial 2, with causes recorded. Neither is `unsatisfiable` — both commands run and
+report — so neither trips the stop condition. The trial measures what the kit does against a
+subject that is genuinely broken in named ways, which is what a brownfield trial is for.
+
+**The subject moved twice on 2026-09-14** and the baseline must be retaken at pre-flight against
+`e588b53`, not reused from trial 1's `05c56eb`: PR #28 made the `--lib` target compile for the
+first time, and PR #27 declared the system build dependencies. Both are recorded in the subject's
+history; neither touches its Rust sources except #28's one-line test fix.
+
 ## Notes
 
 Blocked by three things, and the order matters. Without

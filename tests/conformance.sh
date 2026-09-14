@@ -5664,6 +5664,26 @@ co="$WORK.carryover"; rm -rf "$co"; mkdir -p "$co/src"
   bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
   grep -q '3 finding row(s)\*\* over \*\*2 distinct defect(s)' STATUS.generated.md ||
     { echo "  kit-status does not report rows and defects as different numbers"; exit 1; }
+
+  # A LINK POINTING AT NOTHING IS NOT A CARRIED-OVER DEFECT. Both reviewers noted the dangling
+  # branch was never exercised, and a branch no test reaches is a branch that can rot silently.
+  # It must NOT lower the distinct count, and it must be named.
+  printf '{"verdict":"REVISE","narrative":"n","findings":[{"class":"race","severity":"minor","lang":"bash","summary":"names an id that does not exist","carries_over":"2020-01-01T00:00:00Z:dead"}]}' > r3.json
+  bash "$KIT/tooling/kit-finding.sh" --task T-c --agent implementation-reviewer --json < r3.json >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q '4 finding row(s)\*\* over \*\*3 distinct defect(s)' STATUS.generated.md ||
+    { echo "  a dangling link changed the distinct count; it must not"; exit 1; }
+  grep -q 'name an earlier finding that does not exist' STATUS.generated.md ||
+    { echo "  the dangling link was not reported"; exit 1; }
+
+  # AND THE PRE-COLUMN INDEX MUST SAY SO rather than print a confident blank. Both reviewers
+  # reproduced this independently: the two queries return empty and the line read
+  # "N row(s) over N distinct defect(s) --  carried over" with nothing where the count belongs.
+  sqlite3 .project/index.db "ALTER TABLE finding DROP COLUMN carries_over;" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'predates carry-over links' STATUS.generated.md ||
+    { echo "  an index without the column printed a count instead of saying it cannot"; exit 1; }
   exit 0 )
 check $? "3 rows, 2 defects, 1 resolving link, and a report that says which is which"
 rm -rf "$co"

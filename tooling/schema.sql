@@ -181,6 +181,17 @@ CREATE TABLE finding (
                                     -- seeded from these rows and escape rate counts them: a
                                     -- defect surviving two rounds weighed three times as much as
                                     -- one fixed in the first.
+                                    --
+                                    -- WHAT THIS COLUMN DOES NOT YET FIX, because the first
+                                    -- version of this comment claimed the benefit and a blind
+                                    -- reviewer caught it as false-rationale. Every consumer still
+                                    -- counts ROWS: kit-accel.sh:104 earns a rule on
+                                    -- `HAVING COUNT(*) >= $MIN`, and kit-status.sh's criticals
+                                    -- gate counts unfixed critical ROWS, so one carried-over
+                                    -- critical marked fixed can still hold the gate open while
+                                    -- the same file's header says defects < rows. Only the
+                                    -- summary line reads the link today.
+                                    -- Filed as T-20260914-every-finding-consumer-still-counts-rows.
   file_path  TEXT,                  -- where the finding is anchored, so it can be re-checked
   line_no    INTEGER,               -- 1-indexed line in that file
   fixed_at   TEXT,                  -- NULL outstanding | timestamp addressed. ORTHOGONAL to

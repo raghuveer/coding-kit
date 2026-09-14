@@ -80,7 +80,19 @@ _FLINK=$(q "SELECT COUNT(*) FROM finding f WHERE COALESCE(f.carries_over,'')<>''
              AND EXISTS (SELECT 1 FROM finding e WHERE e.id = f.carries_over);")
 _FDANG=$(q "SELECT COUNT(*) FROM finding f WHERE COALESCE(f.carries_over,'')<>''
              AND NOT EXISTS (SELECT 1 FROM finding e WHERE e.id = f.carries_over);")
-if [ "${_FROWS:-0}" != 0 ]; then
+# THE COLUMN MAY NOT EXIST, and until this guard both queries returned empty against an index
+# built before it did -- printing "N row(s) over N distinct defect(s) --  carried over" with a
+# BLANK count and no warning. Reproduced by both reviewers independently. An absent column is not
+# a zero, and a positive claim over a query that returned nothing is the fail-open this file
+# refuses everywhere else.
+_FHASCOL=$(q "SELECT COUNT(*) FROM pragma_table_info('finding') WHERE name='carries_over';")
+if [ "${_FHASCOL:-0}" = 0 ]; then
+  printf '
+> **This index predates carry-over links**, so rows cannot be distinguished from
+'
+  printf '> defects here. Rebuild with `kit-index.sh` before reading any finding count.
+'
+elif [ "${_FROWS:-0}" != 0 ]; then
   printf '
 - **%s finding row(s)** over **%s distinct defect(s)** -- %s carried over from an
 ' \

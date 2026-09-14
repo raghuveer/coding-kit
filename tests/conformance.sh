@@ -4285,10 +4285,22 @@ echo "  commits: $(git rev-list --count HEAD)"
 #      by exactly those eleven lines and nothing else (119 -> 130). The old-pin fixture from the
 #      previous re-pin was still on disk, so both trees were compared directly with
 #      `git ls-tree -r` rather than one being reconstructed. Two-platform agreement is CI's half.
-EXPECT_HEAD=3110463ee10853fe420b3cf23d1e53bee05e9644
+#      Re-pinned again 2026-09-14, same mechanism a third time: paths.depmap added three lines
+#      to templates/project-profile.md, which kit-init.sh copies into the seed. PREDICTED before
+#      the run, from the fact that the profile template is the only file this change touches that
+#      kit-init.sh commits. Evidence, in the order the standard above asks for it:
+#        - a worktree of main reproduced the OLD pins EXACTLY on this machine (head 3110463...),
+#          so the fixture is reproducible here and the move has one cause;
+#        - `git ls-tree -r` on both seeds, read directly rather than inferred: six files each,
+#          differing in EXACTLY ONE blob, `.claude/project-profile.md` (79d2001e -> db58ca53);
+#        - `git cat-file -p` on the two blobs differs by exactly the three lines added -- two of
+#          comment and the key itself -- and nothing else (130 -> 133).
+#      THREE platforms agree on the new pair this time, not two: ubuntu and macos in CI, and a
+#      full local run on Windows. All three reported 119 passed, 1 failed, and the one was this.
+EXPECT_HEAD=ea78cba2c94cbaca0824c5642c7e11f24086650f
 # The seed alone, so a mismatch says WHICH half moved: seed intact means this script changed,
 # seed moved means a file kit-init.sh commits did.
-EXPECT_SEED=75d6f75e061a6b3c4ce3896734b07f3c9a899d86
+EXPECT_SEED=594f8f939b2cd77acb24ae48cf1c1469751d570c
 fi
 
 if step "trailer hook" fixture; then

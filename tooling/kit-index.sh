@@ -1090,7 +1090,7 @@ if [ -d "$PLANS_DIR" ]; then
       _g=$(awk -F'\t' '$1=="#goal"{sub(/\r$/,"",$2); print $2; exit}' "$_pf")
       printf '%s\n' "$_dupes" | grep -qxF "${_g:-}" && continue
     fi
-    awk -F'\t' -v file="${_pf#$ROOT/}" -v cl_share="$CL_SHARE" -v cl_min="$CL_MIN" '
+    awk -F'\t' -v file="${_pf#$ROOT/}" -v states="$(kit_state_written)" -v cl_share="$CL_SHARE" -v cl_min="$CL_MIN" '
       function q(s){ gsub(/\047/,"\047\047",s); return s }
       function refuse(why) { reason = why; bad = 1 }
       # A plan file is UNTRUSTED INPUT — SECURITY.md §1 classes anything anyone with commit
@@ -1118,6 +1118,7 @@ if [ -d "$PLANS_DIR" ]; then
       { sub(/\r$/, "") }
       $1=="#goal"        { goal=$2;     next }
       $1=="#created"     { created=$2;  next }
+      $1=="#goal_state"   { goalstate=$2; next }
       $1=="#withheld"    { withheld=$2; next }
       # Parked tasks and what waits behind them, withheld on purpose rather than by a data error.
       # Carried in the file for the same reason `#withheld` is: `meta` is rebuilt from scratch by
@@ -1163,13 +1164,20 @@ if [ -d "$PLANS_DIR" ]; then
           refuse("\043version " version " is newer than this kit reads (1)")
         else if (cols_seen && cols_bad)
           refuse("\043columns does not match this kit\047s column order")
+        # A GOAL STATE IS VALIDATED HERE TOO, not only in kit-plan.sh. The planner refuses a bad
+        # value where the operator can see it; this refuses it where it would otherwise reach SQL,
+        # because a committed plan file is untrusted input that every session parses at step 1.
+        # The accepted spellings arrive as `states` from kit_state_written() -- ONE list and two
+        # acceptors, so the pair cannot drift the way four copies of the finding vocabulary did.
+        else if (goalstate != "" && index(" " states " ", " " goalstate " ") == 0)
+          refuse("\043goal_state \047" goalstate "\047 is not an accepted task state")
         if (bad) {
           printf "%s\t%s\n", file, reason > ENVIRON["KIT_PLAN_REFUSED"]
           printf "kit: %s was NOT loaded — %s\n", file, reason > "/dev/stderr"
           exit 0
         }
-        printf "INSERT OR REPLACE INTO goal(id,title,created_at) VALUES(\047%s\047,\047%s\047,\047%s\047);\n", \
-               q(goal), q(goal), q(created)
+        printf "INSERT OR REPLACE INTO goal(id,title,created_at,state) VALUES(\047%s\047,\047%s\047,\047%s\047,\047%s\047);\n", \
+               q(goal), q(goal), q(created), q(goalstate == "" ? "open" : goalstate)
         # Reads as a no-op and is kept deliberately: the build starts from a fresh schema, so on
         # the normal path this deletes nothing. It is the guard for a goal that appears twice
         # WITHIN one file — the duplicate-across-files case is refused before either loads, but
@@ -1294,6 +1302,18 @@ UPDATE task SET tier = COALESCE((
 -- a typo becomes permanent.
 UPDATE task SET state = (SELECT a.canonical FROM state_alias a WHERE a.written = task.state)
   WHERE EXISTS (SELECT 1 FROM state_alias a WHERE a.written = task.state);
+
+-- A GOAL STATE IS NORMALISED BY THE SAME TABLE, and that is the whole argument for reusing the
+-- task vocabulary rather than inventing open/closed for milestones. `#goal_state done` in a plan
+-- file resolves to `completed` here, exactly as `state: done` in a task file does, so every
+-- partition already written against state_class applies to a goal without a second lookup and
+-- without a second set of spellings to keep in step.
+--
+-- Same rule as above for an unrecognised value: left as written, never guessed at. It cannot
+-- normally get this far -- kit-plan.sh refuses it and the plan reader refuses the file -- and
+-- rewriting it here would hide a plan file that reached SQL by some route neither covers.
+UPDATE goal SET state = (SELECT a.canonical FROM state_alias a WHERE a.written = goal.state)
+  WHERE EXISTS (SELECT 1 FROM state_alias a WHERE a.written = goal.state);
 
 -- Then the last transition wins, resolved through the same table. The join to state_alias is
 -- what restricts this to state events -- `finding`, `spend` and the rest are not alias rows --

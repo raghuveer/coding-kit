@@ -211,6 +211,20 @@ kit_state_measured() { printf 'created planned in-progress on-hold completed aba
 # nineteen partition sites instead would be the drift this whole change removes, doubled.
 kit_state_legacy()   { printf 'open:created started:in-progress progress:in-progress unblocked:in-progress blocked:on-hold done:completed'; }
 
+# EVERY SPELLING THAT IS VALID INPUT -- the seven canonical values plus the written half of every
+# legacy pair. Callers that must ACCEPT a state use this; callers that must CLASSIFY one join
+# state_class through state_alias instead, on the normalised value.
+#
+# It exists so a second acceptor cannot drift from the first. `#goal_state` in a plan file is
+# validated in two places -- kit-plan.sh refuses a bad value where the operator can see it, and
+# kit-index.sh refuses the file because a plan file is untrusted input -- and two hand-written
+# lists would be the vocabulary drift this file's own comments keep filing.
+kit_state_written() {
+  printf '%s' "$(kit_state_vocab)"
+  for _p in $(kit_state_legacy); do printf ' %s' "${_p%%:*}"; done
+  printf '\n'
+}
+
 # `a b c` -> `'a','b','c'` for interpolation into SQL built in shell. The values are this file's
 # own literals, never caller input, so quoting is about correctness of the emitted SQL and not
 # about injection.

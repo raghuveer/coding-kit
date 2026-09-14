@@ -3,6 +3,7 @@
 #version	1
 #goal	default
 #created	2026-08-17T02:49:19Z
+#goal_state	in-progress
 #tasks_digest	3262908032-12376
 #parked	7 156
 #columns	goal_id	task_id	layer	rank	score	cluster

@@ -31,6 +31,69 @@ which is the blocker this removes.
 - [ ] No step of the protocol requires installing anything on the host machine
 - [ ] The subject builds and its tests run inside the container, proven once end to end
 
+### Evidence, 2026-09-14 — proposed, not certified. AC5 is BLOCKED on a host action.
+
+| AC | state | where to verify |
+|---|---|---|
+| 1 — a recorded image definition supplying the kit's and the subject's dependencies | **met, 2026-09-12** | `docs/trial-runtime/Dockerfile`, commit `4264b84`. Every package read from the subject's `Cargo.lock` after a first image failed on cmake, not guessed |
+| 2 — the protocol states how a trial names its runtime, kernel and image digest | **met, and it predates this task's filing** | §2 *Record every time*: *"`uname -srm` from where the kit actually ran, plus the container image digest if any, plus the host OS. Prose does not compare"* |
+| 3 — a trial run records that runtime as evidence | **pending a trial** | §2 requires it and §0 now produces it. Nothing can close this but trial 2 |
+| 4 — no step requires installing anything on the host | **met, and now stated rather than implied** | audited: the protocol's only install language is `kit-init.sh` installing hooks *into the copy*, which is not a host install. §0 now states the split — subject toolchain in the container, subject mounted read-only, target to `/tmp`, and the kit needing only `bash`/`git`/`sqlite3`, which adoption already implies |
+| 5 — the subject builds and its tests run inside the container, proven once end to end | **the RUNTIME is proven; the criterion as worded is NOT met, and cannot be by the kit** — see below | the run reached the subject's own source and failed there: 91 errors, every one of 110 locations under `highper-gateway/`, zero toolchain failures |
+
+**AC5, run 2026-09-14 and classified rather than summarised.**
+
+    image    sha256:237fab4e66710fde0e20f279e8c099dcb2d31fdc397d98aa6ec8ff716b878f2a
+    kernel   Linux 6.6.87.2-microsoft-standard-WSL2 x86_64
+    command  cargo check --workspace --all-features   (the subject's own ci.yml)
+    copy     git archive of 4bbcd8e, no .git, mounted writable; subject never mounted
+    result   exit 101 in 248 s, 2,453 lines
+
+**Three states were possible and it is the third.** Not a runtime fault: **zero** toolchain
+failures, and `tikv-jemallocator` — the crate whose autoconf killed the Windows host — compiled
+cleanly. Not a stale lockfile: that was run 1, against the subject read-only, which failed in 27 s
+because `Cargo.lock` predates the manifest and a read-only mount has no way through. This is the
+**subject's own baseline**: 48 × `E0433`, 36 × `E0425`, 2 × `E0422`, 2 × `E0405`, 2 missing
+`async_trait` — missing imports and unresolved paths on the `--all-features` path.
+
+**Correction, same day, before the PR was opened.** The first write-up of this run said *"91
+errors here against the 90 trial 1 recorded — the same baseline reproduced independently"*. That
+is wrong twice and the trial record says so:
+
+- **Trial 1 never reached the subject's source with this command.** Its container
+  `cargo check --workspace --all-features` *"failed at `protoc`"* — subject finding S4 — so it
+  counted nothing. The `90` appears in
+  `T-20260912-the-baseline-records-that-the-subject-is` with no measurement behind it in the
+  trial record.
+- **Trial 1's actual baseline is milder than "red".** `cargo build --release -p highper-gateway`
+  exited **0** in 579 s — the build PASSES on Linux. `cargo test --workspace --lib` exited 101 in
+  167 s, failing to compile on **one** `E0308` in `runtime/signals.rs`.
+
+So today's 91 is **new data, not corroboration**: the first time anyone has taken that command
+past `protoc` on this subject. That is a better result than the one claimed, which is exactly why
+the claim needed checking.
+
+**And the stale lockfile was already known.** Trial 1 recorded it as subject finding S3 —
+*"`Cargo.lock` is stale against `highper-gateway/Cargo.toml:158` (`async-graphql-value`)"*, noted
+13:40–13:44Z on 2026-09-09. Re-discovered here and written up as a new state; it is a
+re-discovery, and the runtime consequence (a read-only mount has no way through it) is the only
+part that is new.
+
+**So the criterion as worded cannot be met by this kit, and that is the finding.** "The subject
+builds" conflates *the runtime is correct* with *the subject is healthy*, and only the first is the
+kit's business. The subject does not compile under `--all-features`; that is its owner's, routed by
+§7 as a subject finding. Proposed rewording, for the operator rather than taken here: *the runtime
+compiles the subject's full dependency graph and reaches its source, with any remaining failure
+attributable to the subject.* That is what was proven.
+
+**An interaction with `T-20260912-a-declared-rung-whose-tooling-fails-has-` that neither task
+saw separately, and it would have bitten trial 2.** That task's `kit-preflight.sh --commands`
+was documented as *"run it in the subject copy"*. For a Linux-first subject on a Windows host
+the declared commands fail there — and the check would have reported `unsatisfiable`, which is
+the state it exists to catch, when the real fault is the runtime being wrong. §0 now says to run
+it wherever the commands are meant to run, which for a containerised subject is inside the
+container. Two controls landing on the same day, correct alone and wrong together.
+
 ## Notes
 
 This also supplies, cheaply, the OS-level boundary that

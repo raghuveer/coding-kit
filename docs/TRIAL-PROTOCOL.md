@@ -155,11 +155,35 @@ Stop unless every box is ticked. Record the answers; they are part of the result
 - [ ] **Baseline recorded before the kit touches anything**: does the subject build, do its
       tests pass, how long do they take. A subject whose tests already fail is a valid trial
       subject, but only if you knew that first — otherwise the kit gets blamed for it.
+- [ ] **The runtime is built and its digest recorded**, for any subject whose toolchain is not
+      already on the host — which is every subject the host does not develop in natively.
+
+          nerdctl build -t cck-trial docs/trial-runtime
+          nerdctl image inspect cck-trial --format '{{index .RepoDigests 0}}'
+
+      `docs/trial-runtime/Dockerfile` is the definition, and every package in it was read from
+      the subject's own manifest rather than guessed. **The tag is not the identity** — record
+      the digest, with `uname -srm` from inside the container, as §2's *Record every time* table
+      requires. Two trials naming one tag over different digests are not comparable.
+
+      **What runs where, stated once so it is not re-derived per trial:**
+
+      - the **subject's toolchain** runs in the container — that is the whole point, and it is
+        what keeps a Linux-first subject off a Windows host's build path;
+      - the **subject is mounted read-only** and the build target sent to `/tmp`. §3 lists a
+        dirty subject tree as a VOID condition, so a run that left `target/` behind would void
+        the next trial before it started;
+      - the **kit** needs only `bash`, `git` and `sqlite3`, which adoption already implies. It
+        is not the subject's toolchain and does not need the container to exist.
 - [ ] **Every declared `commands.*` actually RUNS, before the clock starts.**
 
           bash tooling/kit-preflight.sh --commands
 
-      Run it **in the subject copy**, not here. Three outcomes, and they are the ladder's three
+      **Run it wherever the commands are meant to run.** If the box above built a runtime, that
+      is inside the container, not on the host — a Linux-first subject's `commands.typecheck`
+      failing on a Windows host is the runtime being wrong, not the rung being unsatisfiable,
+      and running this check in the wrong place would report exactly the state it exists to
+      catch. Run it **in the subject copy**, never in the subject itself. Three outcomes, and they are the ladder's three
       dispositions: a command that runs is satisfiable; a rung with nothing declared is
       *unavailable* and the ladder already handles it by raising the tier; a command that is
       declared and does not run is **unsatisfiable**, and that is a stop.

@@ -15,6 +15,18 @@
 #   protobuf-compiler   prost-build and tonic-build shell out to protoc
 #   libssl-dev          openssl-sys links against it
 #
+# THE LIST IS NOW READ FROM THE SUBJECT'S OWN DECLARATION, not from its Cargo.lock. On
+# 2026-09-13 the subject committed `4bbcd8e build: declare the system build dependencies the
+# project already needs`, which names them in .github/workflows/ci.yml and cites this kit's own
+# 2026-09-11 container probe as the reason -- "540 compile lines and then failed on Could not
+# find protoc". Reading a manifest was the right method and it is now superseded by a better
+# source: the project says what it needs.
+#
+#   liburing-dev        io-uring, which is why the subject is Linux-first at all
+#   nasm, perl          aws-lc-sys assembles and generates during the BoringSSL build
+#
+# pkg-config and ca-certificates are in the subject's list and already in rust:1-bookworm.
+#
 # rust:1-bookworm already provides cargo, rustc, cc, pkg-config, git, python3 and curl.
 #
 # THE TAG IS NOT THE IDENTITY. A trial records the DIGEST this produces, with the kernel it ran
@@ -32,4 +44,5 @@ FROM rust:1-bookworm
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       sqlite3 cmake g++ protobuf-compiler libssl-dev \
+      liburing-dev nasm perl \
  && rm -rf /var/lib/apt/lists/*

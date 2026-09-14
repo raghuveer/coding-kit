@@ -56,8 +56,28 @@ because `Cargo.lock` predates the manifest and a read-only mount has no way thro
 **subject's own baseline**: 48 × `E0433`, 36 × `E0425`, 2 × `E0422`, 2 × `E0405`, 2 missing
 `async_trait` — missing imports and unresolved paths on the `--all-features` path.
 
-**91 errors here against the 90 trial 1 recorded.** The same baseline, reproduced independently on
-Linux, which is the first corroboration that figure has ever had.
+**Correction, same day, before the PR was opened.** The first write-up of this run said *"91
+errors here against the 90 trial 1 recorded — the same baseline reproduced independently"*. That
+is wrong twice and the trial record says so:
+
+- **Trial 1 never reached the subject's source with this command.** Its container
+  `cargo check --workspace --all-features` *"failed at `protoc`"* — subject finding S4 — so it
+  counted nothing. The `90` appears in
+  `T-20260912-the-baseline-records-that-the-subject-is` with no measurement behind it in the
+  trial record.
+- **Trial 1's actual baseline is milder than "red".** `cargo build --release -p highper-gateway`
+  exited **0** in 579 s — the build PASSES on Linux. `cargo test --workspace --lib` exited 101 in
+  167 s, failing to compile on **one** `E0308` in `runtime/signals.rs`.
+
+So today's 91 is **new data, not corroboration**: the first time anyone has taken that command
+past `protoc` on this subject. That is a better result than the one claimed, which is exactly why
+the claim needed checking.
+
+**And the stale lockfile was already known.** Trial 1 recorded it as subject finding S3 —
+*"`Cargo.lock` is stale against `highper-gateway/Cargo.toml:158` (`async-graphql-value`)"*, noted
+13:40–13:44Z on 2026-09-09. Re-discovered here and written up as a new state; it is a
+re-discovery, and the runtime consequence (a read-only mount has no way through it) is the only
+part that is new.
 
 **So the criterion as worded cannot be met by this kit, and that is the finding.** "The subject
 builds" conflates *the runtime is correct* with *the subject is healthy*, and only the first is the

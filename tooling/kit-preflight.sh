@@ -402,30 +402,48 @@ case "${1:-}" in
     ROOT=$(kit_root) || { kit_warn "not a git repository"; exit 2; }
     kit_active "$ROOT" || { kit_warn "the kit is not adopted here"; exit 2; }
     PROFILE=$(kit_profile "$ROOT")
-    _bad=0; _ran=0; _none=0
+    _bad=0; _ran=0; _none=0; _red=0
     for _k in build test lint typecheck; do
       _cmd=$(kit_cfg "$PROFILE" "commands.$_k" "")
       case "$_cmd" in
         ''|'#'*) printf 'kit: commands.%-10s NOTHING DECLARED -- unavailable; raise the tier\n' "$_k"
                  _none=$((_none+1)); continue ;;
       esac
-      if ( cd "$ROOT" && eval "$_cmd" ) >/dev/null 2>&1; then
-        printf 'kit: commands.%-10s runs\n' "$_k"; _ran=$((_ran+1))
-      else
-        printf 'kit: commands.%-10s DECLARED AND DOES NOT RUN -- unsatisfiable\n' "$_k" >&2
-        printf '       %s\n' "$_cmd" >&2
-        _bad=$((_bad+1))
-      fi
+      ( cd "$ROOT" && eval "$_cmd" ) >/dev/null 2>&1; _rc=$?
+      # RAN AND FAILED IS NOT THE SAME AS COULD NOT RUN, and the first version of this arm said
+      # it was. `cargo check` exiting 101 with 91 type errors RAN -- it worked, and it reported
+      # the subject's real state. Calling that "DECLARED AND DOES NOT RUN" describes something
+      # that did not happen, and it contradicts the baseline box in section 0: "a subject whose
+      # tests already fail is a valid trial subject, but only if you knew that first". A gate
+      # that stops on a known-red baseline stops on the case the protocol blesses.
+      #
+      # Found by running this arm against the trial-2 copy, where it would have refused the
+      # trial over 91 errors already recorded in that trial's own baseline.
+      #
+      # 126 and 127 are the shell's own "cannot execute" and "not found": the tooling is absent
+      # or unusable, which IS what this box exists to catch, and the one state with no
+      # non-voiding remedy mid-trial. Any other non-zero is a tool that ran and found something.
+      case "$_rc" in
+        0)       printf 'kit: commands.%-10s runs\n' "$_k"; _ran=$((_ran+1)) ;;
+        126|127) printf 'kit: commands.%-10s CANNOT RUN (exit %s) -- unsatisfiable\n' "$_k" "$_rc" >&2
+                 printf '       %s\n' "$_cmd" >&2
+                 _bad=$((_bad+1)) ;;
+        *)       printf 'kit: commands.%-10s ran, exit %s -- a baseline fact, not a stop\n' "$_k" "$_rc"
+                 _red=$((_red+1)) ;;
+      esac
     done
     if [ "$_bad" -gt 0 ]; then
-      kit_warn "STOP -- $_bad declared command(s) do not run here"
+      kit_warn "STOP -- $_bad declared command(s) CANNOT RUN here"
+      kit_warn "  The tooling is absent or unusable. A command that RAN and reported"
+      kit_warn "  failures is a baseline fact, not this -- see section 0's baseline box."
       kit_warn "  A rung whose tooling is declared and fails is neither satisfied nor"
       kit_warn "  declarable unavailable. Inside a trial there is no non-voiding remedy:"
       kit_warn "  editing commands.* mid-trial voids it (TRIAL-PROTOCOL.md section 2), so"
       kit_warn "  this has to be answered now rather than discovered later."
       exit 1
     fi
-    printf 'kit: %s declared command(s) run, %s rung(s) have nothing declared\n' "$_ran" "$_none"
+    printf 'kit: %s pass, %s ran and reported failures, %s with nothing declared\n' \
+      "$_ran" "$_red" "$_none"
     exit 0 ;;
 
   *) usage ;;

@@ -5382,7 +5382,7 @@ rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
   for k in build test lint typecheck; do set_cmd "$k" "true"; done
   out=$(bash "$P" --commands 2>&1); rc=$?
   [ $rc -eq 0 ] || { echo "  arm 1: four runnable commands did not pass (rc=$rc)"; exit 1; }
-  printf '%s' "$out" | grep -q "4 declared command(s) run, 0 rung(s)" ||
+  printf '%s' "$out" | grep -q "4 pass, 0 ran and reported failures, 0 with nothing declared" ||
     { echo "  arm 1: the counts were not reported"; exit 1; }
 
   # A COMMENT is not a declaration. Run blindly it exits 0 and reads as satisfiable.
@@ -5392,14 +5392,35 @@ rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
   printf '%s' "$out" | grep -q "commands.build      NOTHING DECLARED" ||
     { echo "  arm 2: a comment ran as a command instead of reading as undeclared"; exit 1; }
 
-  # Declared and does not run -> unsatisfiable -> stop.
-  set_cmd typecheck "exit 7"
+  # RAN AND FAILED IS NOT A STOP. This is the arm the first version got wrong: it classified on
+  # exit code alone, so `cargo check` exiting 101 with 91 real type errors was reported as
+  # "DECLARED AND DOES NOT RUN" -- a statement about something that did not happen. Section 0's
+  # own baseline box blesses this case in as many words: "a subject whose tests already fail is
+  # a valid trial subject, but only if you knew that first". Measured against the trial-2 copy,
+  # where the old arm would have refused the trial over errors already in its own baseline.
+  set_cmd typecheck "sh -c 'exit 101'"
   out=$(bash "$P" --commands 2>&1); rc=$?
-  [ $rc -eq 1 ] || { echo "  arm 3: a declared command that fails did not stop (rc=$rc)"; exit 1; }
-  printf '%s' "$out" | grep -q "unsatisfiable" ||
-    { echo "  arm 3: the failure was not named as unsatisfiable"; exit 1; }
+  [ $rc -eq 0 ] ||
+    { echo "  arm 3: a command that RAN and reported failures was treated as a stop (rc=$rc)"; exit 1; }
+  printf '%s' "$out" | grep -q "ran, exit 101 -- a baseline fact" ||
+    { echo "  arm 3: a ran-and-failed command was not named as a baseline fact"; exit 1; }
+
+  # COULD NOT RUN IS a stop, and 127 is the shell saying so. This is the state the box exists
+  # for: the tooling is absent, and mid-trial there is no non-voiding remedy.
+  # BOTH STATES AT ONCE, because the interesting question is whether a stop HIDES the rest. The
+  # summary line does not print on a stop -- correctly, there is nothing to summarise -- so the
+  # per-rung lines are the only record of what else was found, and a reader who sees only the
+  # STOP would conclude the other rungs were never reached.
+  set_cmd test "sh -c 'exit 101'"
+  set_cmd typecheck "definitely-not-a-real-binary-here"
+  out=$(bash "$P" --commands 2>&1); rc=$?
+  [ $rc -eq 1 ] || { echo "  arm 4: absent tooling did not stop (rc=$rc)"; exit 1; }
+  printf '%s' "$out" | grep -q "CANNOT RUN (exit 127) -- unsatisfiable" ||
+    { echo "  arm 4: absent tooling was not named as unable to run"; exit 1; }
+  printf '%s' "$out" | grep -q "ran, exit 101 -- a baseline fact" ||
+    { echo "  arm 4: the stop hid a rung that ran and reported failures"; exit 1; }
   exit 0 )
-check $? "runs, nothing-declared and does-not-run are three outcomes, not two"
+check $? "pass, ran-and-failed, cannot-run and nothing-declared are four outcomes, not two"
 rm -rf "$rd"
 fi
 

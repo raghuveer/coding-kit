@@ -2624,7 +2624,15 @@ sp="$WORK.spendpf"; rm -rf "$sp"; mkdir -p "$sp"
   git init -q -b main 2>/dev/null
   git config user.email a@b.c; git config user.name T
   bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
-  git add -A && git commit -q --no-verify -m "chore: seed"
+  git add -A
+  # THE SEED IS DATED BEFORE THE EVENTS BELOW, which are hand-written with January dates. Left
+  # at wall time the fixture says a commit landed eight months after the last reading, and
+  # `--spend`'s recency arm reads that -- correctly -- as a recorder that stopped. That is not
+  # what this step is about: it asserts that spend is judged from the EVENT LOG rather than
+  # from whatever the last rebuild held, and the commit date is incidental setup. Pinning it
+  # makes the fixture internally consistent (work, then readings after it) instead of weakening
+  # the arm that noticed.
+  GIT_AUTHOR_DATE="2025-01-01T00:00:00Z" GIT_COMMITTER_DATE="2025-01-01T00:00:00Z"     git commit -q --no-verify -m "chore: seed"
   P="$KIT/tooling/kit-preflight.sh"
   # THE TWO FAULTS MUST REPORT DIFFERENTLY, and asserting only the exit code cannot see that --
   # a mutation that deleted the no-events branch survived, because the other branch also
@@ -5136,8 +5144,15 @@ sp="$WORK.spendlive"; rm -rf "$sp"; mkdir -p "$sp/src"
   bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
   printf -- '---\nid: T-s\ntitle: s\ntier: T2\n---\nb\n' > .project/tasks/T-s.md
   echo x > src/a
-  git add -A && git commit -q --no-verify -m "chore: seed"
-  # The commit lands BEFORE the reading, so arm 1 has a reading newer than every commit.
+  git add -A
+  # DATES ARE PINNED, and the reason is a measured flake rather than tidiness. The comparator
+  # is `git log --since=<reading>`, which resolves to one-second granularity. Left at wall
+  # time the seed commit and the reading land in the same second on a fast runner -- measured
+  # one second apart on Windows, same second on ubuntu, which is exactly how this step passed
+  # locally and failed in CI on its first push. Pinning one commit far before the reading and
+  # one far after removes the boundary from the test without weakening what it asserts.
+  GIT_AUTHOR_DATE="2020-01-01T00:00:00Z" GIT_COMMITTER_DATE="2020-01-01T00:00:00Z"     git commit -q --no-verify -m "chore: seed"
+  # The commit is dated well BEFORE the reading, so arm 1 has a reading newer than every commit.
   printf '{"type":"assistant","message":{"model":"m","usage":{"input_tokens":10,"cache_creation_input_tokens":0,"cache_read_input_tokens":100,"output_tokens":50}}}\n' > sess.jsonl
   bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" >/dev/null 2>&1
   bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
@@ -5146,7 +5161,8 @@ sp="$WORK.spendlive"; rm -rf "$sp"; mkdir -p "$sp/src"
   [ $? -eq 0 ] || { echo "  arm 1: a live recorder was reported as stale"; exit 1; }
 
   # One commit, no new reading. Nothing else changes.
-  echo y > src/b; git add -A && git commit -q --no-verify -m "chore: work with no reading"
+  echo y > src/b; git add -A
+  GIT_AUTHOR_DATE="2035-01-01T00:00:00Z" GIT_COMMITTER_DATE="2035-01-01T00:00:00Z"     git commit -q --no-verify -m "chore: work with no reading"
   out=$(bash "$KIT/tooling/kit-preflight.sh" --spend 2>&1); rc=$?
   [ $rc -eq 1 ] || { echo "  arm 2: work landed with no reading and --spend still exited $rc"; exit 1; }
   printf '%s' "$out" | grep -q "1 commit(s) have landed since" ||

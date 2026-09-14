@@ -7,6 +7,7 @@
 #   reviewers sharing one role and one task. Omitted, the finding is recorded and reported
 #   as unattributed rather than silently reading as attributed.
 # kit-finding.sh --task ID --agent NAME --class CLASS --severity SEV --summary TEXT
+#                [--carries-over ID]  the earlier finding this repeats, from kit-resolve.sh --list
 #                [--lang L] [--domain D] [--pattern P] [--model M]
 # kit-finding.sh --vocab                           prints the accepted vocabularies
 # kit-finding.sh --contract                        prints the shape of a finding
@@ -62,6 +63,7 @@ kit_active "$ROOT" || {
 }
 
 task=""; agent=""; class=""; sev=""; lang=""; model=""; domain=""; pattern=""; json=0
+carries_over=""
 agent_id=""; unattributed=0; summary=""
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -78,6 +80,10 @@ while [ $# -gt 0 ]; do
     --domain) domain=${2:-}; shift; shift ;;
     --pattern) pattern=${2:-}; shift; shift ;;
     --summary) summary=${2:-}; shift; shift ;;
+    # THE DOOR THE MOTIVATING TRIAL ACTUALLY USED. All 11 findings on 2026-09-09 were recorded
+    # by hand through this path, so a field the JSON door accepts and this one cannot supply is
+    # a field that will never be populated where it matters. Both reviewers said so.
+    --carries-over) carries_over=${2:-}; shift; shift ;;
     --model) model=${2:-}; shift; shift ;;
     --json) json=1; shift ;;
     # Also here, not only as the first argument. Moving them to early dispatch made
@@ -206,9 +212,9 @@ fi
 validate "$class" "$sev" || exit 2
 
 python3 -c 'import json,sys
-k=("class","severity","summary","lang","pattern","domain")
+k=("class","severity","summary","lang","pattern","domain","carries_over")
 print(json.dumps({"findings":[{a:b for a,b in zip(k,sys.argv[1:]) if b!=""}]}))' \
-  "$class" "$sev" "$summary" "$lang" "$pattern" "$domain" | emit || {
+  "$class" "$sev" "$summary" "$lang" "$pattern" "$domain" "$carries_over" | emit || {
     kit_warn "finding rejected by the contract; nothing recorded (see above)"
     exit 2
   }

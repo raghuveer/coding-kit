@@ -78,6 +78,13 @@ parse you.
 }
 ```
 
+**A finding that repeats one from an earlier round carries `"carries_over": "<id>"`** — the
+earlier finding's id, from `kit-resolve.sh --list`. Optional: omit it and nothing fails. Supplied,
+it is what lets a report count DEFECTS rather than ROWS. Measured on the 2026-09-09 trial: three
+reviews of one change produced **11 rows for 5 defects**, two of them appearing three times each,
+and the re-review's own summaries said *"Carried over from round 1"* with nowhere to put it.
+
+
 `narrative` is everything a human reads, as markdown inside the string: scope reviewed, the
 three passes with `file:line` refs, required changes numbered, questions, and what you did not
 check. Nothing is lost by it being a field.

@@ -909,7 +909,7 @@ if [ "$SRC_EVENTS" = ndjson ] && [ -f "$EV" ]; then
           # returns 0 for a missing key; 0 is stored as NULL rather than as line zero, because
           # a line number nobody supplied must not read as a location somebody did.
           ln = jn($0,"line")
-          printf "INSERT OR REPLACE INTO finding(id,task_id,agent,agent_id,model,tier,lang,domain,pattern,class,severity,at,summary,file_path,line_no) VALUES(\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,NULL,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,%s);\n", fid, q(t), q(jf($0,"agent")), q(jf($0,"agent_id")), q(jf($0,"model")), q(jf($0,"lang")), q(jf($0,"domain")), q(jf($0,"pattern")), q(cls), q(jf($0,"severity")), q(a), q(jf($0,"summary")), q(jf($0,"file")), (ln>0 ? ln : "NULL")
+          printf "INSERT OR REPLACE INTO finding(id,task_id,agent,agent_id,model,tier,lang,domain,pattern,class,severity,at,summary,file_path,line_no,carries_over) VALUES(\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,NULL,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,%s,\047%s\047);\n", fid, q(t), q(jf($0,"agent")), q(jf($0,"agent_id")), q(jf($0,"model")), q(jf($0,"lang")), q(jf($0,"domain")), q(jf($0,"pattern")), q(cls), q(jf($0,"severity")), q(a), q(jf($0,"summary")), q(jf($0,"file")), (ln>0 ? ln : "NULL"), q(jf($0,"carries_over"))
         }
       }
       # Spend totals are CUMULATIVE for a transcript, so OR REPLACE keeps the last -- and

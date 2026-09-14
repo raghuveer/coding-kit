@@ -5305,8 +5305,19 @@ fa="$WORK.findagent"; rm -rf "$fa"; mkdir -p "$fa/src" "$fa/sess/subagents"
   bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" \
     --agent-id R1 --agent implementation-reviewer >/dev/null 2>&1
 
-  F() { bash "$KIT/tooling/kit-finding.sh" --task T-f --agent implementation-reviewer \
-          --class fail-open --severity major --lang bash --summary "$1" ${2:+--agent-id "$2"} >/dev/null 2>&1; }
+  # THROUGH THE DOCUMENTED DOOR, and that is the point of this arm rather than a detail. The
+  # first version recorded through kit-finding.sh, which proves the plumbing and NOT the path an
+  # agent is told to use -- and the defect being fixed was precisely that the documented door
+  # omitted the flag. A test exercising a different door from the one the documentation names
+  # cannot catch that class of defect at all.
+  #
+  # skills/verify-ladder/SKILL.md names `kit-review-record.sh --reply-file` as the reply-in-hand
+  # door, and it is how every one of the 2026-09-09 trial's 11 findings was recorded.
+  F() {
+    printf '{"verdict":"REVISE","narrative":"n","findings":[{"class":"fail-open","severity":"major","lang":"bash","summary":"%s"}]}' "$1" > rep.json
+    bash "$KIT/tooling/kit-review-record.sh" --task T-f --agent implementation-reviewer \
+      --reply-file rep.json ${2:+--agent-id "$2"} >/dev/null 2>&1
+  }
   F "attributed to a real run" R1
   F "recorded with no run at all"
   F "attributed to a run nobody recorded" ghost-run

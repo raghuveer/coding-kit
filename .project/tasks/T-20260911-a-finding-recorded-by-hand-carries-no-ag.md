@@ -51,7 +51,7 @@ Delivered by PR #115, merged as `d710e08`.
 |---|---|---|
 | 1 — both doors carry `--agent-id`, and the skill says where the value comes from in plugin mode | **met** | `tooling/kit-finding.sh:4-8`; `skills/verify-ladder/SKILL.md` reply-in-hand block, which names the Agent-tool subagent id and the `<session>/subagents/agent-<id>.jsonl` file `kit-spend.sh` reads it from |
 | 2 — a finding with no id is reported as unjoinable rather than stored as if the join were possible | **met** | `kit-status.sh` prints two counts. On this repository: `580 of 628 carry no agent id, and 48 carry one that matches no spend row` |
-| 3 — a conformance step records through the documented door with an id and asserts the join; without it, asserts the report fires | **PARTIAL** | the join and both report arms are asserted, but through `kit-finding.sh` directly. **The documented door is `kit-review-record.sh`** (`SKILL.md:61,75`), and the defect being fixed was that *that* door omitted the flag — so the step proves the plumbing and not the path an agent is told to use |
+| 3 — a conformance step records through the documented door with an id and asserts the join; without it, asserts the report fires | **met, 2026-09-14** | now records through `kit-review-record.sh --reply-file`, the door `skills/verify-ladder/SKILL.md` names and the one all 11 of the trial's findings used. Mutation-proven: blank the door's `--agent-id` pass-through and arm 1 goes red |
 
 **The finding this work produced, and it is not in the criteria above:** `finding` had no
 `agent_id` column at all. `kit_findings.py` has written the key into the event since it was
@@ -60,6 +60,13 @@ the flag would not have helped. The task read this as a documentation gap, which
 
 **Still zero joinable after all of it**, for a reason that is a third layer and its own task:
 `T-20260914-finding-run-ids-and-spend-run-ids-are-tw`.
+
+**AC3 closed 2026-09-14.** It was recorded as PARTIAL when #115 landed, because the step
+exercised `kit-finding.sh` directly while the documented door is `kit-review-record.sh`. That
+distinction is the whole of this task: the defect was that *the documented door* omitted the
+flag, so a test going through a different door proves the plumbing and cannot catch that class
+at all. The step now goes through the documented one, and the mutation that blanks its
+`--agent-id` pass-through takes arm 1 red.
 
 ## Notes
 

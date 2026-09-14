@@ -4,7 +4,7 @@
 #goal	default
 #created	2026-08-17T02:49:19Z
 #goal_state	in-progress
-#tasks_digest	2601576185-12445
+#tasks_digest	1313666982-12445
 #parked	7 157
 #columns	goal_id	task_id	layer	rank	score	cluster
 default	T-20260808-make-the-security-assurance-cadence-a-po	0	1	11.000	5
@@ -62,14 +62,14 @@ default	T-20260827-discovery-is-a-multi-session-phase-with-	0	52	1.000	2
 default	T-20260912-the-kit-has-no-glossary-so-plan-state-co	0	53	1.000	2
 default	T-20260808-co-change-has-no-eval-harness-so-its-sco	0	54	6.000	3
 default	T-20260826-the-trial-environment-is-recorded-as-pro	0	55	6.000	3
-default	T-20260809-harden-the-schema-so-a-null-cannot-erase	0	56	3.000	3
-default	T-20260812-commits-vanish-between-rev-list-and-the-	0	57	3.000	3
-default	T-20260814-the-absent-counter-notice-fires-on-every	0	58	3.000	3
-default	T-20260821-if-stale-watches-the-head-file-which-git	0	59	3.000	3
-default	T-20260821-kit-trailers-never-checks-tier-against-t	0	60	3.000	3
-default	T-20260821-the-kit-does-not-measure-its-own-develop	0	61	3.000	3
-default	T-20260822-event-seq-is-ingest-order-so-a-commit-tr	0	62	3.000	3
-default	T-20260911-kit-status-reports-spend-with-no-as-of-t	0	63	3.000	3
+default	T-20260911-kit-status-reports-spend-with-no-as-of-t	0	56	5.000	3
+default	T-20260809-harden-the-schema-so-a-null-cannot-erase	0	57	3.000	3
+default	T-20260812-commits-vanish-between-rev-list-and-the-	0	58	3.000	3
+default	T-20260814-the-absent-counter-notice-fires-on-every	0	59	3.000	3
+default	T-20260821-if-stale-watches-the-head-file-which-git	0	60	3.000	3
+default	T-20260821-kit-trailers-never-checks-tier-against-t	0	61	3.000	3
+default	T-20260821-the-kit-does-not-measure-its-own-develop	0	62	3.000	3
+default	T-20260822-event-seq-is-ingest-order-so-a-commit-tr	0	63	3.000	3
 default	T-20260808-record-which-mechanism-produced-a-findin	0	64	2.000	3
 default	T-20260809-the-unverified-tier-floor-message-names-	0	65	2.000	3
 default	T-20260812-an-uninstrumented-project-reports-the-sa	0	66	2.000	3
@@ -105,7 +105,7 @@ default	T-20260801-kit-plan-has-no-notion-of-prerequisite-w	0	95	1.000	4
 default	T-20260819-goals-are-the-milestone-mechanism-and-on	0	96	1.000	4
 default	T-20260822-legacy-state-spellings-in-task-files-sho	0	97	1.000	4
 default	T-20260912-paths-state-moves-the-state-directory-bu	0	98	6.000	18
-default	T-20260911-kit-init-next-steps-omit-choosing-git-ad	0	99	5.000	18
+default	T-20260911-kit-init-next-steps-omit-choosing-git-ad	0	99	3.000	18
 default	T-20260908-kit-init-pins-less-for-an-adopter-than-t	0	100	2.000	18
 default	T-20260911-kit-init-prints-the-claude-remedy-when-t	0	101	2.000	18
 default	T-20260731-accelerator-line-budget-and-eviction	0	102	5.000	1

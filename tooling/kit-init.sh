@@ -192,6 +192,37 @@ else
   # protected. Server-side is the only check that survives a clone.
   echo "  5. copy templates/github-trailer-gate.yml to .github/workflows/ — the hook is"
   echo "     per-clone, so CI is the only trailer check that survives someone skipping it"
+
+  # BROWNFIELD ONLY, AND ONLY WHEN THERE IS HISTORY TO HAVE AN OPINION ABOUT. INSTALL.md makes
+  # this the FIRST step of a brownfield adoption, because the choice decides what the kit
+  # believes about every commit that predates it -- and nothing in this script led anyone to it.
+  #
+  # On the 2026-09-09 trial the session followed the printed order exactly and left the key
+  # unset. The first status then read "Trailer discipline degraded. 97 of 98 non-trivial commits
+  # carry no Task-Id", which is what INSTALL.md predicts for the unset case in as many words.
+  #
+  # Leaving it unset is a LEGITIMATE choice -- it buys touches edges and co-change over the full
+  # history. The defect was that the choice got made by default instead of by the adopter, and a
+  # default that produces a scary-looking number is a default nobody agreed to.
+  #
+  # An empty repository is not asked: there is no earlier history to have a policy about, and a
+  # question with one possible answer is noise in the one place an adopter is reading carefully.
+  if git -C "$ROOT" rev-parse --verify -q HEAD >/dev/null 2>&1; then
+    # `|| true` because `set -e` aborts on a failing command substitution, so without it the
+    # `if` above is the ONLY thing between an empty repository and exit 128 -- and a guard
+    # that is load-bearing for a crash is one refactor away from being one. ${_n:-some}
+    # already covers the empty value.
+    _n=$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || true)
+    echo "  6. decide git.adopted_at in .claude/project-profile.md -- this repo has ${_n:-some}"
+     echo "     commit(s) predating the kit and the key decides what it believes about them:"
+     echo "       unset    all history is scanned; none of it carries trailers, so the"
+     echo "                trailer-discipline warning reads as though the team ignores the"
+     echo "                rule. You get touches edges and co-change over the whole history."
+     echo "       set      discipline numbers describe only work done under the kit, which is"
+     echo "                the honest denominator. Nothing before that point contributes edges."
+     echo "     Neither is wrong; see INSTALL.md, 'Choose git.adopted_at'. Deciding it later"
+     echo "     means re-reading every number taken before you did."
+  fi
 fi
 
 if [ -n "$BLOCKED" ]; then

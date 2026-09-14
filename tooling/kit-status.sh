@@ -477,6 +477,34 @@ fi
 if [ "${SPENT:-0}" -gt 0 ]; then
   printf '\n## Spend\n\n'
   printf '_Billable input-token-equivalents: input x1, cache-write x1.25, cache-read x0.1, output x5._\n\n'
+
+  # AS-OF, PER SCOPE, BECAUSE A SPEND FIGURE WITH NO TIME ON IT CANNOT BE READ. Main-loop rows
+  # are written by the Stop hook at the END of a turn and the index keeps the latest per
+  # transcript, so a reading taken inside a session sees, at best, what the PREVIOUS turn wrote.
+  #
+  # Measured on the 2026-09-09 trial: the final kit-status.sh at 14:09Z reported the main loop at
+  # 6,902.9 kBTE from a row written at 13:57:34Z. The turn that produced the report ended at
+  # 14:10:54Z at 10,259.6 kBTE. The page understated the main loop by a THIRD and nothing on it
+  # said so -- the figure was not wrong, it was OLD, and those are indistinguishable without this.
+  ASOF=$(q "SELECT scope||'  as of '||MAX(at) FROM spend WHERE COALESCE(at,'')<>'' GROUP BY scope ORDER BY 1;")
+  [ -n "$ASOF" ] && { printf '**As of**\n\n'; printf '%s\n' "$ASOF" | sed 's/^/- /'; printf '\n'; }
+
+  # AND WHETHER THE INDEX IS BEHIND THE LOG, which is a different question from how old the
+  # newest row is. events.ndjson is appended by the hook; the table exists only after
+  # kit-index.sh derives it. A figure printed from a stale table is not old, it is WRONG -- the
+  # newer number is already on disk and nobody derived it. Same ordering rule as
+  # kit-preflight.sh --spend, which asks the event log before the index for exactly this reason.
+  _EV="$ROOT/$STATE_DIR/events.ndjson"
+  if [ -f "$_EV" ]; then
+    _EVLAST=$(grep '"kind":"spend"' "$_EV" 2>/dev/null | sed -n 's/.*"at":"\([^"]*\)".*/\1/p' | sort | tail -1)
+    _IXLAST=$(q "SELECT MAX(at) FROM spend;")
+    if [ -n "$_EVLAST" ] && [ -n "$_IXLAST" ] && [ "$_EVLAST" \> "$_IXLAST" ]; then
+      printf '> **The index is BEHIND the event log.** Newest recorded spend event is `%s`;\n' "$_EVLAST"
+      printf '> the newest row this report reads is `%s`. Every figure below is that much\n' "$_IXLAST"
+      printf '> stale, and the newer numbers are already on disk. Run `kit-index.sh` and read\n'
+      printf '> this again rather than quoting what follows.\n\n'
+    fi
+  fi
   ACT=$(q "SELECT COALESCE(NULLIF(t.tier,''),'untiered')||'  '||COUNT(DISTINCT s.task_id)||
                   ' task(s), '||(SUM($BTE)/100000)||'k, '||
                   (SUM($BTE)/COUNT(DISTINCT s.task_id)/100000)||'k mean'

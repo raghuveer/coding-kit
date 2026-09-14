@@ -78,7 +78,7 @@ docstring stubs) can sit on a cheaper tier than prose a stranger has to learn fr
 
 `opus`, `sonnet` and `haiku` are **aliases**, not model IDs. `ANTHROPIC_DEFAULT_OPUS_MODEL`,
 `ANTHROPIC_DEFAULT_SONNET_MODEL` and `ANTHROPIC_DEFAULT_HAIKU_MODEL` control what each one
-resolves to. So an operator remaps all eight agents by setting three environment variables,
+resolves to. So an operator remaps all nine agents by setting three environment variables,
 without touching the plugin.
 
 What the agents actually depend on is the **three-tier split** — deep reasoning, working,
@@ -135,7 +135,16 @@ expose exactly that — everything above works today with no plugin change at al
 ## What this costs
 
 `claude --plugin-dir . plugin details coding-kit` reports the current split. Agent
-descriptions are resident because that is how routing works, so the eight agents are
-~840 tok of the ~1,259 tok always-on cost regardless of which models back them.
+descriptions are resident because that is how routing works, so the agents are the bulk of
+a small always-on cost, regardless of which models back them.
 
-Changing what an alias resolves to does not change that number. Adding a ninth agent does.
+**The last measurement was ~840 tok of ~1,259 tok, taken when EIGHT agents shipped. Nine ship
+today, so it understates by roughly an agent and it is stale rather than wrong.** Re-run the
+command above rather than quoting the old pair.
+
+That this paragraph went stale is the paragraph's own prediction coming true: it closed with
+*"changing what an alias resolves to does not change that number — adding a ninth agent does"*,
+and then `claim-auditor` was added and the number was not retaken. The sentence is kept below
+because it is still the right rule; what was missing was anything that notices.
+
+Changing what an alias resolves to does not change that number. Adding a tenth agent does.

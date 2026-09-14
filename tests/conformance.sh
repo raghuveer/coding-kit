@@ -5432,6 +5432,38 @@ check $? "the caveat appears while nothing is recorded and goes when something i
 rm -rf "$ez"
 fi
 
+
+if step "the baseline template demands a cause, not a verdict"; then
+# `build pass/fail, tests pass/fail` was the template's baseline row, and on 2026-09-09 that
+# shape recorded a subject as red while its release build PASSED and three CI jobs failed for
+# three unrelated reasons. One job's cause stood in for four, and the aggregate word is what got
+# quoted afterwards. An aggregate verdict is not a baseline; a later trial cannot tell an old
+# failure from a new one, which is the comparison section 2 exists to make legitimate.
+#
+# Asserted on the TEMPLATE as well as the protocol, deliberately: the protocol is read once and
+# the template is copied into every trial report, so the template is where the shape survives.
+T="$KIT/docs/TRIALS/TEMPLATE.md"; P="$KIT/docs/TRIAL-PROTOCOL.md"
+bad=0
+# The per-check table, with a cause column -- not prose about causes somewhere in the file.
+grep -qE '^\| check \| command \| exit \| seconds \| cause' "$T" ||
+  { echo "  the template has no per-check baseline table with a cause column"; bad=1; }
+grep -q 'CI job' "$T" ||
+  { echo "  the template does not ask for each CI job's verdict separately"; bad=1; }
+# The word itself, because "mark it as unverified" only works if the mark is a fixed token a
+# reader can grep for. A synonym per trial is not a mark.
+grep -q 'unverified' "$T" ||
+  { echo "  the template does not require an unverified cause to be named as such"; bad=1; }
+grep -q 'unverified' "$P" ||
+  { echo "  the protocol does not require an unverified cause to be named as such"; bad=1; }
+# And the old shape must not survive as an instruction anywhere. It may be QUOTED as the defect
+# it was -- that is how the reason travels -- so the test is that it never stands alone as the
+# thing to record.
+if grep -qE '^\| Baseline before the kit \| build pass/fail' "$T"; then
+  echo "  the template still instructs the aggregate shape"; bad=1
+fi
+check $bad "cause per check, per-CI-job verdicts, and unverified named as such"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

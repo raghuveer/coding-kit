@@ -4,7 +4,7 @@
 #goal	default
 #created	2026-08-17T02:49:19Z
 #goal_state	in-progress
-#tasks_digest	2032129334-12577
+#tasks_digest	4247287271-12577
 #parked	7 159
 #columns	goal_id	task_id	layer	rank	score	cluster
 default	T-20260808-make-the-security-assurance-cadence-a-po	0	1	11.000	5
@@ -23,7 +23,7 @@ default	T-20260912-a-recommendation-carries-no-evidence-lab	0	13	2.000	5
 default	T-20260808-an-agent-tools-entry-that-resolves-to-no	0	14	1.000	5
 default	T-20260814-accelerator-binding-names-an-agent-the-k	0	15	1.000	5
 default	T-20260801-reviewer-agents-cannot-run-the-tools-the	0	16	0.000	5
-default	T-20260912-a-trial-runs-in-a-container-on-the-subje	0	17	8.000	2
+default	T-20260912-a-trial-runs-in-a-container-on-the-subje	0	17	7.000	2
 default	T-20260911-a-carried-over-finding-is-recorded-as-a-	0	18	6.000	2
 default	T-20260822-the-overlay-is-scoped-to-modernization-i	0	19	5.000	2
 default	T-20260911-a-finding-recorded-by-hand-carries-no-ag	0	20	5.000	2

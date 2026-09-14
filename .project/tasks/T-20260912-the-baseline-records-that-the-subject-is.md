@@ -48,6 +48,38 @@ control. The same standard has not been applied to the baseline.
 - [ ] The report template carries the baseline in this fuller shape, so a second trial on the same subject can tell which failures are the same ones and which are new -- the comparison §2 exists to make legitimate
 - [ ] A CHECK THAT CAN FAIL: a conformance step asserting the template names cause-per-check and not only pass/fail, in the same shape as the step asserting §0 calls the superseded count
 
+### Evidence, 2026-09-14 — proposed, not certified
+
+| AC | addressed by | where to verify |
+|---|---|---|
+| 1 — cause per failing check, with the command | a per-check table in `docs/TRIALS/TEMPLATE.md` — check, command, exit, seconds, cause — and §0's baseline box requiring the same | the old row, `build pass/fail, tests pass/fail`, is gone as an instruction and survives only where it is named as the defect |
+| 2 — each CI job's verdict separately | a second table in the template, and §0 saying to use the commands the subject's CI runs rather than ones invented for the trial | |
+| 3 — an unverified cause named as such, never carried forward as established | both documents require the literal token `unverified`, and the conformance step asserts the token rather than the idea | a synonym per trial is not a mark a reader can grep for |
+| 4 — the template carries the fuller shape | `TEMPLATE.md` grew a `## Baseline before the kit` section | asserted on the template as well as the protocol: the protocol is read once, the template is copied into every report |
+| 5 — a check that can fail | conformance step, mutation-proven | collapse the table back to `check \| result` and it goes red naming the missing column |
+
+**AC3's failure mode was committed by me today, in this repository, while working on its
+sibling.** The figure *"90 `--all-features` errors"* was quoted from this task into
+`docs/DEPENDENCIES.md`, into a trial-2 blocker table, and then into a commit message asserting
+that a fresh measurement of 91 *"reproduced the same baseline"*. It had no measurement behind it
+anywhere: trial 1's run of that command failed at `protoc` and counted nothing. An unverified
+cause repeated until it reads as established is exactly what this criterion forbids, and it took
+three artefacts and one day.
+
+**A worked example now exists for the shape**, measured 2026-09-14 on `highper-gateway` at
+`05c56eb` in the trial runtime — the same subject whose aggregate `red` this task was filed
+about:
+
+| check | command | exit | seconds | cause |
+|---|---|---|---|---|
+| build | `cargo build --release -p highper-gateway` | 0 | 579 | — (from trial 1) |
+| tests | `cargo test --workspace --lib -- --test-threads=4` | 101 | 167 | **one** `E0308` in `runtime/signals.rs`; target does not compile, so 0 tests ran |
+| tests, after the one-line fix | same | 101 | 4.8 | 972 passed, 2 failed: `runtime_config` not installed by `test_health_check`; defaults failing their own `InvalidCombination` validation in `load_with_no_env_vars_returns_defaults` |
+| typecheck | `cargo check --workspace --all-features` | 101 | 248 | 91 errors, all under `highper-gateway/` — 48 `E0433`, 36 `E0425`, 2 `E0422`, 2 `E0405`, 2 missing `async_trait` |
+
+Four rows, four different answers to *"is this subject green"*, from one subject on one day. The
+aggregate word this task was filed about cannot carry any of them.
+
 ## Notes
 
 Filed on the operator's instruction of 2026-09-12, after the subject's CI logs were read

@@ -5464,6 +5464,57 @@ fi
 check $bad "cause per check, per-CI-job verdicts, and unverified named as such"
 fi
 
+
+if step "a copy whose permissions reach outside it is not isolated"; then
+# --isolated asked about git: a remote, and an alternates entry. A trial copy carries a THIRD
+# path back and the check did not model it. Reproduced 2026-09-11 on the copy prepared for the
+# highper-gateway trial: a tracked `.claude/settings.local.json` pre-approving `Bash(git *)` and
+# seven entries naming a second checkout of the same subject outside the copy -- and --isolated
+# printed "isolated" and exited 0. `git -C <that checkout> reset --hard` would have run with no
+# prompt against the repository the copy exists to protect.
+#
+# FOUR ARMS, and arm 4 is what stops this being a check that refuses everything: a rule scoped
+# inside the copy is fine and must still pass, or the gate becomes unsatisfiable and gets waived.
+iso="$WORK.isoperm"; rm -rf "$iso"; mkdir -p "$iso/.claude"
+( cd "$iso" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  echo x > f; git add -A; git commit -q --no-verify -m seed
+  P="$KIT/tooling/kit-preflight.sh"
+  W() { printf '%s' "$1" > "$iso/.claude/settings.local.json"; }
+
+  rm -f "$iso/.claude/settings.local.json"
+  bash "$P" --isolated "$iso" >/dev/null 2>&1
+  [ $? -eq 0 ] || { echo "  arm 1: a copy with no settings was refused"; exit 1; }
+
+  W '{"permissions":{"allow":["Bash(git *)"]}}'
+  out=$(bash "$P" --isolated "$iso" 2>&1); rc=$?
+  [ $rc -eq 1 ] || { echo "  arm 2: an unscoped Bash(git *) did not fail (rc=$rc)"; exit 1; }
+  printf '%s' "$out" | grep -q "unscoped" ||
+    { echo "  arm 2: the offending rule was not named"; exit 1; }
+
+  # A REAL path outside the copy, built at runtime rather than written as a literal. A literal
+  # would be a baked absolute path, which validate.py refuses -- correctly, and it caught this.
+  # Using the fixture's own parent is also the more faithful test: it is exactly the shape the
+  # 2026-09-11 copy carried, a sibling checkout beside the copy rather than a fictional one.
+  W "{\"permissions\":{\"allow\":[\"Bash(git -C $(dirname "$iso")/elsewhere status)\"]}}"
+  out=$(bash "$P" --isolated "$iso" 2>&1); rc=$?
+  [ $rc -eq 1 ] || { echo "  arm 3: an absolute path outside the copy did not fail (rc=$rc)"; exit 1; }
+  printf '%s' "$out" | grep -q "outside" ||
+    { echo "  arm 3: the outside path was not named"; exit 1; }
+
+  W '{"permissions":{"allow":["Bash(cargo test)"]}}'
+  out=$(bash "$P" --isolated "$iso" 2>&1); rc=$?
+  [ $rc -eq 0 ] || { echo "  arm 4: a rule scoped inside the copy was refused (rc=$rc)"; exit 1; }
+  # And the success line must say what it checked, so "isolated" never stands for a property
+  # this check did not test.
+  printf '%s' "$out" | grep -q "no permission rule" ||
+    { echo "  arm 4: the pass line does not name what was checked"; exit 1; }
+  exit 0 )
+check $? "unscoped fails, outside-path fails, scoped passes, and the pass line says what it tested"
+rm -rf "$iso"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

@@ -5615,6 +5615,80 @@ check $? "named with its costs where there is history, silent where there is non
 rm -rf "$ad"
 fi
 
+
+if step "two review rounds are three rows over two defects, not three findings"; then
+# A defect a reviewer carried into a later round was recorded as a NEW row with nothing linking
+# it to the one it repeats, so per-task and per-agent counts grew with the number of ROUNDS
+# rather than of DEFECTS. Measured on the 2026-09-09 trial: 11 rows for 5 defects, two of them
+# appearing three times each across rung 4, rung 5 and the re-review -- whose own summaries said
+# "Carried over from round 1" with nowhere to put it.
+#
+# CLASS COULD NOT HAVE SUBSTITUTED. That same carried-over defect was classed `race`, `perf`,
+# `race` across its three rows, so this fixture varies the class across the carry-over on
+# purpose: a test whose two rounds agreed on class would pass against a (task, class) collapse
+# that fails on the real data.
+#
+# FOUR ASSERTIONS, and the last two are what stop this being a column nobody reads:
+#   3 rows, 2 distinct defects, 1 link      the criterion, exactly
+#   the link RESOLVES to a real row         a dangling id is not a carried-over defect
+#   kit-status SAYS both numbers            the count was always rows; saying which is the fix
+#   omitting the field still validates      a reviewer that does not know it must not fail
+co="$WORK.carryover"; rm -rf "$co"; mkdir -p "$co/src"
+( cd "$co" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-c\ntitle: c\ntier: T2\n---\nb\n' > .project/tasks/T-c.md
+  git add -A && git commit -q --no-verify -m seed
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+
+  # Round 1, through the plain door -- and no carries_over, which is the omission arm.
+  bash "$KIT/tooling/kit-finding.sh" --task T-c --agent implementation-reviewer \
+    --class race --severity major --lang bash --summary "round one defect" >/dev/null 2>&1 ||
+    { echo "  omission: a finding without carries_over was refused"; exit 1; }
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  r1=$(Q "SELECT id FROM finding LIMIT 1;")
+  [ -n "$r1" ] || { echo "  round 1 recorded no row"; exit 1; }
+
+  # Round 2: one carried over WITH A DIFFERENT CLASS, one genuinely new.
+  printf '{"verdict":"REVISE","narrative":"n","findings":[{"class":"perf","severity":"major","lang":"bash","summary":"the same defect, carried over","carries_over":"%s"},{"class":"fail-open","severity":"minor","lang":"bash","summary":"a genuinely new one"}]}' "$r1" > r2.json
+  bash "$KIT/tooling/kit-finding.sh" --task T-c --agent implementation-reviewer --json < r2.json >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  rows=$(Q "SELECT COUNT(*) FROM finding;")
+  link=$(Q "SELECT COUNT(*) FROM finding f JOIN finding e ON e.id=f.carries_over;")
+  [ "$rows" = 3 ] || { echo "  rows=$rows, wanted 3"; exit 1; }
+  [ "$link" = 1 ] || { echo "  resolving link(s)=$link, wanted 1"; exit 1; }
+  [ "$((rows - link))" = 2 ] || { echo "  distinct defects=$((rows-link)), wanted 2"; exit 1; }
+
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q '3 finding row(s)\*\* over \*\*2 distinct defect(s)' STATUS.generated.md ||
+    { echo "  kit-status does not report rows and defects as different numbers"; exit 1; }
+
+  # A LINK POINTING AT NOTHING IS NOT A CARRIED-OVER DEFECT. Both reviewers noted the dangling
+  # branch was never exercised, and a branch no test reaches is a branch that can rot silently.
+  # It must NOT lower the distinct count, and it must be named.
+  printf '{"verdict":"REVISE","narrative":"n","findings":[{"class":"race","severity":"minor","lang":"bash","summary":"names an id that does not exist","carries_over":"2020-01-01T00:00:00Z:dead"}]}' > r3.json
+  bash "$KIT/tooling/kit-finding.sh" --task T-c --agent implementation-reviewer --json < r3.json >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q '4 finding row(s)\*\* over \*\*3 distinct defect(s)' STATUS.generated.md ||
+    { echo "  a dangling link changed the distinct count; it must not"; exit 1; }
+  grep -q 'name an earlier finding that does not exist' STATUS.generated.md ||
+    { echo "  the dangling link was not reported"; exit 1; }
+
+  # AND THE PRE-COLUMN INDEX MUST SAY SO rather than print a confident blank. Both reviewers
+  # reproduced this independently: the two queries return empty and the line read
+  # "N row(s) over N distinct defect(s) --  carried over" with nothing where the count belongs.
+  sqlite3 .project/index.db "ALTER TABLE finding DROP COLUMN carries_over;" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'predates carry-over links' STATUS.generated.md ||
+    { echo "  an index without the column printed a count instead of saying it cannot"; exit 1; }
+  exit 0 )
+check $? "3 rows, 2 defects, 1 resolving link, and a report that says which is which"
+rm -rf "$co"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

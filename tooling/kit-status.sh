@@ -61,6 +61,49 @@ printf '# Status\n\n'
 #                two id SPACES: findings here carry operator-chosen run labels (`blind-second`,
 #                `design2`) while spend carries the harness's subagent id (`a070ab68df6ac0287`).
 #                Reported separately because "add the flag" is the wrong remedy for it.
+# ROWS ARE NOT DEFECTS, and until 2026-09-14 every count here said `finding(s)` and meant rows.
+# A defect a reviewer carries into a later round was recorded as a NEW row with nothing linking
+# it to the one it repeats, so counts grew with the number of ROUNDS rather than of DEFECTS.
+# Measured on the 2026-09-09 trial: 11 rows for 5 defects, two of them appearing three times
+# each across rung 4, rung 5 and the re-review, whose own summaries said "Carried over from
+# round 1" with nowhere to put it.
+#
+# BOTH NUMBERS, ALWAYS, AND EACH SAID OUT LOUD. Rounds are a real measurement -- how much
+# re-reviewing a change took -- and defects are a different one. Printing either alone, under a
+# label that does not say which, is what made 11 read as 11.
+#
+# A LINK POINTING AT NOTHING IS COUNTED APART. `carries_over` naming an id with no row is not a
+# carried-over defect and must not silently collapse one: same rule as the unjoinable finding
+# counts below, and the same reason -- absence and error look alike unless separated.
+_FROWS=$(q "SELECT COUNT(*) FROM finding;")
+_FLINK=$(q "SELECT COUNT(*) FROM finding f WHERE COALESCE(f.carries_over,'')<>''
+             AND EXISTS (SELECT 1 FROM finding e WHERE e.id = f.carries_over);")
+_FDANG=$(q "SELECT COUNT(*) FROM finding f WHERE COALESCE(f.carries_over,'')<>''
+             AND NOT EXISTS (SELECT 1 FROM finding e WHERE e.id = f.carries_over);")
+# THE COLUMN MAY NOT EXIST, and until this guard both queries returned empty against an index
+# built before it did -- printing "N row(s) over N distinct defect(s) --  carried over" with a
+# BLANK count and no warning. Reproduced by both reviewers independently. An absent column is not
+# a zero, and a positive claim over a query that returned nothing is the fail-open this file
+# refuses everywhere else.
+_FHASCOL=$(q "SELECT COUNT(*) FROM pragma_table_info('finding') WHERE name='carries_over';")
+if [ "${_FHASCOL:-0}" = 0 ]; then
+  printf '
+> **This index predates carry-over links**, so rows cannot be distinguished from
+'
+  printf '> defects here. Rebuild with `kit-index.sh` before reading any finding count.
+'
+elif [ "${_FROWS:-0}" != 0 ]; then
+  printf '
+- **%s finding row(s)** over **%s distinct defect(s)** -- %s carried over from an
+' \
+    "$_FROWS" "$(( ${_FROWS:-0} - ${_FLINK:-0} ))" "$_FLINK"
+  printf '  earlier round. Rows count review ROUNDS; defects count what was wrong.
+'
+  [ "${_FDANG:-0}" = 0 ] ||
+    printf '  %s row(s) name an earlier finding that does not exist, and are counted as distinct.
+' "$_FDANG"
+fi
+
 _FN=$(q "SELECT COUNT(*) FROM finding;")
 _FNONE=$(q "SELECT COUNT(*) FROM finding WHERE COALESCE(agent_id,'')='';")
 _FORPH=$(q "SELECT COUNT(*) FROM finding f WHERE COALESCE(f.agent_id,'')<>''

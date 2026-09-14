@@ -76,6 +76,13 @@ CONTRACT = (
      "path the finding is anchored to."),
     ("line",     False, int, 1, None,
      "1-indexed line in that file."),
+    ("carries_over", False, str, 0, 80,
+     "the id of an EARLIER finding this one repeats, from `kit-resolve.sh --list`. Optional, "
+     "and omitting it still validates -- a reviewer that does not know the field must not "
+     "start failing. Supplied, it lets a report count DEFECTS rather than ROWS: on the "
+     "2026-09-09 trial three reviews of one change produced 11 rows for 5 defects, two of them "
+     "appearing three times each, and the re-review's own summaries said 'Carried over from "
+     "round 1' with nowhere to put it."),
 )
 
 ALLOWED = tuple(c[0] for c in CONTRACT)
@@ -281,6 +288,9 @@ def build_events(rows, opts):
             # A BARE integer: the reader (jn() in kit-index.sh) matches `"line": <digits>` and
             # would never see a quoted one. 0 means "not supplied" and maps back to NULL there.
             "line": row.get("line", 0),
+            # Blank when absent, like every other optional string, so the reader does not have
+            # to distinguish a missing key from an empty one.
+            "carries_over": row.get("carries_over", ""),
             "summary": row["summary"],
         }
         line = json.dumps(event, ensure_ascii=False, separators=(",", ":"))

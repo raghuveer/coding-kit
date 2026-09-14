@@ -38,11 +38,38 @@ as evidence the rung is redundant.
 Read `.claude/project-profile.md` for `commands.*` and `ladder.*` keys. Never invoke a
 tool this skill names itself — it names none deliberately.
 
-If a rung has **no satisfaction declared** for this stack, do not skip it silently.
-Declare it unavailable, name the compensating control, and **raise the tier by one**.
-Less mechanical verification means more adversarial reading, not a lower bar. A T3
-change in a stack with no mutation tooling gets more human and reviewer attention, not
-less.
+A rung has exactly **three** dispositions and no fourth. Two of them let work complete.
+
+**1. Satisfied.** The declared command ran and passed.
+
+**2. Unavailable** — *nothing is declared for this stack.* Do not skip it silently. Declare it
+unavailable, name the compensating control, and **raise the tier by one**. Less mechanical
+verification means more adversarial reading, not a lower bar. A T3 change in a stack with no
+mutation tooling gets more human and reviewer attention, not less.
+
+**3. Unsatisfiable** — *a satisfaction IS declared and it does not run, or cannot be made to
+pass for reasons outside the change.* This is **not** unavailable: something was declared, so
+the clause above does not reach it, and raising the tier is not the remedy because the rung
+was supposed to be mechanical here and is not.
+
+**`unsatisfiable` blocks a completion claim.** It is not a weaker satisfaction and there is no
+tier that compensates for it: an unsatisfiable rung means the verification the tier assumed
+did not happen, and nothing else in the ladder knows that.
+
+Distinguish it from an ordinary failing check. `commands.typecheck` reporting type errors in
+YOUR change is the rung working — fix the change. `unsatisfiable` is the rung not working: a
+missing build dependency, a platform the toolchain does not support, a target that does not
+compile before you touched it.
+
+> **Why this exists.** The 2026-09-09 highper-gateway trial hit it on two rungs at once.
+> `commands.typecheck` failed everywhere — a Windows host died on jemalloc's autoconf, a
+> container probe ran 1,464 s and died on a missing `protoc` — and `commands.test` was blocked
+> because the `--lib` target did not compile before the trial began. Both had tooling declared,
+> so neither was satisfied and neither was declarable unavailable. The enumeration had two
+> names and the situation was a third. **The trial recorded COMPLETE, two reviewers passed the
+> change at rungs 4 and 5, and it does not compile** — `registry.rs:77`, `error[E0597]`, on
+> that trial's own commit. Rung 3, which genuinely had nothing declared, was declared
+> unavailable and the tier raised correctly; that path is unchanged and still right.
 
 ## Recording findings
 
@@ -126,5 +153,16 @@ a finding that teaches nothing.
 
 ## Completion
 
-Work is complete when every obligation at the declared tier is either satisfied or
-explicitly declared unavailable with its tier raised. "I inspected it" satisfies no rung.
+Work is complete when every obligation at the declared tier is **satisfied**, or explicitly
+declared **unavailable** with its tier raised. "I inspected it" satisfies no rung.
+
+**An `unsatisfiable` rung blocks completion.** This section used to enumerate two states and
+permit anything outside them by omission, which is how a trial reported COMPLETE over a change
+that does not compile. There is no third way to complete: either the rung is made to run, or
+the work is not complete and says so.
+
+Inside a trial the remedy is narrower still, and it is why §0 of `docs/TRIAL-PROTOCOL.md`
+proves every `commands.*` runs BEFORE the clock starts. Mid-trial, editing the profile to make
+a rung run is a `commands.*` change, and §2 makes that void the trial — so a trial that
+discovers an unsatisfiable rung after starting has no non-voiding move left. The outcome is
+VOID, recorded as such. It is never COMPLETE.

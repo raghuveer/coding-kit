@@ -155,6 +155,25 @@ Stop unless every box is ticked. Record the answers; they are part of the result
 - [ ] **Baseline recorded before the kit touches anything**: does the subject build, do its
       tests pass, how long do they take. A subject whose tests already fail is a valid trial
       subject, but only if you knew that first — otherwise the kit gets blamed for it.
+- [ ] **Every declared `commands.*` actually RUNS, before the clock starts.**
+
+          bash tooling/kit-preflight.sh --commands
+
+      Run it **in the subject copy**, not here. Three outcomes, and they are the ladder's three
+      dispositions: a command that runs is satisfiable; a rung with nothing declared is
+      *unavailable* and the ladder already handles it by raising the tier; a command that is
+      declared and does not run is **unsatisfiable**, and that is a stop.
+
+      **This box exists because a trial had no move left without it.** On 2026-09-09 rung 1's
+      `commands.typecheck` turned out to need `protoc`, discovered after the clock started. The
+      only remedy is a `commands.*` edit, which §2 makes void the trial — so the trial could
+      neither satisfy the rung, nor declare it unavailable (something *was* declared), nor fix
+      it without voiding itself. It reported COMPLETE over a change that does not compile.
+      Asked here, the answer costs a pre-flight; asked later, it costs the trial.
+
+      **A comment is not a declaration.** `commands.build: # none` handed to a shell runs, exits
+      0, and would report the rung satisfiable while nothing is declared at all. The check
+      separates the two rather than executing the value blindly.
 - [ ] The subject's owner has agreed, if that is not you.
 
 **The trial**
@@ -357,13 +376,14 @@ Each of these produced a wrong answer on a real run. A trial that hits one is no
 result — it is **no result**. Revision 1 stated the conditions without saying how to notice
 them, which made three of five undetectable in practice.
 
-**Seven conditions as of 2026-09-12.** Six were found by 2026-09-09; the seventh — a reading
-taken inside the session — was written up on 2026-09-12 from that same trial.
+**Eight conditions as of 2026-09-14.** Six were found by 2026-09-09; the seventh — a reading
+taken inside the session — was written up on 2026-09-12 from that same trial. The eighth was
+already written in §2 and never carried here, which is the gap described below.
 
 **One of them differs from all the others in a way worth naming.** The rest leave a trace a
 suspicious reader can find: a path outside the worktree, a dirty tree, a denial in a tool log,
-a `rejected` gap row, a spend row older than the session. **A structurally blind review leaves
-none.** It is well-formed, confidently worded, and complete on its face; the only thing wrong
+a `rejected` gap row, a spend row older than the session, a commit touching the profile.
+**A structurally blind review leaves none.** It is well-formed, confidently worded, and complete on its face; the only thing wrong
 with it is what it was never shown. So it is the one condition that must be checked *before*
 the review rather than doubted afterwards.
 
@@ -375,6 +395,7 @@ the review rather than doubted afterwards.
 | **A permission denial inside a subagent degrades into a partial read.** | Check the tool log for denials. An agent that discloses one is salvageable; assume an undisclosed denial happened if its tool count is far below its peers on the same task. |
 | **A per-file review is STRUCTURALLY BLIND to a defect whose halves live in different files.** Proved 2026-09-09: a reviewer was given `tooling/kit-guard.sh` and a ground-truth check asked whether it found the documented gap that the guard matcher omits `Bash`. It returned **zero** -- and could not have returned anything else, because the matcher is in `hooks/hooks.json` and the reviewer was handed only the script. Unlike every row above, this one produces a **confident, well-formed, complete-looking review**: 7 findings, 7/7 valid vocabulary, no correction loop. Nothing about the output says it was blind. | Before believing a review of `F` found nothing of a class, list what could hold the other half:<br><br>`git grep -lF "$(basename F)" -- . ':!docs' ':!.project' ':!*.md' \| grep -v "^F$"`<br><br>Every file that NAMES `F` is a place a defect about `F` can be half-written. On `kit-guard.sh` this returns 6 files and `hooks/hooks.json` is one of them. Either include them in the prompt, or record them in **Not exercised** by name. The unfiltered form returns 24 here and is unusable, which is why the pathspecs are part of the check rather than an optimisation. |
 | **A reviewer that returns nothing may not have reviewed nothing.** An empty `{"findings":[]}` records as `reason=empty` — *"looked and found nothing"*. | `sqlite3 .project/index.db "SELECT json_extract(payload,'$.reason') AS reason, COUNT(*) FROM event WHERE kind='finding-gap' GROUP BY 1"`. Any `rejected` row is a review whose findings were lost. Confirm the reviewer received a prompt before believing any zero. |
+| **The profile changed mid-trial.** §2 has said since revision 1 that changing `tier.rule`, `commands.*`, `ingest.*` or `accelerator.*` mid-trial voids it. **It was never carried into this section, and it is the only condition on this list that has actually fired.** On 2026-09-09 rung 1 needed `protoc` added to the wrapper to run at all; that is a `commands.*` change, so the only route to a green rung voided the trial. The trial reasoned it out and stopped, correctly — and then reported COMPLETE anyway, because the ladder had no name for the rung it left behind. | Record the profile's commit at §0 and compare at the end:<br><br>`git -C <subject> log --oneline <preflight-sha>..HEAD -- .claude/project-profile.md`<br><br>Any output is a mid-trial profile change and the trial is void. Empty is a pass. Verified runnable: it returns nothing on an unchanged profile and the file's own path comes from `paths.*`, so it follows an adopter who moved it. |
 | **A reading taken inside the session omits the turn that produced it.** Main-loop spend is written at each `Stop`, so a status read mid-session reports the PREVIOUS turn's row. Measured 2026-09-09: 6,902.9 kBTE read against 10,259.6 actually spent — a third of the cost missing from the headline figure. | After the session closes, the index's `spend.at` for the main transcript must equal the last `spend` event for it in `events.ndjson`:<br><br>`sqlite3 .project/index.db "SELECT MAX(at) FROM spend WHERE scope='main';"` against `grep -o '"kind":"spend","at":"[^"]*"' .project/events.ndjson | tail -1`<br><br>If they differ, reindex before reading anything. Verified runnable against this repository. |
 
 **The last detection was itself undetectable, and that is a fourth instance of this section's
@@ -502,6 +523,16 @@ disarms a control in the *next* trial rather than its own.
 **Disputed findings.** Where the subject's owner disagrees that a finding is real, record it as
 disputed with both positions and do not resolve it in the trial report. The trial measures
 whether the kit *produced* the finding; whether it is correct is the owner's call.
+
+**State every rung's disposition, in the report, next to the outcome.** One line per rung:
+`satisfied`, `unavailable` (with the compensating control and the raised tier), or
+`unsatisfiable` (with what did not run). Not a footnote and not prose elsewhere — a reader must
+not be able to reach the outcome without passing the dispositions.
+
+This exists because the alternative was measured. The 2026-09-09 report said **COMPLETE** while
+rungs 1 and 2 were unsatisfiable and rung 3 unavailable; the rung detail was real and recorded,
+and the headline did not carry it, so the headline is what got quoted. **A trial with any
+unsatisfiable rung is VOID, never COMPLETE** — see §3 and the ladder's `## Completion`.
 
 **A trial that found nothing is a result**, and is recorded as one, including which parts of the
 kit ran and produced no output.

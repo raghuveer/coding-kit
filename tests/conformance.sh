@@ -193,6 +193,33 @@ first_divergence() {  # <expected list> <flattened agent text>
   done
 }
 
+if step "--help prints every flag the usage block documents"; then
+# A HELP TEXT BOUND TO LINE NUMBERS IS WRONG SILENTLY. `kit-finding.sh -h` was
+# `sed -n '4,8p' "$0"` -- a hardcoded range that had already outgrown itself: `--vocab` and
+# `--contract` are real flags, documented in the same block, and neither had ever been printed
+# by --help. Nothing failed. The header then grew on 2026-09-14 and clipped again.
+#
+# Asserted against the FILE rather than against a list written here, so this cannot drift the
+# way the thing it is testing drifted. Every `# kit-finding.sh ...` usage line in the header
+# must appear in the --help output; a range that clips any of them goes red.
+h=$(bash "$KIT/tooling/kit-finding.sh" --help 2>&1)
+miss=""
+while IFS= read -r line; do
+  case "$h" in *"$line"*) ;; *) miss="$miss
+    $line" ;; esac
+done <<EOF
+$(awk '/^# kit-finding\.sh /{print} /^#$/{if(seen)exit} /^# kit-finding\.sh /{seen=1}' "$KIT/tooling/kit-finding.sh")
+EOF
+[ -z "$miss" ] || echo "  usage lines the --help output does not contain:$miss"
+# And the two flags that were invisible for the whole life of the old range, named explicitly:
+# a generic check that happened to pass while they were missing is what let this sit.
+case "$h" in *"--vocab"*) ;; *) echo "  --help does not mention --vocab"; miss=x ;; esac
+case "$h" in *"--contract"*) ;; *) echo "  --help does not mention --contract"; miss=x ;; esac
+[ -z "$miss" ]
+check $? "no usage line is clipped, --vocab and --contract included"
+fi
+
+
 if step "finding vocabulary has not drifted"; then
 # The reviewers have no Bash, so they cannot run `kit-finding.sh --vocab` and the lists are
 # inlined in their instructions. That is the only form they can use, and it is exactly the
@@ -5303,7 +5330,7 @@ fa="$WORK.findagent"; rm -rf "$fa"; mkdir -p "$fa/src" "$fa/sess/subagents"
   # it the subagent file directly records nothing, silently -- which is how arm 1 first failed.
   printf '{"type":"assistant","message":{"model":"m","usage":{"input_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":1,"output_tokens":1}}}\n' > sess.jsonl
   bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" \
-    --agent-id R1 --agent implementation-reviewer >/dev/null 2>&1
+    --agent-id R1 --agent implementation-reviewer --session S1 >/dev/null 2>&1
 
   # THROUGH THE DOCUMENTED DOOR, and that is the point of this arm rather than a detail. The
   # first version recorded through kit-finding.sh, which proves the plumbing and NOT the path an
@@ -5337,6 +5364,55 @@ fa="$WORK.findagent"; rm -rf "$fa"; mkdir -p "$fa/src" "$fa/sess/subagents"
     { echo "  arm 2: kit-status did not report the unattributed count"; exit 1; }
   grep -q "1 carry one that matches no spend row" STATUS.generated.md ||
     { echo "  arm 3: kit-status did not report the unmatched count separately"; exit 1; }
+
+  # ARMS 4-6: the SAME faults, caught at RECORD time rather than at kit-status time.
+  #
+  # Arms 1-3 prove the report is right. They cannot prove anyone reads it, and on 2026-09-14 the
+  # answer was nobody: this repository stood at 54 of 54 attributed findings matching no spend
+  # row while the count sat on the status page, correct, through an entire trial that asserted
+  # the opposite twice. AC2 of T-20260911-a-finding-recorded-by-hand-carries-no-ag allowed the
+  # report at kit-status time OR at record time; these arms cover the arm it did not take.
+  #
+  # Captures stderr rather than discarding it, which is the whole difference from F() above.
+  FE() {
+    printf '{"verdict":"REVISE","narrative":"n","findings":[{"class":"fail-open","severity":"major","lang":"bash","summary":"%s"}]}' "$1" > rep.json
+    bash "$KIT/tooling/kit-review-record.sh" --task T-f --agent implementation-reviewer \
+      --reply-file rep.json ${2:+--agent-id "$2"} 2>&1
+  }
+
+  # 4. a run id that DOES resolve must say nothing. This is the arm a broken check fails
+  #    loudest on: a warning that fires on everything is not a check, it is noise, and it
+  #    trains the reader to skip the line that matters.
+  out=$(FE "arm 4 quiet on a real id" R1)
+  case "$out" in
+    *"SESSION id"*|*"matches no spend row"*|*"nothing can join"*)
+      echo "  arm 4: a resolvable agent id was warned about anyway"; exit 1 ;;
+  esac
+
+  # 5. an id that resolves to nothing: named, and named as unresolvable rather than as a typo.
+  out=$(FE "arm 5 unresolvable id" ghost-run-2)
+  case "$out" in
+    *"ghost-run-2"*"matches no spend row"*) ;;
+    *) echo "  arm 5: an unresolvable agent id drew no record-time advice"; exit 1 ;;
+  esac
+
+  # 6. THE ONE THAT WOULD HAVE CAUGHT THE REAL MISTAKE. A session id is not a wrong string, it
+  #    is the wrong ID SPACE -- the harness hands the session id to the caller, so it is the
+  #    value most likely to be passed in good faith. Generic "does not resolve" wording leaves
+  #    the caller to guess; this asserts the diagnosis names it.
+  out=$(FE "arm 6 session id mistaken for a run id" S1)
+  case "$out" in
+    *"SESSION id"*) ;;
+    *) echo "  arm 6: a session id passed as a run id was not diagnosed as such"; exit 1 ;;
+  esac
+
+  # And the advice must never change the exit status: the finding is recorded either way.
+  # Refusing would trade a silent non-join for a lost finding, which is the worse of the two.
+  FE "arm 6b still recorded" S1 >/dev/null || \
+    { echo "  arm 6b: the advisory turned recording into a failure"; exit 1; }
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  n=$(Q "SELECT COUNT(*) FROM finding WHERE agent_id='S1';")
+  [ "$n" = 2 ] || { echo "  arm 6b: findings warned about were not recorded ($n of 2)"; exit 1; }
   exit 0 )
 check $? "the run id reaches the table, joins, and both unjoinable faults are counted apart"
 rm -rf "$fa"

@@ -6,6 +6,14 @@
 #   agent that produced it. --agent is the ROLE and cannot do that: a T3 chain runs three
 #   reviewers sharing one role and one task. Omitted, the finding is recorded and reported
 #   as unattributed rather than silently reading as attributed.
+#   IT IS THE SUBAGENT ID, NOT THE SESSION ID. Both are per-run in the loose sense, so
+#   "the reviewer RUN" does not distinguish them -- and that sentence was the whole of this
+#   help until 2026-09-14, when 54 of 54 attributed findings here were measured joining
+#   nothing and five of them had been given the session id. The session id covers every agent
+#   in the session and so identifies no single run. The value wanted is what the harness
+#   returns when the agent is launched, and what kit-spend.sh reads from
+#   <session>/subagents/agent-<id>.jsonl into spend.agent_id. Pass a wrong one and this
+#   script now says so at record time, naming which kind of wrong it is.
 # kit-finding.sh --task ID --agent NAME --class CLASS --severity SEV --summary TEXT
 #                [--carries-over ID]  the earlier finding this repeats, from kit-resolve.sh --list
 #                [--lang L] [--domain D] [--pattern P] [--model M]
@@ -91,7 +99,14 @@ while [ $# -gt 0 ]; do
     # round-4 reviewer caught. Both spellings work from either position now.
     --vocab) printf 'class:    %s\nseverity: %s\n' "$CLASSES" "$SEVERITIES"; exit 0 ;;
     --contract) exec python3 "$(dirname "$0")/kit_findings.py" --contract ;;
-    -h|--help) sed -n '4,8p' "$0"; exit 0 ;;
+    # DERIVED, not a line range. This was `sed -n '4,8p'`, which silently truncated: it
+    # already hid `--vocab` and `--contract` -- both real flags, both documented here, neither
+    # ever printed by --help -- and it clipped this header again the moment it grew. A help
+    # text bound to line numbers is wrong every time the file above it changes, and nothing
+    # fails when it is. The usage block is every comment line from the first usage line to the
+    # first bare `#`, so it ends where the prose starts and cannot be outgrown.
+    -h|--help)
+      awk '/^# kit-finding\.sh /{u=1} u&&/^#$/{exit} u' "$0"; exit 0 ;;
     *) kit_warn "unknown argument: $1"; exit 2 ;;
   esac
 done
@@ -181,6 +196,23 @@ declared_industries() {
 }
 
 PY="$(dirname "$0")/kit_findings.py"
+
+# An agent id that resolves to nothing was accepted here without a word until 2026-09-14, when
+# this repository was measured at 54 of 54 attributed findings matching no spend row -- the join
+# had never worked once. `kit-status.sh` reported the count correctly the whole time and nobody
+# read it, which is why this fires at RECORD time, next to the mistake, and names WHICH kind of
+# miss it is. A session id was what the kit's own trial passed for all five of its findings.
+#
+# WARN, never refuse, and leave this script's exit status alone. A reviewer's spend row is
+# written by a Stop hook and can legitimately arrive AFTER the finding, so refusing would trade
+# a silent non-join for a lost finding -- the worse of the two.
+#
+# Placed after PY is set, and once per invocation rather than once per finding: a `--json` batch
+# shares one id, and a warning repeated forty times is one nobody finishes reading. The first
+# draft of this sat beside EV at :112, where PY is still empty -- `bash -n` passes on that.
+if [ -n "$agent_id" ]; then
+  python3 "$PY" --check-agent-id "$EV" "$agent_id" || true
+fi
 
 # The structured path: a reviewer returns DATA and this records it. No block is scraped out of
 # prose and nothing retypes fields by hand -- both were parsing, and every defect in the old

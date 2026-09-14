@@ -578,11 +578,85 @@ def parse_opts(argv):
     return opts
 
 
+def agent_id_advice(events_path, agent_id):
+    """Say whether an agent id will join a spend row, and if it will not, WHICH miss it is.
+
+    Measured 2026-09-14: 54 of 54 attributed findings in the kit's own repository matched no
+    spend row, so the join had never worked once. The flag was accepted raw, so a session id, a
+    typo and a hand-written label (`blind-second`, `design2`, `entry-final`) all recorded as
+    though attributed. `kit-status.sh` reported the count correctly throughout and was not read.
+
+    Returns (code, message). Code 0 means it joins and the message is empty. Anything else is
+    advisory: the caller still records the finding, because a reviewer's spend row is written by
+    a Stop hook and can legitimately arrive AFTER the finding. Refusing would trade a silent
+    non-join for a lost finding, which is worse.
+
+    Naming the kind of miss is the whole value. The session id is the wrong value a caller is
+    most likely to have to hand -- the harness hands it to them -- and it is what the kit's own
+    trial passed for all five of its findings.
+    """
+    runs, sessions, transcripts = set(), set(), set()
+    seen_spend = False
+    try:
+        with open(events_path, encoding="utf-8") as fh:
+            for line in fh:
+                if '"spend"' not in line:
+                    continue
+                try:
+                    ev = json.loads(line)
+                except ValueError:
+                    continue
+                if ev.get("kind") != "spend":
+                    continue
+                seen_spend = True
+                for key, bucket in (("agent_id", runs), ("session", sessions),
+                                    ("transcript", transcripts)):
+                    if ev.get(key):
+                        bucket.add(ev[key])
+    except OSError:
+        # No log to read. Not a pass -- there is nothing this id could possibly join to, and
+        # saying "fine" here is the vacuous arm this project keeps finding in its own checks.
+        return 4, ("no event log at %s, so nothing can join. The finding is recorded; the "
+                   "attribution is not." % events_path)
+
+    if agent_id in runs:
+        return 0, ""
+    if not seen_spend:
+        return 4, ("no spend rows are recorded at all, so no finding in this repository can "
+                   "join one. Check that the spend hook is wired and firing.")
+    if agent_id in sessions:
+        return 4, ("'%s' is a SESSION id, not a reviewer run id. A session covers every agent "
+                   "in it, so it cannot identify one run. Pass the subagent id -- the value "
+                   "`spend.agent_id` carries, which the harness returns when the agent is "
+                   "launched." % agent_id)
+    for sess in sessions:
+        if agent_id.startswith(sess) and agent_id != sess:
+            return 4, ("'%s' is a SESSION id with '%s' appended. A suffix does not make a "
+                       "session id identify a run. Pass the subagent id."
+                       % (agent_id, agent_id[len(sess):]))
+    if agent_id in transcripts:
+        return 4, ("'%s' is a transcript key, not a run id. `spend.agent_id` is the value to "
+                   "pass." % agent_id)
+    return 4, ("'%s' matches no spend row. If the reviewer has not finished, its row has not "
+               "been written yet and this is expected -- re-check with kit-status.sh. If it is "
+               "a label rather than a harness id, the finding will never join." % agent_id)
+
+
 def main():
     mode = sys.argv[1] if len(sys.argv) > 1 else "--validate"
     if mode == "--contract":
         print_contract()
         return 0
+    # Reads no stdin and is dispatched early for the same reason --resolve is: a mode that
+    # blocks on a terminal it was never given looks exactly like a hang.
+    if mode == "--check-agent-id":
+        if len(sys.argv) < 4:
+            sys.stderr.write("kit-findings: --check-agent-id needs <events-path> <id>\n")
+            return 2
+        code, msg = agent_id_advice(sys.argv[2], sys.argv[3])
+        if msg:
+            sys.stderr.write("kit-findings: %s\n" % msg)
+        return code
     if mode not in ("--validate", "--emit-events", "--gap-event", "--correction", "--resolve",
                     "--unassessable", "--superseded"):
         sys.stderr.write("kit-findings: unknown mode %s\n" % mode)

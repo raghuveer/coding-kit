@@ -110,6 +110,14 @@ the two readings a trial exists to take. In plugin mode the value is the Agent-t
 id, the same one `kit-spend.sh` records from `<session>/subagents/agent-<id>.jsonl`; that is
 what makes the two rows join.
 
+**It is NOT the session id, and that is the mistake to expect.** The harness hands you the
+session id, so it is the value nearest to hand; it covers every agent in the session and
+therefore identifies no single run. Measured 2026-09-14 on the kit's own repository: **54 of 54
+attributed findings joined nothing**, and five of those had been given the session id by a
+session that had read this page. `kit-finding.sh` now says so at record time and names
+which kind of wrong value it got -- but the advice is a warning, not a refusal, so a caller that
+does not read it still records an unjoinable finding.
+
 Omit it and the finding is still recorded -- losing a finding to a missing label would be the
 worse trade -- but `kit-status.sh` reports it as unattributed rather than letting it read as
 attributed. On the 2026-09-09 trial **all 11 findings** were recorded through this door while

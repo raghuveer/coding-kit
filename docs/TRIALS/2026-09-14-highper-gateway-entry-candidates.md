@@ -18,13 +18,13 @@ cannot tell the census apart from the author of the census.
 1. Why does KNOWN_LIMITATIONS.md record `Linux support excellent` while `cargo check --workspace
    --all-features` fails on Linux with 91 errors. The default build passes - is the claim scoped to
    default features and simply unqualified.
-   evidence: KNOWN_LIMITATIONS.md:371, docs/TRIALS/2026-09-14-highper-gateway.md:46
+   evidence: KNOWN_LIMITATIONS.md:370, docs/TRIALS/2026-09-14-highper-gateway.md:46
    answer:
 
 2. What did the `114 TODO/FIXME comments in 36 files` count include. Measured at e588b53 the
    figure is 84 in 26 `.rs` files, or 343 in 86 tracked files of every kind. Neither reproduces it,
    and the document does not say what it counted.
-   evidence: KNOWN_LIMITATIONS.md:413, KNOWN_LIMITATIONS.md:418
+   evidence: KNOWN_LIMITATIONS.md:414, KNOWN_LIMITATIONS.md:417
    answer:
 
 3. The co-change graph holds 149 files that are not in the tree - a restructure, a deletion, or
@@ -46,11 +46,11 @@ cannot tell the census apart from the author of the census.
 ## Candidate tasks
 
 - [ ] KNOWN_LIMITATIONS records two figures that the tree does not reproduce
-      evidence: KNOWN_LIMITATIONS.md:371, KNOWN_LIMITATIONS.md:413
+      evidence: KNOWN_LIMITATIONS.md:370, KNOWN_LIMITATIONS.md:417
       kit-task.sh --title 'KNOWN LIMITATIONS records two figures the tree does not reproduce' --tier T1 --lang markdown --paths 'KNOWN_LIMITATIONS.md'
 
 - [ ] A documented count carries no method so no reader can reproduce it
-      evidence: KNOWN_LIMITATIONS.md:413
+      evidence: KNOWN_LIMITATIONS.md:417
       kit-task.sh --title 'A documented count carries no method so no reader can reproduce it' --tier T1 --lang markdown --paths 'KNOWN_LIMITATIONS.md'
 
 - [ ] Documentation exceeds code and 94 percent of it was written once - 195858 markdown lines

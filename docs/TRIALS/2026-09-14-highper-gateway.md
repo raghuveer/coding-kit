@@ -13,12 +13,12 @@
 | Question | **On a brownfield subject that never fully adopted the kit, and whose baseline is red for four independently-named reasons, does the kit produce a change that the verify ladder can actually pass — and where it cannot, does the trial say so rather than record COMPLETE?** |
 | Kit SHA | `e6f47aada6403199339e6446b56702634c2e3824` |
 | Time-box / actual | **1 h**, then a recorded STOP / CONTINUE / RETRY, **cap 4 h** / **~60 min, one unit** |
-| Subject | `highper-gateway`, Rust, 169 commits, `e588b53` on `master` |
+| Subject | `highper-gateway`, Rust, **173 commits at `e588b53`**, 174 at the adoption commit `a6b3dcb` — the census read 174. The pre-flight recorded `169` and nothing produced that figure |
 | Greenfield / brownfield | **brownfield**, history not truncated |
-| Outcome | **the unit completed and the kit's one real gate held.** `kit-entry.sh --check` refused 4 of 4 mutations, each naming its own cause. Two kit defects found, both in the *documented procedure* rather than in code |
+| Outcome | **two units completed; the gate held and the record did not.** `kit-entry.sh --check` refused 4 of 4 mutations, each naming its own cause. Two kit defects found, both in the *documented procedure* rather than in code |
 | Baseline before the kit | see **Baseline** — four checks, four causes. `build pass, tests fail` is not a baseline |
-| Instruments verified live | spend **45 → 46** rows; findings **628 → 629**, and the row joins to its run |
-| Copy isolation verified | `--isolated` exit 0 after 20 outward-reaching permission rules were stripped |
+| Instruments verified live | spend **45 → 46** rows; findings **628 → 629** at pre-flight, **631** after this trial's two, and the rows join to their runs |
+| Copy isolation verified | `--isolated` exit 0 after the tracked `.claude/settings.local.json` was removed. It carried **24** `allow` rules — the pre-flight's *"20 outward-reaching"* is unsupported and the whole file went |
 
 ## Runtime
 
@@ -148,14 +148,20 @@ decision cost less than I said it would.
 
 ### What the census showed, and what it refused to do
 
-`entry-report.md` **proposes nothing**, by design — ADR 0001 makes that refusal the only structural
-control in the entry mechanism, and it held. Four facts drove the unit:
+`entry-report.md` **proposes nothing**, by design, and it held. **Corrected after audit:** this
+section first said ADR 0001 *"makes that refusal the only structural control in the entry mechanism"*,
+which is wrong twice. The ADR's sentence is narrower — `kit-entry.sh` cannot write a task file, *"the
+one place this design does gate"* (`docs/adr/0001-anchor-entry-facts-to-files.md:106`) — and that is a
+different assertion from `entry-report.md` proposing nothing. The ADR's **own superseding note**
+(`:119-133`) then records a **second** structural control: `--check` matching the whole candidate line
+against a whitelist. This record exercised that second control sixty lines further down and still
+called the first one the only one. Four facts drove the unit:
 
 | fact | figure |
 |---|---|
 | documentation against code | **195,858 markdown lines** in 370 files vs **110,814 Rust lines** in 291 |
 | documentation revision | **347 of 370 markdown files have exactly one commit**, against 174 commits |
-| the hub files | `dsl_parser.rs` co-change degree 96, `server.rs` 83, `handler.rs` 73 — **1 author each, none touched since 2026-05-16** |
+| the hub files | `config/dsl_parser.rs` co-change degree 96, `proxy/server.rs` 83, `proxy/handler.rs` 73 — **1 author each, none touched since 2026-05-16**. Paths, not basenames: `server.rs` and `handler.rs` each match four files and only the degree disambiguates them |
 | the graph exceeds the tree | 149 files co-change that are **not in the tree** |
 
 Documentation that is 1.8× the code and 94% never-revised, sitting beside a core that four months of
@@ -223,7 +229,7 @@ Both are figures in `KNOWN_LIMITATIONS.md` that the tree at `e588b53` does not r
 in the subject was edited.**
 
 **S1 — `Linux support excellent` is recorded beside a Linux build that does not type-check.**
-`KNOWN_LIMITATIONS.md:371` marks Linux with a tick while attributing the `cargo check` failure to
+`KNOWN_LIMITATIONS.md:370` marks Linux with a tick while attributing the `cargo check` failure to
 Windows and `io-uring`. This trial's own baseline ran `cargo check --workspace --all-features` **in a
 Linux container** and got **91 errors, all under `highper-gateway/`** — 48 `E0433`, 36 `E0425`,
 2 `E0422`, 2 `E0405`, 2 missing `async_trait` — and the subject's own `Check` and `Clippy` CI jobs
@@ -234,8 +240,8 @@ fail on Linux for the same surface.
 where the measurement is qualified**, and a reader cannot tell which feature set it covers. Filed as
 question 1, not as a defect, per the rule that an undocumented scope is a question.
 
-**S2 — a count with no method.** `KNOWN_LIMITATIONS.md:413` records *"114 TODO/FIXME comments"* in
-*"36 files across codebase"*. Measured at `e588b53`:
+**S2 — a count with no method.** `KNOWN_LIMITATIONS.md:417` records *"114 TODO/FIXME comments"*, and
+`:414` locates them in *"36 files across codebase"*. Measured at `e588b53`:
 
     git grep -E "(TODO|FIXME)" -- '*.rs'     84 hits in 26 files
     git grep -E "(TODO|FIXME)"              343 hits in 86 files
@@ -257,8 +263,13 @@ whether the figure drifted or was measured differently. That is the defect — n
 
 - **kit defects:** K1, K2 — both in `docs/`, neither in code. A trial that only looked for code
   defects would have recorded this hour as finding nothing.
-- **subject findings:** S1, S2 — proposals in this record, and **nowhere else**. No file in
-  `D:\trials\highper-gateway-e588b53` outside the ignored `.project` was modified.
+- **subject findings:** S1, S2 — proposals in this record, and **nowhere else**. `KNOWN_LIMITATIONS.md`
+  is unmodified and `git status --short` is empty.
+  **Corrected after audit:** this said *"no file outside the ignored `.project` was modified"*, which is
+  false as written. The **adoption commit `a6b3dcb`** changes three tracked files —
+  `.claude/settings.local.json` deleted, `.gitattributes` +6, `.gitignore` +8 — and the kit also wrote
+  `STATUS.generated.md` and `.claude/project-profile.md`, both ignored but both outside `.project`. The
+  intent was *the trial applied nothing to the subject*, and that holds; the sentence claimed more.
 - **protocol findings:** the six from the pre-flight, plus K2, which is really a protocol finding
   wearing a kit-defect shape — the collision is between `ENTRY-PROPOSAL.md` and `TRIAL-PROTOCOL.md`
   §3, and neither document is wrong on its own.
@@ -279,12 +290,81 @@ per-trial cost is quoted here rather than quoting one the instrument cannot supp
 rows are attributable and the main row is not, which is the asymmetry `--agent-id` fixed for
 findings and has not fixed for spend.
 
+## Unit 2 — the record audited by a second reader, and the answer to K1
+
+K1 says the kit's reviewers are unreachable from an adopted project. That is testable rather than
+assumable, so the second unit tested it: a **generic** agent type — one the harness offers to
+everybody, with no kit plugin loaded — was pointed at `agents/claim-auditor.md` and told to follow it.
+
+**It worked.** The agent read the prompt, obeyed its output contract, and returned the audit in the
+contract's JSON shape with a per-claim verdict vocabulary it was never given inline. 83k tokens,
+23 tool calls, 5m14s.
+
+**So K1 is a distribution defect, not a design defect, and that narrows the fix.** The kit's agent
+files are portable prompts; what does not port is the plugin loader that is currently their only
+route into a session. A harness that can run a subagent with a prompt can run all nine. This is the
+first evidence in either trial bearing on *"support many coding agents"*, and it is favourable.
+
+**Blind by construction:** the auditor was handed twelve claims to check and told nothing about
+whether any was true, in an order that did not match the record's.
+
+### Nine of twelve confirmed to the digit
+
+Every census figure reproduced from `entry-facts.tsv` without rounding — 370/195,858 against
+291/110,814; 347 of 370 at one commit; the three hub degrees with their authors and dates;
+`KNOWN_LIMITATIONS.md` at 567/8/2/2026-09-12/51. Both `git grep` counts reproduced exactly. The
+`kit-init.sh` silence, the unwired `sync-agents.ps1`, the absent-and-unignored `docs/design-input/`,
+the clean tree, and the 51/580 attribution split all held.
+
+### Three did not hold, and they cluster
+
+**Every one is in a place where this record stopped quoting an instrument and started paraphrasing a
+document.** The figures came from tools and survived; the sentences came from me and did not.
+
+| # | claim | verdict | what was wrong |
+|---|---|---|---|
+| 1 | *"ADR 0001 makes that refusal the only structural control"* | **OVERSTATED** | The ADR's own superseding note records a **second** structural control — the `--check` whitelist. This record exercised it sixty lines later and still called the first one the only one |
+| 2 | *"No file outside the ignored `.project` was modified"* | **OVERSTATED** | The adoption commit changes three tracked files; the kit wrote two more ignored files outside `.project` |
+| 3 | `KNOWN_LIMITATIONS.md:371` and `:413` | **STALE-CITATION** ×2 | Quotes verbatim, substance sound, **pointers off**. `:371` is the *Windows-fails* row — a reader following it lands on the line that reads as refuting the point. `:413` is `**Impact:** NONE`; the two quotes it carries are at `:414` and `:417` |
+
+Finding 1 is the one worth keeping. **It is a self-contradiction inside one document**, visible to
+anyone who read both sections, and it survived my writing it, my re-reading it, and a `--check` run.
+A second reader found it in five minutes. That is the ninth time in this project's record that the
+defect which mattered was found by a second reader rather than by a passing check.
+
+### Four numbers the audit disturbed that were not in its scope
+
+It flagged these as open questions, correctly refusing to rule on unassigned claims. All four are
+now corrected in the header above, and **three of the four were pre-flight figures, not trial
+figures** — this record shipped them forward unchecked:
+
+- **the commit count.** The header said `169`; the body said `174`. Measured: **173** at `e588b53`,
+  **174** at the adoption commit. *Nothing produces 169.* It was in the pre-flight record and was
+  carried, which is the exact failure mode this project has a memory note about.
+- **the permission rules.** The header said `20 outward-reaching`; the adoption commit message said
+  24. The stripped file carries **24 `allow` rules** and the whole file was removed, so `20` is
+  unsupported by anything.
+- **the finding count.** `628 → 629` and `51 + 580 = 631` are both in this record — a pre-write
+  total beside a post-write split, with nothing saying so.
+- **the hub files** were named by bare basename; `server.rs` and `handler.rs` each match four files
+  in the tree and only the co-change degree disambiguates them.
+
+### What the audit did not check, stated because an unstated gap reads as a pass
+
+The whole Baseline table and its exit codes and `seconds`; the per-CI-job verdicts; the six
+pre-flight findings; the runtime digest; `kit-entry seconds=197` and the artefact sizes; the 9,818
+co-change pairs and the 149 out-of-census files; the four `--check` refusals and their messages; the
+spend table; PR #130; and *"since 0.2.0 the kit is a plugin"*. **Nothing was UNVERIFIABLE** — every
+assigned claim was answerable from the two trees.
+
 ## What was NOT exercised
 
 - **the verify ladder.** The unit produced two task files and two findings and changed no code, so
   there was nothing for rungs 1–5 to read. `--commands` was proved runnable in the container during
   the pre-flight (1 pass, 3 ran and reported failures) and was not re-run.
-- **every reviewer agent.** Not a choice — see K1; none was available.
+- **every reviewer agent as a kit-installed agent.** See K1; none was available that way. Unit 2
+  showed the prompts run under a generic agent type, which is the remedy, not a substitute for the
+  finding.
 - **`kit-task.sh` from a candidate line.** The proposal's five lines were validated by `--check` and
   **not run against the subject**; the two tasks filed were filed in the *kit*, about the kit.
 - **the 149 out-of-census files**, the hub files, and the doc-vs-code ratio — all left as questions

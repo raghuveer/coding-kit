@@ -81,6 +81,28 @@ justification for the narrower scope, and widening it later needs its own argume
       assert the **behaviour**: a fixture session with the settings registered produces a
       `scope=subagent` row, and one without produces none.
 
+### Evidence, 2026-09-14 — proposed, not certified, and three of six are NOT met
+
+**The boxes above are deliberately unticked**, and this one should not be closed: half its
+criteria are open. Recorded because "the instrument is fixed" is the shorter and wronger
+summary of today, and it is the one that would have been carried forward.
+
+| AC | state | where to verify |
+|---|---|---|
+| 1 — `.claude/settings.json` registers the two hooks, no `CLAUDE_PLUGIN_ROOT`, guard excluded with the reason | **met, and it predates today** | the file has existed since before this session; `$CLAUDE_PROJECT_DIR`, `$comment` states why `kit-guard.sh` stays out |
+| 2 — proven against a recorded zero, by running one subagent and comparing `scope=subagent` before and after | **NOT met** | main-loop scope was proven this way — nothing from `2026-09-10T03:22:11Z` to `2026-09-14T03:30`, then readings at `03:37:40Z` and `03:40:44Z`. **No subagent was run**, so the half this criterion actually names is unproven |
+| 3 — `--spend` reports live capture, asking `events.ndjson` before the index | **met**, and strengthened | pre-existing; PR #110 added a recency arm and #112 stopped that arm failing open |
+| 4 — does not double-count under `--plugin-dir` | **NOT met** | never exercised. The criterion says *check it, do not assume it*, and it has not been checked |
+| 5 — the churn is accepted deliberately | **met, and now real** | `.project/events.ndjson` was committed twice today carrying this session's rows |
+| 6 — a check that can fail: a fixture session WITH the settings produces a `scope=subagent` row, one WITHOUT produces none | **NOT met** | today's conformance work asserts the recency arm, not settings registration. The existing spend step proves `kit-spend.sh` records subagent rows; nothing proves the registration is what causes it |
+
+**What today actually added is not in these six.** The recorder had been dark since 2026-09-10
+because `kit-spend.sh` resolves its root from the SESSION's directory and exits 0 in a repo that
+has not adopted the kit — sessions rooted at the parent workspace recorded nothing, correctly and
+silently. Fixed by a workspace-level registration; capture resumed mid-session. And `--spend`
+reported `spend capture is live` throughout, because it asked whether anything was EVER recorded.
+Both are worth their own criteria if this task is re-scoped rather than closed.
+
 ## Notes
 
 Filed 2026-08-21 after the operator asked whether hooks were in place during kit development. They

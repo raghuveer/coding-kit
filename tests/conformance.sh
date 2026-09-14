@@ -5332,6 +5332,66 @@ rm -rf "$fa"
 fi
 
 
+if step "a declared rung that does not run is named, and blocks a completion claim"; then
+# The ladder had TWO dispositions -- satisfied, or unavailable with the tier raised -- and a
+# third state happens: a satisfaction IS declared and does not run. `## Completion` permitted it
+# by omission, which is how the 2026-09-09 trial reported COMPLETE over a change that does not
+# compile, with two reviewers passing it at rungs 4 and 5.
+#
+# Three assertions, because the fix has three halves and any one alone is decoration:
+#   1. the ladder NAMES the state and says it blocks completion  (prose, asserted as prose)
+#   2. TRIAL-PROTOCOL section 3 carries the profile-change VOID condition, which was written in
+#      section 2 and never carried here -- the only condition on that list that has actually
+#      fired on a real trial
+#   3. --commands SEPARATES the three outcomes on a real fixture. This is the load-bearing one:
+#      a comment-only declaration (`commands.build: # none`) handed to a shell RUNS and exits 0,
+#      so a naive check reports a rung satisfiable when nothing is declared -- the same
+#      conflation the ladder gap is about, one layer down.
+L="$KIT/skills/verify-ladder/SKILL.md"; T="$KIT/docs/TRIAL-PROTOCOL.md"
+bad=0
+grep -q "unsatisfiable" "$L" || { echo "  the ladder does not name the third disposition"; bad=1; }
+grep -qi "blocks a completion claim\|blocks completion" "$L" ||
+  { echo "  the ladder does not say the third disposition blocks completion"; bad=1; }
+grep -q "profile changed mid-trial" "$T" ||
+  { echo "  section 3 does not carry the profile-change condition"; bad=1; }
+grep -q "preflight.sh --commands" "$T" ||
+  { echo "  pre-flight does not call --commands before the clock starts"; bad=1; }
+check $bad "the ladder names it, and the protocol gates and voids on it"
+
+rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
+( cd "$rd" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  P="$KIT/tooling/kit-preflight.sh"
+  set_cmd() { sed -i.bak "s|^commands.$1:.*|commands.$1:  $2|" .claude/project-profile.md; rm -f .claude/project-profile.md.bak; }
+
+  # All four declared and runnable -> pass, and nothing reported as undeclared.
+  for k in build test lint typecheck; do set_cmd "$k" "true"; done
+  out=$(bash "$P" --commands 2>&1); rc=$?
+  [ $rc -eq 0 ] || { echo "  arm 1: four runnable commands did not pass (rc=$rc)"; exit 1; }
+  printf '%s' "$out" | grep -q "4 declared command(s) run, 0 rung(s)" ||
+    { echo "  arm 1: the counts were not reported"; exit 1; }
+
+  # A COMMENT is not a declaration. Run blindly it exits 0 and reads as satisfiable.
+  set_cmd build "# none -- nothing is compiled here"
+  out=$(bash "$P" --commands 2>&1); rc=$?
+  [ $rc -eq 0 ] || { echo "  arm 2: a comment-only declaration was treated as a failure"; exit 1; }
+  printf '%s' "$out" | grep -q "commands.build      NOTHING DECLARED" ||
+    { echo "  arm 2: a comment ran as a command instead of reading as undeclared"; exit 1; }
+
+  # Declared and does not run -> unsatisfiable -> stop.
+  set_cmd typecheck "exit 7"
+  out=$(bash "$P" --commands 2>&1); rc=$?
+  [ $rc -eq 1 ] || { echo "  arm 3: a declared command that fails did not stop (rc=$rc)"; exit 1; }
+  printf '%s' "$out" | grep -q "unsatisfiable" ||
+    { echo "  arm 3: the failure was not named as unsatisfiable"; exit 1; }
+  exit 0 )
+check $? "runs, nothing-declared and does-not-run are three outcomes, not two"
+rm -rf "$rd"
+fi
+
 if step "a zero escape count says which zero it is"; then
 # The denominator side of this table has refused to read as clean since it was written: an
 # absent `via:kit` population is called out as "not a clean result". The NUMERATOR had no such

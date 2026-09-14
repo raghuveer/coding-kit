@@ -39,6 +39,28 @@ plugin's own Agent-tool reviewers (`T-20260801-nothing-invokes-kit-finding-so-th
       the finding and spend rows join on it. The same step without the id asserts that the
       unjoinable report fires.
 
+### Evidence, 2026-09-14 — proposed, not certified
+
+**The boxes above are deliberately unticked.** A session certifying its own output is the
+signature that carries no information, and ADR 0010 makes the transition the operator's. This
+records what to check, per criterion, so ticking is a read rather than a re-derivation.
+
+Delivered by PR #115, merged as `d710e08`.
+
+| AC | state | where to verify |
+|---|---|---|
+| 1 — both doors carry `--agent-id`, and the skill says where the value comes from in plugin mode | **met** | `tooling/kit-finding.sh:4-8`; `skills/verify-ladder/SKILL.md` reply-in-hand block, which names the Agent-tool subagent id and the `<session>/subagents/agent-<id>.jsonl` file `kit-spend.sh` reads it from |
+| 2 — a finding with no id is reported as unjoinable rather than stored as if the join were possible | **met** | `kit-status.sh` prints two counts. On this repository: `580 of 628 carry no agent id, and 48 carry one that matches no spend row` |
+| 3 — a conformance step records through the documented door with an id and asserts the join; without it, asserts the report fires | **PARTIAL** | the join and both report arms are asserted, but through `kit-finding.sh` directly. **The documented door is `kit-review-record.sh`** (`SKILL.md:61,75`), and the defect being fixed was that *that* door omitted the flag — so the step proves the plumbing and not the path an agent is told to use |
+
+**The finding this work produced, and it is not in the criteria above:** `finding` had no
+`agent_id` column at all. `kit_findings.py` has written the key into the event since it was
+added — 550 of 628 events here carry it — and the indexer had nowhere to store it, so supplying
+the flag would not have helped. The task read this as a documentation gap, which was half of it.
+
+**Still zero joinable after all of it**, for a reason that is a third layer and its own task:
+`T-20260914-finding-run-ids-and-spend-run-ids-are-tw`.
+
 ## Notes
 
 Adjacent: `T-20260808-record-which-mechanism-produced-a-findin` records *which mechanism* produced a

@@ -6,6 +6,7 @@
 # kit-preflight.sh --criticals           no unfixed critical is outstanding in THIS repository
 # kit-preflight.sh --unassessable        the standing blind spot --criticals deliberately excludes
 # kit-preflight.sh --superseded          the OTHER thing it excludes: findings whose subject died
+# kit-preflight.sh --commands            every declared commands.* actually RUNS, before the clock
 #
 # The checks docs/TRIAL-PROTOCOL.md §0 gates on, as commands rather than as prose. A pre-flight
 # box that a human evaluates by reading is a box that gets ticked while tired; two of this
@@ -326,6 +327,56 @@ case "${1:-}" in
     fi
     printf 'kit: spend capture is live -- %s event(s), %s row(s), last reading %s
 '       "$ev" "$rows" "${last:-none}"
+    exit 0 ;;
+
+  --commands)
+    # METHODOLOGY FINDING M5 OF THE 2026-09-09 TRIAL, and the structural half of
+    # T-20260912-a-declared-rung-whose-tooling-fails-has-. That trial discovered
+    # `commands.typecheck` was unsatisfiable AFTER starting, when the only remedy -- adding
+    # protoc to the wrapper -- is a `commands.*` change, which §2 of TRIAL-PROTOCOL.md makes
+    # void the trial. It had no non-voiding move left. Asking before the clock starts is the
+    # only move that exists.
+    #
+    # THREE OUTCOMES, MATCHING THE LADDER'S THREE DISPOSITIONS, and the middle one is the whole
+    # reason this is not a one-liner. In this repository `commands.build` reads
+    # `# none -- shell and markdown, nothing is compiled`: handed to a shell that is a COMMENT,
+    # it runs, it exits 0, and a naive check reports the rung satisfiable when nothing is
+    # declared at all. That is the exact conflation the ladder gap is about, reproduced in the
+    # control meant to catch it.
+    #
+    #   declared and runs      -> satisfiable
+    #   nothing declared       -> unavailable. Correct, and the ladder already handles it:
+    #                             declare it, name the compensating control, raise the tier.
+    #   declared and does not  -> UNSATISFIABLE. Stop. Neither of the other two, and the state
+    #                             that reported COMPLETE over a change that does not compile.
+    . "$(dirname "$0")/kit-lib.sh"
+    ROOT=$(kit_root) || { kit_warn "not a git repository"; exit 2; }
+    kit_active "$ROOT" || { kit_warn "the kit is not adopted here"; exit 2; }
+    PROFILE=$(kit_profile "$ROOT")
+    _bad=0; _ran=0; _none=0
+    for _k in build test lint typecheck; do
+      _cmd=$(kit_cfg "$PROFILE" "commands.$_k" "")
+      case "$_cmd" in
+        ''|'#'*) printf 'kit: commands.%-10s NOTHING DECLARED -- unavailable; raise the tier\n' "$_k"
+                 _none=$((_none+1)); continue ;;
+      esac
+      if ( cd "$ROOT" && eval "$_cmd" ) >/dev/null 2>&1; then
+        printf 'kit: commands.%-10s runs\n' "$_k"; _ran=$((_ran+1))
+      else
+        printf 'kit: commands.%-10s DECLARED AND DOES NOT RUN -- unsatisfiable\n' "$_k" >&2
+        printf '       %s\n' "$_cmd" >&2
+        _bad=$((_bad+1))
+      fi
+    done
+    if [ "$_bad" -gt 0 ]; then
+      kit_warn "STOP -- $_bad declared command(s) do not run here"
+      kit_warn "  A rung whose tooling is declared and fails is neither satisfied nor"
+      kit_warn "  declarable unavailable. Inside a trial there is no non-voiding remedy:"
+      kit_warn "  editing commands.* mid-trial voids it (TRIAL-PROTOCOL.md section 2), so"
+      kit_warn "  this has to be answered now rather than discovered later."
+      exit 1
+    fi
+    printf 'kit: %s declared command(s) run, %s rung(s) have nothing declared\n' "$_ran" "$_none"
     exit 0 ;;
 
   *) usage ;;

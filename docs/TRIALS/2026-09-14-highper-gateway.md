@@ -3,7 +3,7 @@
 
 # Trial: highper-gateway — 2026-09-14
 
-> **PRE-FLIGHT COMPLETE, CLOCK NOT YET STARTED.** Everything below **Baseline** is recorded; the
+> **TRIAL RUN. Clock `16:51:40Z`, boundary `17:51:40Z`, cap `20:51:40Z`.** Everything below **Baseline** is recorded; the
 > sections after it are filled as the trial runs. §0 requires the pre-flight answers to be
 > recorded because they are part of the result, and this trial's pre-flight produced six findings
 > of its own before any work began — they are listed under **Pre-flight findings**.
@@ -12,10 +12,10 @@
 |---|---|
 | Question | **On a brownfield subject that never fully adopted the kit, and whose baseline is red for four independently-named reasons, does the kit produce a change that the verify ladder can actually pass — and where it cannot, does the trial say so rather than record COMPLETE?** |
 | Kit SHA | `e6f47aada6403199339e6446b56702634c2e3824` |
-| Time-box / actual | **1 h**, then a recorded STOP / CONTINUE / RETRY, **cap 4 h** / *pending* |
+| Time-box / actual | **1 h**, then a recorded STOP / CONTINUE / RETRY, **cap 4 h** / **~60 min, one unit** |
 | Subject | `highper-gateway`, Rust, 169 commits, `e588b53` on `master` |
 | Greenfield / brownfield | **brownfield**, history not truncated |
-| Outcome | *pending* |
+| Outcome | **the unit completed and the kit's one real gate held.** `kit-entry.sh --check` refused 4 of 4 mutations, each naming its own cause. Two kit defects found, both in the *documented procedure* rather than in code |
 | Baseline before the kit | see **Baseline** — four checks, four causes. `build pass, tests fail` is not a baseline |
 | Instruments verified live | spend **45 → 46** rows; findings **628 → 629**, and the row joins to its run |
 | Copy isolation verified | `--isolated` exit 0 after 20 outward-reaching permission rules were stripped |
@@ -129,24 +129,164 @@ new trial, new copy, new baseline, both records kept.
 
 ---
 
-*Sections below are filled as the trial runs.*
+## The unit — entry, chosen by the kit's own census
 
-## Cost
+The operator's decision was **C: let the kit choose its own entry point** rather than nominating a
+change. So `kit-entry.sh` ran first and the unit came out of what it found.
 
-*pending*
+    kit-entry seconds=197
+    entry-facts.tsv         86,783 bytes    965 tracked files, 11 columns
+    entry-comment-runs.tsv 855,718 bytes    15,494 runs in 470 files
+    entry-report.md          2,295 bytes
+
+**A pre-flight claim of mine was wrong and is corrected here.** I told the operator that setting
+`git.adopted_at` to the adoption commit meant the kit would see no history, so co-change would be
+dark. Co-change came back **9,818 pairs over 335 of 965 files** from all 174 commits.
+`kit-entry.sh` reads history directly and does not consult `adopted_at`; what `adopted_at` bounds is
+`kit-index.sh`'s trailer range, so what is actually switched off is `touches` edges. The operator's
+decision cost less than I said it would.
+
+### What the census showed, and what it refused to do
+
+`entry-report.md` **proposes nothing**, by design — ADR 0001 makes that refusal the only structural
+control in the entry mechanism, and it held. Four facts drove the unit:
+
+| fact | figure |
+|---|---|
+| documentation against code | **195,858 markdown lines** in 370 files vs **110,814 Rust lines** in 291 |
+| documentation revision | **347 of 370 markdown files have exactly one commit**, against 174 commits |
+| the hub files | `dsl_parser.rs` co-change degree 96, `server.rs` 83, `handler.rs` 73 — **1 author each, none touched since 2026-05-16** |
+| the graph exceeds the tree | 149 files co-change that are **not in the tree** |
+
+Documentation that is 1.8× the code and 94% never-revised, sitting beside a core that four months of
+history has not touched, is a claim-audit target. The unit became: **do the subject's own
+most-alive document's figures reproduce?** `KNOWN_LIMITATIONS.md` is the natural target — 567 lines,
+8 commits, 2 authors, last touched 2026-09-12, co-change degree 51.
 
 ## Findings
 
-*pending*
+### Kit findings — two, both in the documented procedure
+
+Neither is a code defect. Both are places where the procedure reads correctly and cannot be executed.
+
+**K1 — `ENTRY-PROPOSAL.md` step 2 names an agent that adoption never installs.**
+`T-20260914-entry-proposal-step-2-names-a-researcher`, `fail-open`, major.
+Step 2 hands the census to a `researcher` subagent, which **returns** the proposal; ADR 0001 split
+facts from judgement so a reader could tell them apart. The agent ships at `agents/researcher.md`,
+a kit-owned directory; since 0.2.0 the kit is a **plugin** and that is the only route, the
+per-project `sync-agents.ps1` having been retired and left unwired. `grep agents tooling/kit-init.sh`
+returns nothing — **adoption installs no agent anywhere.** This subject excludes `.claude` six ways,
+so no project-level copy is possible either, and the session running the trial offered
+`claude, claude-code-guide, Explore, general-purpose, Plan, statusline-setup` and no `researcher`.
+
+The orchestrator therefore wrote the judgement itself, which collapses the split the ADR exists to
+create, and the only control on that is a sentence at the top of the proposal saying so. **This is
+the portability problem in miniature:** a step that resolves only inside one harness's plugin loader
+is exactly what does not port to another coding agent.
+
+**K2 — the entry procedure writes into the tracked tree, which voids the trial it serves.**
+`T-20260914-the-entry-procedure-writes-into-the-trac`, `correctness`, major.
+Step 3 writes `<paths.design_input>/YYYY-MM-DD-entry-questions.md`, **committed**. §3 makes a dirty
+subject tree a VOID condition. On this subject `docs/design-input/` neither exists nor is ignored, so
+the step would put `?? docs/design-input/` into `git status --short`. The step was **not taken**; the
+questions were left in the ignored candidates file, which is not what the procedure says.
+
+**The value is that this is the third instance of one gap.** The pre-flight found it twice already —
+the baseline rewrites `Cargo.lock`, and `--commands` does too — and both were filed as properties of
+those steps. They are not: **any kit step that writes into the tracked tree collides with §3**, and
+nothing says which steps may. A clean-tree assertion before the clock, which
+`T-20260914-the-copy-procedure-loses-branches-trusts` AC3 asks for, does nothing for a step taken
+mid-trial.
+
+Both recorded through `kit-finding.sh --agent-id`, and both **join their runs**: the index reports
+51 attributed against 580 unattributed, where before the instrument work every row was unattributed.
+
+### The gate that held — `--check`, mutation-proved
+
+`kit-entry.sh --check` passed the real proposal first try, which by this project's own standard says
+nothing. Four mutations, each refused, each naming its own cause:
+
+| mutation | result |
+|---|---|
+| a candidate line carrying `'; touch /tmp/marker; #` | `candidate line is not safe to paste` |
+| `--state wontfix` — outside the ADR 0008 vocabulary | refused, exit 1 |
+| a checkbox put on a question | `a question carries a checkbox -- a question is answered, not ticked` |
+| `## Could not determine` reduced to its heading | `a heading is not a disclosure` |
+
+**4 of 4.** This is the first control in this trial that was shown to fail when broken, and the
+whitelist grammar is the reason — the two earlier attempts that inspected an extracted title both
+failed open.
+
+### Subject findings — proposals, never applied (§7)
+
+Both are figures in `KNOWN_LIMITATIONS.md` that the tree at `e588b53` does not reproduce. **Nothing
+in the subject was edited.**
+
+**S1 — `Linux support excellent` is recorded beside a Linux build that does not type-check.**
+`KNOWN_LIMITATIONS.md:371` marks Linux with a tick while attributing the `cargo check` failure to
+Windows and `io-uring`. This trial's own baseline ran `cargo check --workspace --all-features` **in a
+Linux container** and got **91 errors, all under `highper-gateway/`** — 48 `E0433`, 36 `E0425`,
+2 `E0422`, 2 `E0405`, 2 missing `async_trait` — and the subject's own `Check` and `Clippy` CI jobs
+fail on Linux for the same surface.
+
+**Stated precisely, because the over-claim is available and wrong:** the default build passes
+(`cargo build --release -p highper-gateway`, exit 0). The claim is not false — it is **unqualified
+where the measurement is qualified**, and a reader cannot tell which feature set it covers. Filed as
+question 1, not as a defect, per the rule that an undocumented scope is a question.
+
+**S2 — a count with no method.** `KNOWN_LIMITATIONS.md:413` records *"114 TODO/FIXME comments"* in
+*"36 files across codebase"*. Measured at `e588b53`:
+
+    git grep -E "(TODO|FIXME)" -- '*.rs'     84 hits in 26 files
+    git grep -E "(TODO|FIXME)"              343 hits in 86 files
+
+Neither reproduces 114/36, and **the document does not say what it counted**, so no reader can tell
+whether the figure drifted or was measured differently. That is the defect — not the number.
 
 ## Which brownfield degradations bit
 
-*pending*
+| degradation | bit? |
+|---|---|
+| **adoption is incomplete** — `.claude` and `.project` excluded, `kit-init.sh` exits 1 | **yes, and it was the proximate cause of K1.** No project-level agent install is possible |
+| **`touches` edges dark** (`adopted_at` = adoption commit) | **no** — the unit was documentation and never needed blast radius. Co-change carried it instead, and co-change was **not** affected |
+| **red baseline** — 91 type errors, 2 test failures, 6 advisories | **yes, productively.** It is the evidence for S1 |
+| **history deeper than the tree** — 149 files | not exercised; reported as a count, not a list, so the files cannot be named from the artefacts |
+| **`merges 2`** — per-file `commits`/`authors` are lower bounds | recorded, not relied on |
 
 ## Three kinds of finding
 
-*pending*
+- **kit defects:** K1, K2 — both in `docs/`, neither in code. A trial that only looked for code
+  defects would have recorded this hour as finding nothing.
+- **subject findings:** S1, S2 — proposals in this record, and **nowhere else**. No file in
+  `D:\trials\highper-gateway-e588b53` outside the ignored `.project` was modified.
+- **protocol findings:** the six from the pre-flight, plus K2, which is really a protocol finding
+  wearing a kit-defect shape — the collision is between `ENTRY-PROPOSAL.md` and `TRIAL-PROTOCOL.md`
+  §3, and neither document is wrong on its own.
+
+## Cost
+
+**Not measurable at this resolution, and that is the finding.** The `spend` table is keyed on
+`transcript`, so a session is **one row updated in place**. The trial hour sits inside a row
+covering 1,552 turns of a full day:
+
+| scope | rows | turns | kBTE |
+|---|---|---|---|
+| main | 1 | 1,552 | 93,705 |
+| subagent | 3 | 88 | 1,249 |
+
+There is no way to attribute a time-boxed unit inside a session to its share of that row, so **no
+per-trial cost is quoted here rather than quoting one the instrument cannot support.** The subagent
+rows are attributable and the main row is not, which is the asymmetry `--agent-id` fixed for
+findings and has not fixed for spend.
 
 ## What was NOT exercised
 
-*pending*
+- **the verify ladder.** The unit produced two task files and two findings and changed no code, so
+  there was nothing for rungs 1–5 to read. `--commands` was proved runnable in the container during
+  the pre-flight (1 pass, 3 ran and reported failures) and was not re-run.
+- **every reviewer agent.** Not a choice — see K1; none was available.
+- **`kit-task.sh` from a candidate line.** The proposal's five lines were validated by `--check` and
+  **not run against the subject**; the two tasks filed were filed in the *kit*, about the kit.
+- **the 149 out-of-census files**, the hub files, and the doc-vs-code ratio — all left as questions
+  1, 3, 4 and 5 in the proposal, unanswered by design. They are the operator's to answer.
+- **anything requiring a write to the subject's tracked tree**, deliberately — see K2.

@@ -65,7 +65,56 @@ case "${1:-}" in
       fail=1
     fi
     [ "$fail" = 0 ] || exit 1
-    printf 'kit: %s is isolated -- no remote, no shared object store\n' "$COPY"
+    # A THIRD PATH BACK, AND THE COPY CARRIES IT IN A TRACKED FILE. The two checks above ask
+    # about git: a remote, and an alternates entry. Neither sees the copy's own Claude Code
+    # permissions, and a clone brings them along when the subject tracks them.
+    #
+    # Reproduced 2026-09-11 on the copy prepared for the highper-gateway trial. Its
+    # `.claude/settings.local.json` pre-approved 24 commands including `Bash(git *)`, and SEVEN
+    # entries naming a second checkout of the same subject OUTSIDE the copy, with uncommitted
+    # changes. User-level settings pre-approve nothing, so that file would have been the trial
+    # session's only pre-approval -- and `--isolated` printed "isolated" and exited 0.
+    #
+    # `git -C <the other checkout> reset --hard` would then run with NO PROMPT, against the
+    # repository the copy exists to protect. TRIAL-PROTOCOL.md section 4 rests on "the removed
+    # remote is what makes the procedure hold when the guard cannot"; a pre-approved `git *`
+    # routes around the removed remote entirely, because it never needs the copy's remote.
+    #
+    # FAILS, NEVER WARNS. A warning printed beside the word "isolated" reads as a pass, and this
+    # check's whole job is to stand between an agent and the subject.
+    #
+    # Pre-approving git in its OWN repository is the subject's business and is not judged here.
+    # Printing "isolated" about a copy is the kit's claim, and the claim is what must be true.
+    perm=0
+    for _sf in "$COPY/.claude/settings.json" "$COPY/.claude/settings.local.json"; do
+      [ -f "$_sf" ] || continue
+      # Unscoped reach: a rule whose argument is a bare wildcard can name any path, so the copy
+      # boundary means nothing to it. Matched on the RULE SHAPE rather than on a list of command
+      # names -- `Bash(*)` reaches further than `Bash(git *)` and a name list would miss it.
+      _wide=$(grep -oE '"(Bash|Read|Write|Edit)\([^")]*\*\)"' "$_sf" 2>/dev/null | sort -u)
+      # And any rule naming an absolute path that is not inside the copy. Windows and POSIX
+      # spellings both, because the copy may be prepared on either.
+      _abs=$(grep -oE '"[^"]*(/[a-z]/|[A-Za-z]:\\|/home/|/Users/|/mnt/)[^"]*"' "$_sf" 2>/dev/null |
+             grep -vF "$COPY" | sort -u)
+      if [ -n "$_wide" ] || [ -n "$_abs" ]; then
+        [ "$perm" = 0 ] && printf 'kit: STOP -- the copy carries permissions that reach outside it:\n' >&2
+        perm=1
+        printf '  %s\n' "${_sf#$COPY/}" >&2
+        [ -z "$_wide" ] || printf '%s\n' "$_wide" | sed 's/^/    unscoped: /' >&2
+        [ -z "$_abs" ]  || printf '%s\n' "$_abs"  | sed 's/^/    outside:  /' >&2
+      fi
+    done
+    if [ "$perm" != 0 ]; then
+      printf '  A pre-approved rule is not a sandbox and not a remote: it lets a command run\n' >&2
+      printf '  with no prompt, so the removed remote protects nothing against it. Remove the\n' >&2
+      printf '  rules, or scope them inside the copy, before the trial starts.\n' >&2
+      exit 1
+    fi
+    # The line names what was CHECKED, so "isolated" is never printed about a property this
+    # check did not test. It still cannot see a human approving a prompt, and says so.
+    printf 'kit: %s is isolated -- no remote, no shared object store, no permission rule\n' "$COPY"
+    printf '  reaching outside it. A prompted command can still be approved by hand; that is\n'
+    printf '  not something a check can see.\n'
     exit 0 ;;
 
   --unassessable)

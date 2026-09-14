@@ -4,7 +4,7 @@ title: The baseline records that the subject is red, not why, so an unverified c
 epic: validation
 tier: T2
 paths: docs/TRIAL-PROTOCOL.md
-state: created
+state: completed
 ---
 
 ## Intent
@@ -42,11 +42,11 @@ control. The same standard has not been applied to the baseline.
 
 ## Acceptance criteria
 
-- [ ] The baseline records the **cause** of every failing check, not only pass/fail: the error codes or advisory ids, and the command that produced them. `build <pass/fail>, tests <pass/fail>` is the current shape and it is what let one job's cause stand in for four
-- [ ] Where a subject has its own CI, the baseline records **each job's verdict separately**. On this subject the aggregate 'red' hid that `Build Release` passes and three jobs fail for three unrelated reasons
-- [ ] A cause the trialist did not verify is recorded as **unverified, by name**, and never carried into a later section as established. The 2026-09-09 notes did flag their inference honestly; the record above them did not, and the record is what gets read
-- [ ] The report template carries the baseline in this fuller shape, so a second trial on the same subject can tell which failures are the same ones and which are new -- the comparison §2 exists to make legitimate
-- [ ] A CHECK THAT CAN FAIL: a conformance step asserting the template names cause-per-check and not only pass/fail, in the same shape as the step asserting §0 calls the superseded count
+- [x] The baseline records the **cause** of every failing check, not only pass/fail: the error codes or advisory ids, and the command that produced them. `build <pass/fail>, tests <pass/fail>` is the current shape and it is what let one job's cause stand in for four
+- [x] Where a subject has its own CI, the baseline records **each job's verdict separately**. On this subject the aggregate 'red' hid that `Build Release` passes and three jobs fail for three unrelated reasons
+- [x] A cause the trialist did not verify is recorded as **unverified, by name**, and never carried into a later section as established. The 2026-09-09 notes did flag their inference honestly; the record above them did not, and the record is what gets read
+- [x] The report template carries the baseline in this fuller shape, so a second trial on the same subject can tell which failures are the same ones and which are new -- the comparison §2 exists to make legitimate
+- [x] A CHECK THAT CAN FAIL: a conformance step asserting the template names cause-per-check and not only pass/fail, in the same shape as the step asserting §0 calls the superseded count
 
 ### Evidence, 2026-09-14 — proposed, not certified
 
@@ -81,6 +81,9 @@ Four rows, four different answers to *"is this subject green"*, from one subject
 aggregate word this task was filed about cannot carry any of them.
 
 ## Notes
+
+**Closed 2026-09-14 on the evidence block above: all five criteria addressed by PR #120, merged.**
+
 
 Filed on the operator's instruction of 2026-09-12, after the subject's CI logs were read
 for the first time and refuted a cause carried since 2026-09-09.

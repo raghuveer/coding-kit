@@ -182,6 +182,23 @@ declared_industries() {
 
 PY="$(dirname "$0")/kit_findings.py"
 
+# An agent id that resolves to nothing was accepted here without a word until 2026-09-14, when
+# this repository was measured at 54 of 54 attributed findings matching no spend row -- the join
+# had never worked once. `kit-status.sh` reported the count correctly the whole time and nobody
+# read it, which is why this fires at RECORD time, next to the mistake, and names WHICH kind of
+# miss it is. A session id was what the kit's own trial passed for all five of its findings.
+#
+# WARN, never refuse, and leave this script's exit status alone. A reviewer's spend row is
+# written by a Stop hook and can legitimately arrive AFTER the finding, so refusing would trade
+# a silent non-join for a lost finding -- the worse of the two.
+#
+# Placed after PY is set, and once per invocation rather than once per finding: a `--json` batch
+# shares one id, and a warning repeated forty times is one nobody finishes reading. The first
+# draft of this sat beside EV at :112, where PY is still empty -- `bash -n` passes on that.
+if [ -n "$agent_id" ]; then
+  python3 "$PY" --check-agent-id "$EV" "$agent_id" || true
+fi
+
 # The structured path: a reviewer returns DATA and this records it. No block is scraped out of
 # prose and nothing retypes fields by hand -- both were parsing, and every defect in the old
 # harvester came from parsing (docs/LESSONS.md S5).

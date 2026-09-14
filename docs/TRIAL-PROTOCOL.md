@@ -152,6 +152,17 @@ Stop unless every box is ticked. Record the answers; they are part of the result
           bash tooling/kit-preflight.sh --isolated <copy>
 
       Zero, or stop. §4 has the reasoning and the same check.
+
+      **It now checks a third path, and the third one is not git.** A clone brings the subject's
+      `.claude/settings.*` with it when the subject tracks them. On 2026-09-11 the copy prepared
+      for the highper-gateway trial carried `Bash(git *)` and seven entries naming a second
+      checkout of the same subject outside the copy — and `--isolated` printed *"isolated"* and
+      exited 0. A pre-approved `git *` routes around the removed remote entirely, because it
+      never needs the copy's remote.
+
+      **What it still cannot see, stated so nobody reads the pass as more than it is:** a
+      permission rule is not a sandbox. A command that is *prompted* can still be approved by a
+      human mid-trial, and no check can prevent that — §4's guard discussion is the other half.
 - [ ] **Baseline recorded before the kit touches anything**, and recorded with **causes**: one
       row per check — command, exit, seconds, and for every failure the error codes or advisory
       ids that produced it. A subject whose tests already fail is a valid trial subject, but only

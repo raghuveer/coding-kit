@@ -5515,6 +5515,55 @@ check $? "unscoped fails, outside-path fails, scoped passes, and the pass line s
 rm -rf "$iso"
 fi
 
+if step "a spend figure carries its as-of time, and says when the index is behind"; then
+# On the 2026-09-09 trial the final kit-status.sh at 14:09Z reported the main loop at 6,902.9
+# kBTE from a row written at 13:57:34Z, while the turn producing the report ended at 14:10:54Z
+# at 10,259.6. The page understated the main loop by a THIRD and nothing on it said so. The
+# figure was not wrong; it was OLD, and without an as-of those are the same page.
+#
+# TWO DIFFERENT FAULTS, and the second is the one that needs a notice rather than a timestamp:
+#   as-of        how old the newest row IS. Always printed, per scope.
+#   index behind a NEWER row is already in events.ndjson and nobody derived it. That figure is
+#                not old, it is wrong, and the remedy is a rebuild rather than a caveat.
+#
+# The third arm is what stops the notice being decoration: after kit-index.sh it must GO.
+sa="$WORK.spendasof"; rm -rf "$sa"; mkdir -p "$sa/src"
+( cd "$sa" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-a\ntitle: a\ntier: T2\n---\nb\n' > .project/tasks/T-a.md
+  git add -A && git commit -q --no-verify -m seed
+  EV=.project/events.ndjson
+  row() { printf '{"task":"T-a","kind":"spend","at":"%s","transcript":"t1","scope":"main","agent":"","agent_id":"","session":"s","model":"m","turns":1,"tok_in":10,"tok_out":20,"cache_read":0,"cache_write":0,"context":100}\n' "$1" >> "$EV"; }
+
+  row 2026-01-01T00:00:00Z
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'as of 2026-01-01T00:00:00Z' STATUS.generated.md ||
+    { echo "  arm 1: the spend figure carries no as-of time"; exit 1; }
+  grep -q 'index is BEHIND' STATUS.generated.md &&
+    { echo "  arm 1: the behind-notice fired on a current index"; exit 1; }
+
+  # A later event, appended AFTER indexing: exactly the state a reading inside a session hits.
+  row 2026-06-01T00:00:00Z
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'index is BEHIND' STATUS.generated.md ||
+    { echo "  arm 2: a newer event than the index did not raise the behind-notice"; exit 1; }
+  grep -q '2026-06-01T00:00:00Z' STATUS.generated.md ||
+    { echo "  arm 2: the notice does not name the newer event's time"; exit 1; }
+
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'index is BEHIND' STATUS.generated.md &&
+    { echo "  arm 3: the notice survived the rebuild that fixed its cause"; exit 1; }
+  grep -q 'as of 2026-06-01T00:00:00Z' STATUS.generated.md ||
+    { echo "  arm 3: the as-of did not move to the newer row after rebuilding"; exit 1; }
+  exit 0 )
+check $? "as-of per scope, a behind-notice when the log is newer, and both correct after a rebuild"
+rm -rf "$sa"
+fi
+
 if step "a brownfield adopter is told to decide git.adopted_at, and a greenfield one is not"; then
 # INSTALL.md makes choosing git.adopted_at the FIRST step of a brownfield adoption, because the
 # key decides what the kit believes about every commit predating it. kit-init.sh's printed next

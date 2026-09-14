@@ -167,6 +167,7 @@ T-20260909-handoff-section-11-asserts-invariants-by	T-20260826-two-artefacts-car
 T-20260909-handoff-section-11-asserts-invariants-by	T-20260909-209-of-621-findings-carry-no-language-so	split-from
 T-20260911-a-finding-recorded-by-hand-carries-no-ag	T-20260801-nothing-invokes-kit-finding-so-the-findi	related
 T-20260911-a-finding-recorded-by-hand-carries-no-ag	T-20260808-record-which-mechanism-produced-a-findin	related
+T-20260911-a-finding-recorded-by-hand-carries-no-ag	T-20260914-finding-run-ids-and-spend-run-ids-are-tw	split-from
 T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260809-a-claim-audit-before-a-task-closes-names	related
 T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260815-four-of-five-review-fixes-have-no-assert	related
 T-20260912-a-fix-commit-can-weaken-an-existing-test	T-20260821-the-fixed-commit-walk-spawns-one-git-per	related
@@ -211,3 +212,4 @@ T-20260914-a-goal-state-is-a-label-the-planner-neve	T-20260819-goals-are-the-mil
 T-20260914-a-goal-state-is-a-label-the-planner-neve	T-20260826-two-artefacts-carrying-one-fact-with-not	related
 T-20260914-finding-run-ids-and-spend-run-ids-are-tw	T-20260911-a-finding-recorded-by-hand-carries-no-ag	split-from
 T-20260914-nothing-checks-that-a-prose-task-referen	T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	related
+T-20260914-the-escape-rate-numerator-has-no-writer-	T-20260731-validate-the-priority-weights-against-es	sequencing

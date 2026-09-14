@@ -5,7 +5,7 @@ epic: planning
 tier: T2
 lang: python
 paths: tooling/kit_refs.py, tooling/kit-plan.sh, tests/conformance.sh
-state: created
+state: completed
 ---
 ## Intent
 
@@ -50,6 +50,9 @@ Two things worth carrying that the criteria do not:
   Reviewing the map's contents is `T-20260818-nothing-reviews-the-plan-so-a-wrong-orde`.
 
 ## Notes
+
+**Closed 2026-09-14: six of six, ticked by the change that implemented them, PR #108, merged.**
+
 
 Filed 2026-09-14 at the operator's direction, with the implementation in the same change. The 15
 references it found on first run are recorded in `docs/DEPENDENCIES.md`; all were judged from the

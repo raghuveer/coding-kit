@@ -17,7 +17,7 @@
 | Greenfield / brownfield | **brownfield**, history not truncated |
 | Outcome | **two units completed; the gate held and the record did not.** `kit-entry.sh --check` refused 4 of 4 mutations, each naming its own cause. Two kit defects found, both in the *documented procedure* rather than in code |
 | Baseline before the kit | see **Baseline** — four checks, four causes. `build pass, tests fail` is not a baseline |
-| Instruments verified live | spend **45 → 46** rows; findings **628 → 629** at pre-flight, **631** after this trial's two, and the rows join to their runs |
+| Instruments verified live | spend **45 → 46** rows; findings **628 → 629** at pre-flight, **634** after this trial's five. **The rows do NOT join to their runs** — see *The join that does not join* |
 | Copy isolation verified | `--isolated` exit 0 after the tracked `.claude/settings.local.json` was removed. It carried **24** `allow` rules — the pre-flight's *"20 outward-reaching"* is unsupported and the whole file went |
 
 ## Runtime
@@ -204,8 +204,8 @@ nothing says which steps may. A clean-tree assertion before the clock, which
 `T-20260914-the-copy-procedure-loses-branches-trusts` AC3 asks for, does nothing for a step taken
 mid-trial.
 
-Both recorded through `kit-finding.sh --agent-id`, and both **join their runs**: the index reports
-51 attributed against 580 unattributed, where before the instrument work every row was unattributed.
+Both recorded through `kit-finding.sh --agent-id`. **This section first claimed they join their
+runs. They do not** — see *The join that does not join* below.
 
 ### The gate that held — `--check`, mutation-proved
 
@@ -356,6 +356,50 @@ pre-flight findings; the runtime digest; `kit-entry seconds=197` and the artefac
 co-change pairs and the 149 out-of-census files; the four `--check` refusals and their messages; the
 spend table; PR #130; and *"since 0.2.0 the kit is a plugin"*. **Nothing was UNVERIFIABLE** — every
 assigned claim was answerable from the two trees.
+
+## The join that does not join — found after the boundary, correcting this record
+
+**Every claim in this record that findings "join their runs" was false, and the kit said so the
+whole time.** Recorded here rather than quietly edited, because the way it was found is the point.
+
+`kit-status.sh` prints, and has printed throughout:
+
+    Findings that cannot be joined to a reviewer run: 580 of 634 carry no agent id,
+    and 54 carry one that matches no spend row.
+
+**54 of 54 attributed findings match no spend row. Not one has ever joined.** Measured:
+
+| what | value |
+|---|---|
+| `spend.agent_id` holds | the harness **subagent** id — `a5e877a2010bfdbef` |
+| `spend.session` holds | the **session** id — `aa8f5759-c366-4687-b752-400b012601f0` |
+| what I passed to `--agent-id` | the **session** id, for both unit-1 findings; the session id plus a suffix for the three audit findings |
+| the auditor's real subagent id | `a5e877a2010bfdbef` — **present in `spend` the entire time**, returned to me when the agent was launched, and not used |
+
+The other 49 rows are worse and older: `blind-second`, `design2`, `entry-final`, `entry-impl`,
+`preflight-probe` — hand-written labels that were never harness ids at all.
+
+### Whose defect this is
+
+**Mine, mostly, and the kit behaved correctly.**
+`T-20260911-a-finding-recorded-by-hand-carries-no-ag` AC2 asks that an unjoinable finding be
+*"reported as unjoinable rather than stored as if the join were possible"*, and that is exactly
+what happened: the count was on the status page before, during and after this trial. The control
+fired. **I did not read it, and asserted the opposite twice.**
+
+The residual kit gap is narrow and real: `kit-finding.sh` takes `--agent-id` raw
+(`agent_id=${2:-}`, `:75`) with **no validation at record time**, so a session id, a typo or an
+invented label is accepted silently and surfaces only at the next `kit-status.sh`. The task's AC2
+says *"by `kit-status.sh` **or** at record time"*, so this is not a missed criterion — it is the
+weaker of the two arms the criterion allowed, and five more unjoinable rows were written before
+anyone looked.
+
+### Why it matters beyond tidiness
+
+This is the instrument the operator asked for by name. With the join at 0/54, *"what did this
+reviewer cost and what did it find"* is still unanswerable for **every** run in the repository —
+which was the original complaint, and it was not fixed by adding the column, recording values, or
+reporting the gap. **A column that is populated is not a column that joins.**
 
 ## The 1-hour boundary — decision: STOP
 

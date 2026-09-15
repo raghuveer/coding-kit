@@ -59,7 +59,7 @@ Filed 2026-09-15 on the operator's instruction, alongside
 `T-20260915-divergence-is-computable-for-no-class-of` and
 `T-20260915-no-budget-cap-binds-so-an-unattended-run`.
 
-**Explicitly ordered behind the findings-record work.** `T-20260914-a-finding-that-was-never-a-defect-has`
+**Explicitly ordered behind the findings-record work.** `T-20260914-a-finding-that-was-never-a-defect-has-no`
 (a disposition cannot be aimed at a row) and
 `T-20260914-finding-run-ids-and-spend-run-ids-are-tw` (0 of 54 attributed findings join) are the
 instruments this decision would be made against. Deciding delegation first would be deciding what a

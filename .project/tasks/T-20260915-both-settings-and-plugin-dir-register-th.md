@@ -44,7 +44,7 @@ passes `--plugin-dir`. So nothing recorded here is contaminated.
 
 **Where it will bite is trials.** Every trial runs the kit through `--plugin-dir`. Trial 1 and
 trial 2 were unaffected only because adoption installs no settings file
-(`T-20260914-kit-agents-are-portable-prompts-behin`), so the subject had nothing to register a
+(`T-20260914-kit-agents-are-portable-prompts-behind-a`), so the subject had nothing to register a
 second copy. That is luck, not design: the first adopter who registers the hook locally *and* loads
 the plugin doubles their own log, and the figure that misleads them is the event count a preflight
 prints, not a cost.

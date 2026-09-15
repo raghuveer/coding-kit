@@ -25,12 +25,30 @@ writer never looks.
 
 ## Acceptance criteria
 
-- [ ] The trailer is in both working agreements, in the half it belongs to — the agent half says
+- [x] The trailer is in both working agreements, in the half it belongs to — the agent half says
       propose and stop, the operator half says who writes it.
-- [ ] The report distinguishes a zero with a writer from a zero without one. A numerator of zero
+- [x] The report distinguishes a zero with a writer from a zero without one. A numerator of zero
       and no recorder is not a measurement and must not print as one.
-- [ ] A check that can fail, and the arm that matters is the second: the caveat must DISAPPEAR
+- [x] A check that can fail, and the arm that matters is the second: the caveat must DISAPPEAR
       when a real escape is recorded, or it is decoration that survives its own cause.
+
+
+### Evidence, 2026-09-15 — all three verified in the tree, ticked
+
+Re-checked rather than assumed, each against the file that would have to carry it:
+
+- **AC1** — `Fixes-Escape-Of` appears twice in `.claude/CLAUDE.md` (the agent half at `:52` says
+  propose and stop; the operator half says who writes it) and twice in `templates/CLAUDE.kit.md`,
+  so an adopting project inherits both halves.
+- **AC2** — `STATUS.generated.md` carries *"No escape has ever been recorded here, so every
+  numerator above is zero by construction"*. A zero with no writer does not print as a measurement.
+- **AC3** — `tests/conformance.sh`, step *"a zero escape count says which zero it is"*, two arms,
+  and the second is the one that matters: the caveat must DISAPPEAR when a real escape is
+  recorded, so it cannot survive its own cause.
+
+**Not claimed: that escape rate is measurable.** It is not, and the numerator is still 0 across
+324 commits. What this task asked for is that the next escape be recordable and the current zero
+honest, and both hold.
 
 ## Notes
 

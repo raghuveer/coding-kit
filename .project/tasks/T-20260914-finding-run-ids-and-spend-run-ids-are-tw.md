@@ -29,14 +29,14 @@ returns nothing reads exactly like a join over data nobody recorded.
 
 ## Acceptance criteria
 
-- [ ] It is decided and written down which space `agent_id` holds, and the other one either gets
+- [x] It is decided and written down which space `agent_id` holds, and the other one either gets
       its own column or is refused at the writer. A column that accepts both is the state this
       task exists to end.
 - [ ] The 48 existing rows are dispositioned rather than left to look like failures — they were
       recorded correctly against the convention of their day.
-- [ ] `kit-status.sh` keeps reporting the two faults apart. "No id" and "an id that matches
+- [x] `kit-status.sh` keeps reporting the two faults apart. "No id" and "an id that matches
       nothing" have different remedies, and collapsing them would hide this defect class again.
-- [ ] A check that can fail: a finding recorded with the harness id joins; one recorded with a
+- [x] A check that can fail: a finding recorded with the harness id joins; one recorded with a
       label is reported, not silently dropped.
 
 ### Decision, 2026-09-14 — operator: `agent_id` holds the HARNESS id
@@ -56,6 +56,24 @@ name are gone, so no rewrite could recover the ids they would need.
 **`kit-status.sh` keeps reporting the two faults apart** — no id at all, versus an id matching no
 spend row. Collapsing them would hide exactly this defect class the next time it appears, and the
 second count is what made this one visible.
+
+
+### Evidence, 2026-09-15 — three of four verified and ticked; AC2 is the operator's
+
+- **AC1** — the decision is recorded in this file and is now in the tool: `kit-finding.sh:5`
+  states `--agent-id` is the reviewer RUN, distinguishes it from `--agent` (the role), and names
+  `<session>/subagents/agent-<id>.jsonl` as where the value comes from. PR #132 made a
+  non-resolving id say so at record time.
+- **AC3** — `STATUS.generated.md` reports the two faults apart: *"580 of 635 carry no agent id,
+  and 55 carry one that matches no spend row"*. Collapsing them would hide this defect class.
+- **AC4** — `tests/conformance.sh`, step *"a finding joins the reviewer run that produced it, or
+  is reported as unjoinable"*.
+
+**AC2 is NOT met and is not the agent's to meet.** Dispositioning the 55 legacy rows means
+marking them, and every mark that retires a finding is operator-reserved — `.claude/CLAUDE.md`
+is explicit. `kit-vindicate.sh --finding ID --false --note TEXT` now exists to make it possible
+at all (`T-20260914-a-finding-that-was-never-a-defect-has-no`); before it, the rows could not be
+aimed at. The marks themselves are proposed, not run.
 
 ## Notes
 

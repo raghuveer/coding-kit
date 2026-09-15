@@ -97,6 +97,18 @@
   deleting the evidence must not be the cheapest way out of the gate. Like `--unassessable`, it
   leaves the criticals gate, stays in the record permanently, and `kit-status.sh` counts it
   separately rather than folding it into zero. **Yours, not the agent's**, for the same reason.
+- A finding that was **never a defect** — a probe, a reviewer's false positive — is marked
+  `kit-vindicate.sh --finding ID --false --note TEXT`. A fifth claim, and the note is REQUIRED:
+  this mark retires one named finding from the criticals gate on its own, with no
+  sole-of-its-class test standing behind it, so it must say why. Do not reach for `--fixed`
+  (nothing was addressed), `--unassessable` (these are perfectly legible) or `--superseded`
+  (nothing was withdrawn).
+
+  The older `--task ID --class CLASS` form is **kept and is not a synonym**: it refutes every
+  finding sharing that pair, which is right when a reviewer's whole class on a task was noise
+  and wrong for a single row. 604 of 635 findings here share a pair with at least one other, so
+  the class form is the one that needs care. `kit-status.sh` counts the two apart and never
+  folds either into zero. **Yours, not the agent's**, for the same reason as `--fixed`.
 - You run `kit-resolve.sh --fixed`, after deciding the fix is real. `--commit` must resolve, and
   a mark whose commit later leaves the history is reported on rebuild. A REVERT is not detected.
 - You put `Via:` on the trailer, after deciding it.

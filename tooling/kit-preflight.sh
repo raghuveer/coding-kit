@@ -236,12 +236,17 @@ case "${1:-}" in
     # in kit-status.sh, which is two copies of a rule that has already been wrong twice -- once
     # filtering by task state, once excluding refutations too eagerly. The document calls this.
     #
-    # A refuted critical is excluded ONLY IF the refutation is unambiguous. `kit-vindicate.sh`
-    # keys on (task, class) and marks every finding matching both, so on a task with two
-    # `fail-open` findings a single `--false` about the harmless one also refutes the critical
-    # -- and the critical would leave the gate having never been judged. Fail closed: a
-    # class-scoped refutation retires a finding only when it is the sole finding of that class
-    # on that task.
+    # A refuted critical is excluded ONLY IF the refutation is unambiguous, and there are two
+    # ways to be. `kit-vindicate.sh --class` marks every finding matching (task, class), so on a
+    # task with two `fail-open` findings a single `--false` about the harmless one also refutes
+    # the critical -- and the critical would leave the gate having never been judged. Fail
+    # closed: a class-scoped refutation retires a finding only when it is the sole finding of
+    # that class on that task.
+    #
+    # `--finding` names one row and is unambiguous by construction, so it is honoured without
+    # that test. Applying the test to it would refuse the precise mark while accepting the
+    # imprecise one. A scope missing from the row is read as 'class', because every vindication
+    # written before the column existed was one.
     # A finding the operator has explicitly marked unassessable leaves the gate, and ONLY one
     # marked individually does. The exclusion is deliberately not `summary IS NULL` -- that
     # would exempt every FUTURE critical whose summary is missing, turning a bounded historical
@@ -261,10 +266,12 @@ case "${1:-}" in
        WHERE f.severity='critical' AND f.fixed_at IS NULL
          AND f.unassessable_at IS NULL
          AND f.superseded_at IS NULL
-         AND NOT (COALESCE(f.vindicated,1) = 0 AND 1 = (
+         AND NOT (COALESCE(f.vindicated,1) = 0 AND (
+               COALESCE(f.vindicated_scope,'class') = 'finding'
+               OR 1 = (
                SELECT COUNT(*) FROM finding g
                 WHERE COALESCE(g.task_id,'') = COALESCE(f.task_id,'')
-                  AND COALESCE(g.class,'')   = COALESCE(f.class,'')));" 2>&1)
+                  AND COALESCE(g.class,'')   = COALESCE(f.class,''))));" 2>&1)
     case "$n" in
       ''|*[!0-9]*)
         kit_warn "the criticals query FAILED -- this is not a report of zero"

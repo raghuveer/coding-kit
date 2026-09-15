@@ -156,6 +156,17 @@ CREATE TABLE finding (
   severity   TEXT,
   at         TEXT,
   vindicated INTEGER,               -- NULL unknown | 1 real | 0 false positive
+  vindicated_scope TEXT,            -- WHICH MARK SET `vindicated`: 'finding' | 'class' | NULL.
+                                    -- Not decoration. `kit-vindicate.sh --class` updates every
+                                    -- finding matching (task, class), so on a task carrying two
+                                    -- `fail-open` findings one `--false` about the harmless one
+                                    -- also refutes the critical. The criticals gate defends
+                                    -- against that by excluding a refutation only when it is the
+                                    -- sole finding of its class on its task -- a guard that is
+                                    -- correct for a class mark and WRONG for a row mark, which is
+                                    -- unambiguous by construction. Without this column the two
+                                    -- are indistinguishable once written, so the guard would keep
+                                    -- refusing a refutation that named one row exactly.
   summary    TEXT,                  -- one line naming the defect. Until this column existed a
                                     -- row was a bare counter: seven findings recorded on
                                     -- 2026-08-10 all read `fail-open|major|bash` and could not

@@ -57,19 +57,19 @@ Both are from trial 2, both are probes of mine, and they divide exactly on the c
 
 ## Acceptance criteria
 
-- [ ] A finding can be marked *not a defect* **by its own id**, with a required reason, making the
+- [x] A finding can be marked *not a defect* **by its own id**, with a required reason, making the
       same claim `kit-vindicate.sh --false` makes at `(task, class)`. Whether that is a new flag on
       `kit-resolve.sh` or a `--finding` mode on `kit-vindicate.sh` is the decision to make; the two
       commands answer deliberately different questions and merging them is not obviously right.
-- [ ] `kit-status.sh` counts these **apart** from fixed and apart from unassessable, and never folds
+- [x] `kit-status.sh` counts these **apart** from fixed and apart from unassessable, and never folds
       them into zero — as it already does for the other two permanent marks.
-- [ ] The existing `(task, class)` behaviour is **kept**, not replaced. It is the right granularity
+- [x] The existing `(task, class)` behaviour is **kept**, not replaced. It is the right granularity
       for a reviewer whose whole class of finding on a task was noise, and the accelerator ladder
       reads it.
-- [ ] A conformance step marks one finding of several sharing a `(task, class)` pair and asserts
+- [x] A conformance step marks one finding of several sharing a `(task, class)` pair and asserts
       that **only that row** is refuted. Mutation-proved: widen the key back to `(task, class)` and
       the step goes red.
-- [ ] Operator-reserved, like `--fixed` and `--unassessable`, for the reason `.claude/CLAUDE.md`
+- [x] Operator-reserved, like `--fixed` and `--unassessable`, for the reason `.claude/CLAUDE.md`
       gives: a session certifying its own output is the signature that carries no information.
 
 ## Notes

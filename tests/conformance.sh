@@ -5864,6 +5864,89 @@ check $? "registration records in an adopted repo and stays silent, exit 0, in o
 rm -rf "$hk"
 fi
 
+
+if step "a refutation can name one finding of several sharing a class"; then
+# The defect: kit-vindicate.sh keyed only on (task, class), and 604 of 635 findings in this
+# repository share such a pair with at least one other. So the one verb that makes the right
+# claim about a reviewer's false positive -- it was never a defect -- could not be aimed at the
+# row that needed it, and the criticals gate defended itself by refusing every class refutation
+# that was not the sole finding of its class. Correct, and it left 95% of the table unmarkable.
+#
+# The fixture is two CRITICAL findings sharing (T-v, fail-open), which is exactly the shape the
+# gate refuses. One is named by id. The assertions are that the OTHER one does not move and that
+# the gate drops to one -- a step that only counted the gate would pass while refuting both.
+#
+# MUTATION: widen the row mark back to (task, class) in kit-index.sh and this goes red twice
+# over -- the second finding becomes refuted too, and the gate then refuses BOTH because the
+# pair is ambiguous, so the count goes to 2 rather than to 0.
+vd="$WORK.vindrow"; rm -rf "$vd"; mkdir -p "$vd/src"
+( cd "$vd" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-v\ntitle: v\ntier: T2\n---\nb\n' > .project/tasks/T-v.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+
+  printf '%s' '{"findings":[{"class":"fail-open","severity":"critical","lang":"bash","summary":"the one that was never a defect"},{"class":"fail-open","severity":"critical","lang":"bash","summary":"the one that is real and must survive"}]}' \
+    | bash "$KIT/tooling/kit-finding.sh" --task T-v --agent security-reviewer --json >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  n=$(Q "SELECT COUNT(*) FROM finding WHERE task_id='T-v' AND severity='critical';")
+  [ "$n" = 2 ] || { echo "  fixture recorded $n critical(s), wanted 2"; exit 1; }
+
+  # ASK THE REAL GATE, do not restate its query. kit-preflight.sh --criticals is the ONE home
+  # for this predicate -- its own header says so, after the rule was wrong twice while living in
+  # two places. A third copy inlined here would pass while the gate itself was broken, which is
+  # the failure this step exists to catch.
+  gatecount() {
+    out=$(bash "$KIT/tooling/kit-preflight.sh" --criticals 2>&1)
+    case "$out" in
+      *"no unfixed critical"*) printf '0' ;;
+      *"unfixed critical(s) outstanding"*)
+        printf '%s' "$out" | tr ' ' '
+' | grep -E '^[0-9]+$' | head -1 ;;
+      *) printf 'ERR' ;;
+    esac
+  }
+  g0=$(gatecount)
+  [ "$g0" = 2 ] || { echo "  the gate held $g0 critical(s) before any mark, wanted 2"; exit 1; }
+
+  # A reason is REQUIRED on a row mark: it retires a finding with no sole-of-its-class test
+  # standing behind it, and the kit's rule for a mark that clears a gate is that it says why.
+  fid=$(Q "SELECT id FROM finding WHERE task_id='T-v' AND summary LIKE '%never a defect%';")
+  [ -n "$fid" ] || { echo "  could not resolve the finding id"; exit 1; }
+  bash "$KIT/tooling/kit-vindicate.sh" --finding "$fid" --false >/dev/null 2>&1
+  rc=$?
+  [ "$rc" = 2 ] || { echo "  --finding without --note exited $rc, wanted 2"; exit 1; }
+
+  bash "$KIT/tooling/kit-vindicate.sh" --finding "$fid" --false \
+    --note "a probe row; the reviewer was wrong" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  marked=$(Q "SELECT COALESCE(vindicated,-1)||'/'||COALESCE(vindicated_scope,'-') FROM finding WHERE id='$fid';")
+  [ "$marked" = "0/finding" ] || { echo "  the named row reads $marked, wanted 0/finding"; exit 1; }
+
+  # THE ASSERTION THAT MAKES THIS MORE THAN A COUNT: the neighbour sharing the pair is untouched.
+  other=$(Q "SELECT COALESCE(vindicated,-1) FROM finding
+              WHERE task_id='T-v' AND summary LIKE '%is real%';")
+  [ "$other" = "-1" ] || { echo "  the neighbour sharing (task,class) reads $other, wanted unjudged"; exit 1; }
+
+  g1=$(gatecount)
+  [ "$g1" = 1 ] || { echo "  the gate holds $g1 critical(s) after one row mark, wanted 1"; exit 1; }
+
+  # The class door is KEPT, and still refuses to retire either of an ambiguous pair.
+  bash "$KIT/tooling/kit-vindicate.sh" --task T-v --class correctness --real >/dev/null 2>&1 || {
+    echo "  the (task, class) door was broken by the row door"; exit 1; }
+
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'never having been a defect' STATUS.generated.md || {
+    echo "  kit-status does not count refutations apart"; exit 1; }
+  exit 0 )
+check $? "one row is refuted by id, its neighbour is untouched, and the gate drops by one"
+rm -rf "$vd"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

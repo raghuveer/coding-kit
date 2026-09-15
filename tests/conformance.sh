@@ -5947,6 +5947,143 @@ check $? "one row is refuted by id, its neighbour is untouched, and the gate dro
 rm -rf "$vd"
 fi
 
+
+if step "a carried-over critical fixed once leaves the gate, and the file agrees with itself"; then
+# The defect: `finding.carries_over` existed and ONE summary line read it. Every consumer that
+# ACTED on a count still counted rows -- so a critical carried into a second review round was two
+# rows, marking it addressed cleared one, and the criticals gate stayed open for work that was
+# done. The same generated file then said "2 row(s) over 1 distinct defect(s)" in its header
+# while its gate counted 2. One file, two counts of the same findings, disagreeing.
+#
+# THE GATE IS ASKED, NOT RESTATED. kit-preflight.sh --criticals is the one home for the
+# predicate; an inlined copy here would pass while the gate itself was broken.
+#
+# TWO MUTATIONS, each alone:
+#   kit-index.sh stops deriving defect_id      -> the fixed mark clears one row, gate reads 1
+#   the gate goes back to f.fixed_at IS NULL   -> same, and the header still says 1 defect
+gd="$WORK.gatedefect"; rm -rf "$gd"; mkdir -p "$gd/src"
+( cd "$gd" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-g\ntitle: g\ntier: T2\n---\nb\n' > .project/tasks/T-g.md
+  echo x > src/a; git add -A && git commit -q --no-verify -m seed
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+  gatecount() {
+    out=$(bash "$KIT/tooling/kit-preflight.sh" --criticals 2>&1)
+    case "$out" in
+      *"no unfixed critical"*) printf '0' ;;
+      *"unfixed critical(s) outstanding"*)
+        printf '%s' "$out" | tr ' ' '\n' | grep -E '^[0-9]+$' | head -1 ;;
+      *) printf 'ERR' ;;
+    esac
+  }
+
+  bash "$KIT/tooling/kit-finding.sh" --task T-g --agent implementation-reviewer \
+    --class race --severity critical --lang bash --summary "round one, and it is critical" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  r1=$(Q "SELECT id FROM finding LIMIT 1;")
+  [ -n "$r1" ] || { echo "  round 1 recorded no row"; exit 1; }
+
+  # Round 2 carries it over, and varies the class -- the real data did, and a fixture whose two
+  # rounds agreed on class would pass against a (task, class) collapse that fails in the field.
+  printf '{"verdict":"REVISE","narrative":"n","findings":[{"class":"perf","severity":"critical","lang":"bash","summary":"the same defect, second round","carries_over":"%s"}]}' "$r1" > r2.json
+  bash "$KIT/tooling/kit-finding.sh" --task T-g --agent implementation-reviewer --json < r2.json >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  rows=$(Q "SELECT COUNT(*) FROM finding;")
+  defs=$(Q "SELECT COUNT(DISTINCT defect_id) FROM finding;")
+  [ "$rows" = 2 ] || { echo "  rows=$rows, wanted 2"; exit 1; }
+  [ "$defs" = 1 ] || { echo "  distinct defects=$defs, wanted 1 -- defect_id is not derived"; exit 1; }
+
+  # ONE defect outstanding, not two rows. This arm fails if the gate counts rows.
+  g0=$(gatecount)
+  [ "$g0" = 1 ] || { echo "  the gate reads $g0 before any fix, wanted 1 (one defect, two rounds)"; exit 1; }
+
+  # Address it ONCE, naming the second round's row.
+  r2=$(Q "SELECT id FROM finding WHERE COALESCE(carries_over,'') <> '';")
+  [ -n "$r2" ] || { echo "  the carried-over row is not linked"; exit 1; }
+  sha=$(git rev-parse HEAD)
+  bash "$KIT/tooling/kit-resolve.sh" --finding "$r2" --fixed --commit "$sha" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  # THE CRITERION, EXACTLY: one mark on one round clears the defect.
+  g1=$(gatecount)
+  [ "$g1" = 0 ] || { echo "  the gate reads $g1 after the defect was addressed once, wanted 0"; exit 1; }
+
+  # AND THE FILE MUST AGREE WITH ITSELF. The header counting defects while the gate counted rows
+  # is the self-contradiction that made this findable.
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q '2 finding row(s)\*\* over \*\*1 distinct defect(s)' STATUS.generated.md ||
+    { echo "  kit-status does not say 2 rows over 1 defect"; exit 1; }
+  # AND THE SENTENCE MUST BE TRUE OF THE ROWS, not only of the defect. One mark on one round
+  # leaves the other row unmarked, so "all marked addressed" would assert a disposition nobody
+  # recorded -- the same false claim this section already had to remove once for unassessable.
+  grep -q 'none outstanding (2 critical finding row(s) over 1 defect(s)' STATUS.generated.md ||
+    { echo "  kit-status does not say 2 critical rows over 1 addressed defect"; exit 1; }
+  grep -q 'all marked addressed' STATUS.generated.md &&
+    { echo "  kit-status claims every ROW was marked when only one was"; exit 1; }
+  exit 0 )
+check $? "one defect over two rounds, addressed once, leaves the gate and the header agrees"
+rm -rf "$gd"
+fi
+
+
+if step "one defect seen twice does not earn an accelerator rule"; then
+# kit-accel.sh earned a rule on `HAVING COUNT(*) >= $MIN`, counting finding ROWS. A defect
+# carried into a second review round is two rows, so with --min 2 ONE defect in ONE project
+# could earn a rule and be proposed into shared config that every future project loads. That is
+# the laundering the file's own header says it exists to prevent, arriving through the counter
+# instead of through a refuted finding.
+#
+# The fixture holds both cases so the step cannot pass by proposing nothing at all:
+#   (bash, race)      one defect, two rounds   -- must NOT earn
+#   (bash, fail-open) two separate defects     -- MUST earn, at the same threshold
+#
+# MUTATION: put COUNT(*) back in the HAVING clause and the first pair earns, which the step
+# names. Without the second pair, deleting the whole query would also pass.
+ac="$WORK.acceldefect"; rm -rf "$ac"; mkdir -p "$ac/src"
+( cd "$ac" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-h\ntitle: h\ntier: T2\n---\nb\n' > .project/tasks/T-h.md
+  git add -A && git commit -q --no-verify -m seed
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+
+  bash "$KIT/tooling/kit-finding.sh" --task T-h --agent implementation-reviewer \
+    --class race --severity major --lang bash --summary "the repeated one, round one" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  r1=$(Q "SELECT id FROM finding WHERE class='race';")
+  [ -n "$r1" ] || { echo "  round 1 recorded no row"; exit 1; }
+
+  printf '{"verdict":"REVISE","narrative":"n","findings":[{"class":"race","severity":"major","lang":"bash","summary":"the repeated one, round two","carries_over":"%s"},{"class":"fail-open","severity":"major","lang":"bash","summary":"a distinct defect"},{"class":"fail-open","severity":"major","lang":"bash","summary":"another distinct defect"}]}' "$r1" > r2.json
+  bash "$KIT/tooling/kit-finding.sh" --task T-h --agent implementation-reviewer --json < r2.json >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  # Rows agree with the old counter; defects do not. If these two ever match, the fixture has
+  # stopped exercising the difference and every assertion below is vacuous.
+  rr=$(Q "SELECT COUNT(*) FROM finding WHERE class='race';")
+  rd=$(Q "SELECT COUNT(DISTINCT defect_id) FROM finding WHERE class='race';")
+  [ "$rr" = 2 ] && [ "$rd" = 1 ] || {
+    echo "  fixture is not exercising the difference: race rows=$rr defects=$rd, wanted 2 and 1"; exit 1; }
+
+  bash "$KIT/tooling/kit-accel.sh" propose --min 2 --out prop.md >/dev/null 2>&1
+  [ -f prop.md ] || { echo "  no proposal was written"; exit 1; }
+
+  # SCOPE THE MATCH TO EARNED LINES. The proposal also prints a below-threshold section, and
+  # `race` appears there correctly -- a bare grep matched that and read as a pass for the wrong
+  # reason. Assign first, then match: the suite runs under pipefail.
+  earned=$(grep -F '[earned]' prop.md)
+  case "$earned" in *race*)
+    echo "  one defect seen twice earned a rule"; exit 1 ;; esac
+  case "$earned" in *fail-open*) : ;; *)
+    echo "  two distinct defects did NOT earn, so the threshold is not being met at all"; exit 1 ;; esac
+  exit 0 )
+check $? "rounds of one defect count once, and two real defects still earn at the same threshold"
+rm -rf "$ac"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

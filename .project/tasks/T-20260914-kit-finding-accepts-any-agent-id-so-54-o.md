@@ -10,16 +10,6 @@ state: created
 
 ## Intent
 
-
-## Acceptance criteria
-
-- [ ] 
-- [ ] 
-
-## Notes
-
-## Intent
-
 `kit-finding.sh` takes `--agent-id` raw — `agent_id=${2:-}` at `:75` — and writes it into the event
 with no check that it resolves to anything. **Measured 2026-09-14: 54 of 54 attributed findings in
 this repository match no spend row. The join has never worked once.**

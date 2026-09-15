@@ -10,16 +10,6 @@ state: created
 
 ## Intent
 
-
-## Acceptance criteria
-
-- [ ] 
-- [ ] 
-
-## Notes
-
-## Intent
-
 A finding row that was **never a defect** — a probe, a reviewer's false positive, a row written to
 prove the instrument works — cannot be dispositioned. All four existing doors make a different
 claim, and `.claude/CLAUDE.md` is explicit that they are not synonyms:

@@ -10,16 +10,6 @@ state: created
 
 ## Intent
 
-
-## Acceptance criteria
-
-- [ ] 
-- [ ] 
-
-## Notes
-
-## Intent
-
 `T-20260914-entry-proposal-step-2-names-a-researcher` established that the kit's agents are
 unreachable from an adopted project: `kit-init.sh` installs none, the per-project
 `sync-agents.ps1` was retired in 0.2.0 and left unwired, and the plugin manifest is therefore the

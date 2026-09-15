@@ -5797,6 +5797,73 @@ check $? "3 rows, 2 defects, 1 resolving link, and a report that says which is w
 rm -rf "$co"
 fi
 
+
+if step "the registered hook records, and silence in an unadopted repo stays correct" spend; then
+# AC6 of T-20260821-the-kit-does-not-measure-its-own-develop. Asserting that
+# .claude/settings.json EXISTS is a source-text assertion and is vacuous -- the criterion
+# says to assert the behaviour, so this runs the recorder the way the registration runs it.
+#
+# The defect it guards is not hypothetical. Capture stopped on 2026-09-10 and nothing
+# noticed for four days and 122 commits, because kit-spend.sh resolves its root with
+# `git rev-parse --show-toplevel` from the SESSION's directory and exits 0 where no
+# .claude/project-profile.md is found. Inertness in a repository that has not adopted the
+# kit is CORRECT behaviour -- and it is precisely what hid the outage.
+#
+# Three assertions, and the second and third are the ones with teeth:
+#   1. .claude/settings.json still registers kit-spend.sh on SubagentStop. If the
+#      registration is ever dropped or renamed, this goes red instead of going quiet.
+#   2. invoked as the hook invokes it, in an ADOPTED repo, it writes a scope=subagent row.
+#   3. invoked identically in a repo that has NOT adopted the kit, it writes nothing and
+#      exits 0. A recorder that started writing there would be the opposite defect, and
+#      that arm is what distinguishes "the hook is wired" from "the hook writes anywhere".
+hk="$WORK.hookreg"; rm -rf "$hk"; mkdir -p "$hk/adopted/sess/subagents" "$hk/bare"
+
+# Read the REAL registration out of the committed settings file, not a copy of it.
+reg=$(python3 -c '
+import json, sys
+try:
+    d = json.load(open(sys.argv[1], encoding="utf-8"))
+except Exception:
+    print("unreadable"); sys.exit()
+for entry in d.get("hooks", {}).get("SubagentStop", []):
+    for h in entry.get("hooks", []):
+        if "kit-spend.sh" in h.get("command", ""):
+            print("registered"); sys.exit()
+print("absent")
+' "$KIT/.claude/settings.json")
+
+sub=""; bareev="none"
+( cd "$hk/adopted" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf '{"type":"assistant","message":{"model":"m-main","usage":{"input_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":9}}}\n' > sess.jsonl
+  printf '{"type":"assistant","message":{"model":"m-sub","usage":{"input_tokens":2,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":7}}}\n' > sess/subagents/agent-Z9.jsonl
+  printf '{"session_id":"S1","transcript_path":"%s/sess.jsonl","agent_id":"Z9","agent_type":"general-purpose"}' "$PWD" |
+    bash "$KIT/tooling/kit-spend.sh" ) >/dev/null 2>&1
+sub=$(grep -c '"scope":"subagent"' "$hk/adopted/.project/events.ndjson" 2>/dev/null | tr -d ' \015')
+[ -n "$sub" ] || sub=0
+
+# Arm 3. A git repo with no profile: the same invocation must stay silent AND exit 0.
+( cd "$hk/bare" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  mkdir -p sess/subagents
+  printf '{"type":"assistant","message":{"model":"m-main","usage":{"input_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":9}}}\n' > sess.jsonl
+  printf '{"type":"assistant","message":{"model":"m-sub","usage":{"input_tokens":2,"cache_creation_input_tokens":0,"cache_read_input_tokens":0,"output_tokens":7}}}\n' > sess/subagents/agent-Z9.jsonl
+  printf '{"session_id":"S2","transcript_path":"%s/sess.jsonl","agent_id":"Z9","agent_type":"general-purpose"}' "$PWD" |
+    bash "$KIT/tooling/kit-spend.sh" ) >/dev/null 2>&1
+barerc=$?
+[ -e "$hk/bare/.project/events.ndjson" ] && bareev="written"
+
+{ [ "$reg" = "registered" ] || { echo "  .claude/settings.json does not register kit-spend.sh on SubagentStop (read: $reg)"; false; } } &&
+{ [ "$sub" = 1 ] || { echo "  adopted repo recorded $sub subagent row(s), wanted 1"; false; } } &&
+{ [ "$bareev" = "none" ] || { echo "  an unadopted repo had events written to it"; false; } } &&
+{ [ "$barerc" = 0 ] || { echo "  the recorder exited $barerc in an unadopted repo, wanted 0"; false; } }
+check $? "registration records in an adopted repo and stays silent, exit 0, in one that is not"
+rm -rf "$hk"
+fi
+
 if [ -n "$ONLY" ]; then
   # Deliberately not the same sentence as a full run. `35 passed, 0 failed` over a
   # filtered run would be a worse defect than the slowness the filter cures, so the

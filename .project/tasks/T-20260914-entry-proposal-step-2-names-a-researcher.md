@@ -10,16 +10,6 @@ state: created
 
 ## Intent
 
-
-## Acceptance criteria
-
-- [ ] 
-- [ ] 
-
-## Notes
-
-## Intent
-
 `docs/ENTRY-PROPOSAL.md` step 2 says a `researcher` subagent is given the report and the TSVs and
 **returns** the proposal text. That is the judgement half of the entry mechanism; ADR 0001 split
 facts from judgement precisely so that a reader can tell them apart.

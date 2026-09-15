@@ -10,16 +10,6 @@ state: created
 
 ## Intent
 
-
-## Acceptance criteria
-
-- [ ] 
-- [ ] 
-
-## Notes
-
-## Intent
-
 `docs/ENTRY-PROPOSAL.md` step 3 has the orchestrator write two files. One,
 `<paths.state>/entry-candidates.md`, is fine on a trial subject: `paths.state` is `.project`, which
 this subject ignores. The other is not:

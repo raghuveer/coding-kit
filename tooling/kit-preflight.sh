@@ -261,9 +261,23 @@ case "${1:-}" in
     # by an operator who wrote the withdrawal into the tree where the next reader will see it.
     # Without the fourth verb, 31 findings reviewing a rejected design sat here permanently and
     # their task could never close no matter how much correct work was done on it.
+    # COUNTS DEFECTS, NOT ROWS, and the wording above needed no change because counting rows was
+    # what made it untrue: `carries_over` links a repeated finding to the row it repeats, so three
+    # rows can be one defect, and "3 unfixed criticals" then named a quantity nobody has.
+    #
+    # A DEFECT IS ADDRESSED WHEN ANY OF ITS ROUNDS IS. A carried-over critical marked fixed once
+    # used to leave its earlier rows unfixed and the gate open for work that was done.
+    #
+    # COALESCE(defect_id, id) so an index built before the column degrades to exactly the old
+    # row-level behaviour rather than to NULL -- where `g.defect_id = f.defect_id` is never true,
+    # NOT EXISTS is always true, and the fixed test silently stops applying. That is the failure
+    # direction a gate may not take, and it would have looked like more criticals, not fewer.
     n=$(sqlite3 -noheader "$DB" "
-      SELECT COUNT(*) FROM finding f
-       WHERE f.severity='critical' AND f.fixed_at IS NULL
+      SELECT COUNT(DISTINCT COALESCE(f.defect_id, f.id)) FROM finding f
+       WHERE f.severity='critical'
+         AND NOT EXISTS (SELECT 1 FROM finding g
+                          WHERE COALESCE(g.defect_id, g.id) = COALESCE(f.defect_id, f.id)
+                            AND g.fixed_at IS NOT NULL)
          AND f.unassessable_at IS NULL
          AND f.superseded_at IS NULL
          AND NOT (COALESCE(f.vindicated,1) = 0 AND (

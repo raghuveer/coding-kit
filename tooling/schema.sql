@@ -156,6 +156,20 @@ CREATE TABLE finding (
   severity   TEXT,
   at         TEXT,
   vindicated INTEGER,               -- NULL unknown | 1 real | 0 false positive
+  defect_id  TEXT,                  -- WHICH DEFECT this row is a round of. Derived, never authored:
+                                    -- `carries_over` links a repeated finding to the row it
+                                    -- repeats, so N rows can be one defect, and every consumer
+                                    -- that ACTS on a count was counting rows. A carried-over
+                                    -- critical marked fixed once stayed in the criticals gate
+                                    -- while the same generated file said "N row(s) over M
+                                    -- distinct defect(s)" in its own header -- one file, two
+                                    -- counts of the same findings, disagreeing.
+                                    --
+                                    -- Resolved in kit-index.sh so the rule has one home. A row
+                                    -- with no link is its own defect, and so is one whose link
+                                    -- DANGLES: a dangling `carries_over` must not drop the row
+                                    -- out of the gate, which is the one direction a gate may
+                                    -- never fail in.
   vindicated_scope TEXT,            -- WHICH MARK SET `vindicated`: 'finding' | 'class' | NULL.
                                     -- Not decoration. `kit-vindicate.sh --class` updates every
                                     -- finding matching (task, class), so on a task carrying two

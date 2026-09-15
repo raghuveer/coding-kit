@@ -773,20 +773,39 @@ fi
 # the count. Written without the COALESCE first and caught by the fixture, not by reading. It is
 # the same NULL trap this file already carries two other fixes for.
 #
-# ONLY AN UNAMBIGUOUS REFUTATION RETIRES A FINDING. `kit-vindicate.sh` keys on (task, class) and
-# updates every finding matching both, so on a task carrying two `fail-open` findings a single
-# `--false` about the harmless one ALSO refutes the critical -- which would then leave this gate
-# having never been judged. Excluded only when it is the sole finding of its class on its task.
-# The same predicate lives in kit-preflight.sh --criticals, which is what the protocol runs.
-UNAMBIG="1 = (SELECT COUNT(*) FROM finding g
-               WHERE COALESCE(g.task_id,'') = COALESCE(f.task_id,'')
-                 AND COALESCE(g.class,'')   = COALESCE(f.class,''))"
+# ONLY AN UNAMBIGUOUS REFUTATION RETIRES A FINDING, and since 2026-09-15 there are two ways to
+# be unambiguous. `kit-vindicate.sh --class` updates every finding matching (task, class), so on
+# a task carrying two `fail-open` findings a single `--false` about the harmless one ALSO refutes
+# the critical -- which would then leave this gate having never been judged. A class mark is
+# therefore honoured only when the finding is the sole one of its class on its task.
+#
+# `kit-vindicate.sh --finding` names one row. It cannot be ambiguous, and holding it to the
+# sole-of-its-class test would refuse the precise mark while accepting the imprecise one -- the
+# guard defeating the fix that removes its reason to exist. 604 of 635 findings here share a
+# (task, class) pair, so that is 95% of the table the row mark exists for.
+#
+# COALESCE the scope, not just the verdict: every vindication written before the column existed
+# was a class mark, and reading a missing scope as 'class' keeps those marks meaning what they
+# meant. The same predicate lives in kit-preflight.sh --criticals, which is what the protocol runs.
+UNAMBIG="(COALESCE(f.vindicated_scope,'class') = 'finding'
+          OR 1 = (SELECT COUNT(*) FROM finding g
+                   WHERE COALESCE(g.task_id,'') = COALESCE(f.task_id,'')
+                     AND COALESCE(g.class,'')   = COALESCE(f.class,'')))"
 CRITFALSE=$(q "SELECT COUNT(*) FROM finding f
                 WHERE f.severity='critical' AND f.fixed_at IS NULL AND f.vindicated=0
                   AND $UNAMBIG;")
 CRITAMBIG=$(q "SELECT COUNT(*) FROM finding f
                 WHERE f.severity='critical' AND f.fixed_at IS NULL AND f.vindicated=0
                   AND NOT $UNAMBIG;")
+# REFUTATIONS COUNTED BY SCOPE, and reported apart from fixed and from unassessable. A row
+# that was never a defect is a third thing: nothing was addressed, and it is perfectly
+# legible. Folding it into either neighbour would say something false about it, which is the
+# same argument `--superseded` already won. Counted over the whole table rather than over
+# criticals, because the claim is about the record, not about the gate.
+FALSEROW=$(q "SELECT COUNT(*) FROM finding f
+               WHERE f.vindicated=0 AND COALESCE(f.vindicated_scope,'class')='finding';")
+FALSECLS=$(q "SELECT COUNT(*) FROM finding f
+               WHERE f.vindicated=0 AND COALESCE(f.vindicated_scope,'class')='class';")
 OPENCRIT=$(q "SELECT COALESCE(NULLIF(f.task_id,''),'(unattributed)')||'  '||COUNT(*)||
                      '  ['||COALESCE(NULLIF(t.state,''),'no task file')||']'
                 FROM finding f LEFT JOIN task t ON t.id = f.task_id
@@ -915,10 +934,24 @@ if [ "${FMISS:-0}" != 0 ]; then
 fi
 if [ "${CRITAMBIG:-0}" != 0 ]; then
   printf -- '\n> **%s unfixed critical(s) carry a refutation that cannot be trusted.** They are\n' "$CRITAMBIG"
-  printf -- '> COUNTED above, not excluded. `kit-vindicate.sh` keys on `(task, class)` and marks\n'
-  printf -- '> every finding matching both, so on a task with two findings of one class a single\n'
-  printf -- '> `--false` about the harmless one also refutes the critical. A refutation retires a\n'
-  printf -- '> finding only when it is the sole finding of its class on its task.\n'
+  printf -- '> COUNTED above, not excluded. `kit-vindicate.sh --class` marks every finding matching\n'
+  printf -- '> `(task, class)`, so on a task with two findings of one class a single `--false`\n'
+  printf -- '> about the harmless one also refutes the critical. A CLASS refutation retires a\n'
+  printf -- '> finding only when it is the sole finding of its class on its task. To retire one of\n'
+  printf -- '> several, name it: `kit-vindicate.sh --finding ID --false --note TEXT`.\n'
+fi
+if [ "${FALSEROW:-0}" != 0 ] || [ "${FALSECLS:-0}" != 0 ]; then
+  printf -- '\n> **%s finding(s) are recorded as never having been a defect** — %s named by id, %s\n' \
+    "$(( ${FALSEROW:-0} + ${FALSECLS:-0} ))" "${FALSEROW:-0}" "${FALSECLS:-0}"
+  printf -- '> by `(task, class)`. This is a THIRD disposition and is counted apart on purpose:\n'
+  printf -- '> `fixed` says it was addressed and nothing was, `unassessable` says nobody can tell\n'
+  printf -- '> what it said and these are legible. Folding any of the three together would record\n'
+  printf -- '> a claim that is false about two of them.\n'
+  if [ "${FALSECLS:-0}" != 0 ]; then
+    printf -- '>\n> The `(task, class)` marks refuted every finding sharing the pair, which is the\n'
+    printf -- '> right granularity for a reviewer whose whole class on a task was noise and the\n'
+    printf -- '> wrong one for a single row. They are not re-scoped retrospectively.\n'
+  fi
 fi
 if [ "${CRITFALSE:-0}" != 0 ]; then
   printf -- '\n> **%s unfixed critical(s) are excluded as refuted** (`vindicated=0`). A reviewer\n' "$CRITFALSE"

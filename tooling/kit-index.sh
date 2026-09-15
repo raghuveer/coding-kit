@@ -932,8 +932,18 @@ if [ "$SRC_EVENTS" = ndjson ] && [ -f "$EV" ]; then
         # union merge routinely does; applied inline it updates zero rows, and kit-accel.sh
         # then reads that finding as unrefuted and proposes it -- exactly the laundering
         # kit-vindicate.sh exists to prevent. Sorted input makes last-write-wins correct.
+        #
+        # TWO SCOPES. `scope` is absent on every event written before 2026-09-15, and those are
+        # all class marks -- so a missing scope reads as `class` rather than as unknown, which
+        # keeps the 0 vindications already in this log meaning exactly what they meant.
+        # A row mark names one id and updates one row; the criticals gate reads the scope back
+        # to decide whether its sole-of-its-class guard applies.
         nv++
-        v[nv] = sprintf("UPDATE finding SET vindicated=%s WHERE task_id=\047%s\047 AND class=\047%s\047;", (index($0,"\"vindicated\":1")?"1":"0"), q(t), q(jf($0,"class")))
+        vfid = jf($0, "finding")
+        if (vfid != "")
+          v[nv] = sprintf("UPDATE finding SET vindicated=%s, vindicated_scope=\047finding\047 WHERE id=\047%s\047;", (index($0,"\"vindicated\":1")?"1":"0"), q(vfid))
+        else
+          v[nv] = sprintf("UPDATE finding SET vindicated=%s, vindicated_scope=\047class\047 WHERE task_id=\047%s\047 AND class=\047%s\047;", (index($0,"\"vindicated\":1")?"1":"0"), q(t), q(jf($0,"class")))
       }
       # Whether a finding was ADDRESSED -- a different question from whether it was real, and
       # the one nothing could answer before. Held to END for the reason vindication is: after a

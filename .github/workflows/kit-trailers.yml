@@ -138,15 +138,48 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      # The Windows arm of this step once reported SUCCESS with no sqlite3 on the box:
+      # `choco install` met a 504 from the community feed, printed "installed 0/0 packages"
+      # and still EXITED 0, so the `||` never fired and 43 steps later failed on
+      # "sqlite3: command not found". An install step that cannot fail is not an install step.
+      # Hence a retry for the transient case, a feed-independent fallback for the sustained
+      # one, and a verification that is the real gate -- green here now means sqlite3
+      # answered, not that a package manager said something reassuring.
       - name: Install sqlite3
         run: |
+          set -eu
           if command -v apt-get >/dev/null; then
             sudo apt-get -qq update && sudo apt-get -qq install -y sqlite3
           elif [ "$RUNNER_OS" = Windows ]; then
-            sqlite3 --version || choco install sqlite -y --no-progress
+            for attempt in 1 2 3; do
+              if command -v sqlite3 >/dev/null 2>&1; then break; fi
+              echo "sqlite3 absent, choco attempt $attempt"
+              choco install sqlite -y --no-progress || true
+              hash -r 2>/dev/null || true
+            done
+            if ! command -v sqlite3 >/dev/null 2>&1; then
+              echo "choco did not produce sqlite3; falling back to sqlite.org"
+              page=$(curl -fsSL https://sqlite.org/download.html)
+              rel=$(printf '%s' "$page" | grep -oE '[0-9]{4}/sqlite-tools-win-x64-[0-9]+[.]zip' | head -1)
+              if [ -z "$rel" ]; then echo "could not locate a win-x64 tools build"; exit 1; fi
+              curl -fsSL -o /tmp/sqlite-tools.zip "https://sqlite.org/$rel"
+              unzip -q -o /tmp/sqlite-tools.zip -d /tmp/sqlite-tools
+              exe=$(find /tmp/sqlite-tools -name sqlite3.exe -print -quit)
+              if [ -z "$exe" ]; then echo "no sqlite3.exe in the archive"; exit 1; fi
+              dir=$(dirname "$exe")
+              cygpath -w "$dir" >> "$GITHUB_PATH"
+              PATH="$dir:$PATH"
+              export PATH
+            fi
           else
             sqlite3 --version || brew install sqlite
           fi
+          # The gate. Absent this the step is decorative, which is how it passed last time.
+          if ! command -v sqlite3 >/dev/null 2>&1; then
+            echo "FATAL: sqlite3 is not on PATH after the install step"
+            exit 1
+          fi
+          echo "sqlite3 $(sqlite3 --version)"
 
       # T-20260822 AC1, verbatim: "The same benchmark is run on one other machine. If it reports
       # 10-30 ms this is a fault worth pursuing; if it reports ~800 ms it is the hardware and the

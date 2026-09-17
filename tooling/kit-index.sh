@@ -371,7 +371,16 @@ if [ "$HAVE_TASKS" = 1 ]; then
       if (index(g, "?") || index(g, "[") || index(g, "]")) return ""
       r = g
       gsub(/[\\.^$+(){}|]/, "\\\\&", r)
-      gsub(/\052+/, ".*", r)
+      # `[*]+`, not `\052+`. An octal escape inside a regex literal is rejected by gawk under
+      # --posix AND by stock gawk 5.4.1 in DEFAULT mode, which takes the whole program down at
+      # PARSE time -- so kit-index.sh cannot rebuild the index at all, and `POSIXLY_CORRECT=1`,
+      # the pre-push check in docs/LESSONS.md 12, cannot be run on the largest script in the kit.
+      # A bracket expression needs no escape and is portable. Proved equivalent, not assumed:
+      # both forms extracted from this file and run over the same globs, byte-identical output
+      # under default gawk and under POSIXLY_CORRECT=1, including globs with no `*` at all.
+      # The `\001` and `\003` separators elsewhere in this file are NOT regex literals and
+      # are deliberately untouched -- see T-20260817.
+      gsub(/[*]+/, ".*", r)
       return "^" r "$"
     }
     function floorof(paths,   n, i, parts2, j, m, rule, g, t, best, rules) {

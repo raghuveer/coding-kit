@@ -68,7 +68,7 @@ portability failure nobody can demonstrate.
 
 ## Acceptance criteria
 
-- [ ] `POSIXLY_CORRECT=1 bash tooling/kit-index.sh` completes and rebuilds the index, so §12's
+- [x] `POSIXLY_CORRECT=1 bash tooling/kit-index.sh` completes and rebuilds the index, so §12's
       technique covers this file.
 - [ ] The replacement is **proved equivalent, not assumed**. `/[*]+/` is a candidate and was
       checked on five realistic globs — `tooling/**`, `src/*.go`, `a/**/b`,
@@ -76,15 +76,15 @@ portability failure nobody can demonstrate.
       `POSIXLY_CORRECT=1` gawk. Re-run that comparison as part of the fix rather than trusting
       this note, and include a glob containing no `*` at all, which is the case that must not
       change.
-- [ ] **Do not "fix" the other octal escapes while here.** `\001` and `\003` are separator
+- [x] **Do not "fix" the other octal escapes while here.** `\001` and `\003` are separator
       sentinels, they pass under POSIX mode, and rewriting them would be an unrequested change to
       the git-log reader for no demonstrated gain. If a sweep finds a genuine second instance,
       that is a finding; a tidy-up is not.
-- [ ] A conformance step, or an addition to an existing one, that runs the affected converter
+- [x] A conformance step, or an addition to an existing one, that runs the affected converter
       under `POSIXLY_CORRECT=1`. Without it this regresses the next time someone reaches for an
       octal escape, and the whole point is that ordinary CI is green either way — **no existing
       check can fail on this**, which is why one has to be added rather than relied upon.
-- [ ] `docs/LESSONS.md` §12 records the construct alongside the two argument-permutation cases it
+- [x] `docs/LESSONS.md` §12 records the construct alongside the two argument-permutation cases it
       already carries, with the detection. It is a third instance of the same lesson and the
       section is where the next person will look.
 
@@ -156,6 +156,51 @@ replacement has to satisfy.
 
 **No criterion is ticked by this amendment.** Nothing here is a fix; the construct is unchanged at
 `tooling/kit-index.sh:351`.
+
+### Evidence, 2026-09-17 — fixed; four of five ticked, AC2 waits on the runner
+
+**The change is one character class.** `gsub(/\052+/, ".*", r)` became `gsub(/[*]+/, ".*", r)` at
+`tooling/kit-index.sh`. Nothing else in the function moved.
+
+**AC2's equivalence was PROVED, and the method matters more than the result.** A first attempt
+retyped `globre` into a scratch file and lost two backslashes in transcription -- it produced
+`^src/.*&go$` where the real function produces `^src/.*\.go$`, so it was comparing something that
+was not this code. **Both variants are now extracted from `kit-index.sh` itself**, the new one
+derived from the old by a single asserted substitution, so a transcription error cannot survive.
+
+Twelve globs, covering AC2's five plus the cases it asked for by name:
+
+    tooling/**   src/*.go   a/**/b   tooling/kit-index.sh   **
+    docs/*.md    a*b*c      *        x    a.b+c(d)    a?b    [abc]
+
+| comparison | result |
+|---|---|
+| OLD default gawk vs NEW default gawk | **byte-identical** |
+| NEW default gawk vs NEW `POSIXLY_CORRECT=1` | **byte-identical** |
+| OLD under `POSIXLY_CORRECT=1` | *"Invalid preceding regular expression: /\052+/"* -- the defect, reproduced |
+
+The globs with **no `*` at all** (`tooling/kit-index.sh`, `x`) are unchanged, which AC2 names as the
+case that must not change, and the refused ones (`a?b`, `[abc]`) still return empty.
+
+**AC2 IS NOT TICKED.** The amendment above requires the comparison to run under **gawk 5.4.1**, the
+version that rejects the construct in default mode. This machine has 5.3.2 and cannot produce that
+evidence; `conformance (windows-latest)` is the only place it exists. The proof is the leg moving
+off its 31 FAIL / 71 PASS baseline -- not a claim to be made ahead of it.
+
+**AC1 -- `POSIXLY_CORRECT=1 bash tooling/kit-index.sh` exits 0 and rebuilds**: 216 tasks, 635
+findings, 81 spend rows, and **143 tasks with a computed `tier_floor`**, which is `globre`'s actual
+job rather than merely proof the script ran.
+
+**AC4 -- the step asserts the FLOOR, not the exit status**, because on the defect the ingest refuses
+and LEAVES THE PREVIOUS INDEX IN PLACE: correct, announced, and indistinguishable from success to
+anything that only checks whether the script ran. A fresh fixture plus a derived value is what makes
+it visible. Mutation-proved: restoring the octal escape and changing nothing else gives *"no index
+was written under POSIXLY_CORRECT=1"* and FAIL. It also asserts the floor is the same **with and
+without** the variable, so the fix cannot silently change what a glob means. **It is not a Windows
+step** -- it runs everywhere, because the defect is a gawk version and gawk runs everywhere.
+
+**AC3 -- 13 `\001`/`\003` separator escapes remain untouched.** They are string context, not regex
+literals, and the task says not to tidy them.
 
 ## Notes
 

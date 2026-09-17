@@ -1649,6 +1649,56 @@ fi
 rm -rf "$nx"
 fi
 
+if step "the glob converter parses under POSIXLY_CORRECT, and the floor it derives is unchanged"; then
+# `globre` turned a glob's `*` into a regex with `gsub(/\052+/, ".*", r)`. An octal escape inside
+# a REGEX LITERAL is rejected by gawk under --posix, and by stock gawk 5.4.1 in DEFAULT mode --
+# the runner's awk, found by conformance (windows-latest). It fails at PARSE time, so the whole
+# of kit-index.sh dies before it reads anything: the ingest refuses, the index is not rebuilt,
+# and `POSIXLY_CORRECT=1`, the pre-push check docs/LESSONS.md 12 prescribes, cannot be run on
+# the largest script in the kit.
+#
+# THIS ASSERTS THE FLOOR, NOT THE EXIT STATUS. On the defect the ingest refuses and LEAVES THE
+# PREVIOUS INDEX IN PLACE -- correct, announced, and indistinguishable from success to anything
+# that only checks whether the script ran. A fresh fixture plus a derived value is what makes
+# the difference visible.
+#
+# It is NOT a Windows step. It runs everywhere, because the defect is a gawk version and gawk
+# runs everywhere; ubuntu's mawk and macOS's BSD awk simply never rejected the construct, which
+# is why two green legs sat beside this for a month.
+px="$WORK.posixawk"; rm -rf "$px"; mkdir -p "$px/.claude" "$px/.project/tasks" "$px/src"
+( cd "$px" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  { echo "---"; echo "paths.tasks:  .project/tasks"; echo "paths.state:  .project"
+    echo "paths.status: STATUS.generated.md"; echo "tier.default: T1"
+    echo "tier.rule: src/** T3"; echo "---"; } > .claude/project-profile.md
+  printf -- '---
+id: T-p
+title: p
+tier: T1
+paths: src/a.go
+---
+b
+' > .project/tasks/T-p.md
+  printf 'x
+' > src/a.go
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  rm -f .project/index.db
+  POSIXLY_CORRECT=1 bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  # No index at all is the shape of the defect: the parse died before any ingest.
+  [ -f .project/index.db ] || { echo "  no index was written under POSIXLY_CORRECT=1"; exit 1; }
+  f=$(sqlite3 .project/index.db "SELECT COALESCE(tier_floor,'-') FROM task WHERE id='T-p';" | sed $'s/\r$//')
+  [ "$f" = T3 ] || { echo "  floor under POSIXLY_CORRECT=1 was '$f', wanted T3"; exit 1; }
+  # And the same tree without the variable must agree, or the fix has changed what a glob means.
+  rm -f .project/index.db
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  g=$(sqlite3 .project/index.db "SELECT COALESCE(tier_floor,'-') FROM task WHERE id='T-p';" | sed $'s/\r$//')
+  [ "$g" = "$f" ] || { echo "  floor differs with and without POSIXLY_CORRECT: '$g' vs '$f'"; exit 1; }
+  exit 0 )
+check $? "kit-index parses under POSIXLY_CORRECT and derives the same floor either way"
+rm -rf "$px"
+fi
+
 if step "provenance is recorded, defaulted and split out of the rate it would dilute"; then
 # Escape rate was computed over EVERY task regardless of whether this pipeline had ever run on
 # one. On a brownfield adoption most of the backlog is pre-existing or hand-done, so the

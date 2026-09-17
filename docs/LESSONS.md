@@ -335,3 +335,32 @@ The second was the worse one: `entry-facts.tsv` came out as a header with no row
 census silently empty, on one of the two platforms CI runs. **Use it before pushing anything that
 shells out** — it is not a full BSD emulator, but it converts a class of "only CI can tell me"
 into "I can tell right now".
+
+**A third case, and it exposes the technique's blind spot — 2026-09-17.** An octal escape inside a
+**regex literal** belongs on that list:
+
+    $ POSIXLY_CORRECT=1 awk '{ gsub(/\052+/, ".*", $0) }'
+    awk: error: Invalid preceding regular expression: /\052+/
+
+`\052` is `*`. Written as an escape inside `/.../` it parses as an unquantified `*`, and the
+program dies at **parse** time — not at the line that uses it. The cure is a bracket expression,
+`[*]+`, which needs no escape anywhere. Note what is NOT wrong: `\001` and `\003` as separator
+sentinels in string context are fine and were deliberately left alone. It is the regex literal,
+not the notation.
+
+**But the check could not be run where it was needed, and that is the lesson.** This construct
+lived in `tooling/kit-index.sh` — the largest script in the kit and the one every session runs —
+and `POSIXLY_CORRECT=1` died on it at parse time before reaching anything else. **So the one file
+most in need of the technique was the one file exempt from it**, for a month, and the exemption
+looked exactly like a file nobody had got round to checking.
+
+**And "no real platform rejects it" expired.** `T-20260817` bounded the severity honestly in
+August: this was a `gawk --posix` result, and `gawk --posix` is not any platform's awk. Then
+`conformance (windows-latest)` arrived with **gawk 5.4.1, which rejects it in DEFAULT mode**, and
+the index could not be built at all — 31 failing steps from that one line. ubuntu runs mawk and
+macOS runs BSD awk, so neither could ever have seen it.
+
+**Two things generalise.** A portability check that cannot be run on your largest file is not a
+check you have; measure its coverage, not its existence. And a severity bound of the form *"no
+platform does this today"* is a statement about today's platforms — it decays silently, and the
+thing that refutes it is a new toolchain version, not a new argument.

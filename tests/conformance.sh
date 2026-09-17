@@ -148,6 +148,47 @@ if step "environment"; then
 uname -srm 2>/dev/null || echo "(no uname)"
 bash --version | head -1; git --version; sqlite3 --version | awk '{print "sqlite3 "$1}'
 (awk --version 2>/dev/null || awk -W version 2>&1) | head -1
+# The kit shells out to python3 from kit-finding.sh, kit-resolve.sh, kit-review-record.sh,
+# kit-claim.sh and kit-plan.sh. It was not reported here, so a platform without it looked
+# like fourteen unrelated finding failures rather than one missing interpreter. Report every
+# interpreter the kit depends on, not only the ones that were interesting the day this was
+# written. Never fails the run -- it is the environment banner, not a gate.
+python3 --version 2>&1 | head -1 || echo "python3: ABSENT"
+command -v python3 >/dev/null 2>&1 || echo "python3: NOT ON PATH"
+python  --version 2>&1 | head -1 || echo "python: ABSENT"
+
+# DIAGNOSTIC, and temporary. conformance (windows-latest) reports 14 failures whose assertions
+# say only "got 2, wanted 0" and "recorded 0 critical(s)" -- every step redirects stderr to
+# /dev/null, so the CAUSE is never printed anywhere. Two hypotheses were formed from the tally
+# alone and BOTH were wrong: a second gawk-version defect like globre (swept: no octal escapes
+# and no non-standard regex escapes anywhere), and a missing python3 (this banner now shows it
+# present). Guessing from a tally is what produced both. This runs the first failing path once
+# and prints what it actually says.
+( pd="${WORK:-/tmp}.pydiag"; rm -rf "$pd"; mkdir -p "$pd/.claude" "$pd/.project/tasks"
+  cd "$pd" || exit 0
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  { echo "---"; echo "paths.tasks:  .project/tasks"; echo "paths.state:  .project"
+    echo "tier.default: T1"; echo "---"; } > .claude/project-profile.md
+  printf -- '---
+id: T-d
+title: d
+tier: T2
+---
+b
+' > .project/tasks/T-d.md
+  git add -A >/dev/null 2>&1 && git commit -q --no-verify -m seed >/dev/null 2>&1
+  echo "--- kit-finding.sh, stderr shown ---"
+  bash "$KIT/tooling/kit-finding.sh" --task T-d --agent implementation-reviewer     --class race --severity major --lang bash --summary "diagnostic probe, not a real finding" 2>&1 |
+    sed 's/^/    /' | head -20
+  echo "    exit=$? events=$(grep -c '"kind":"finding"' .project/events.ndjson 2>/dev/null)"
+  echo "--- which bash does each layer resolve? ---"
+  echo "    shell sees:  $(command -v bash)"
+  python3 -c "import shutil,sys; print('    python sees:', shutil.which('bash'))" 2>&1 | head -2
+  python3 -c "import subprocess,sys; r=subprocess.run(['bash','-c','echo ok'],capture_output=True); print('    bash -c echo ok -> rc=%s out=%r err=%r' % (r.returncode, r.stdout[:80], r.stderr[:80]))" 2>&1 | head -3
+  echo "--- kit_findings.py --contract, stderr shown ---"
+  python3 "$KIT/tooling/kit_findings.py" --contract 2>&1 | sed 's/^/    /' | head -5
+  rm -rf "$pd" ) 2>&1 || true
 fi
 
 if step "scripts are executable in the git index"; then
@@ -1697,6 +1738,89 @@ b
   exit 0 )
 check $? "kit-index parses under POSIXLY_CORRECT and derives the same floor either way"
 rm -rf "$px"
+fi
+
+if step "the kit runs where only python is named python, and says so when neither exists"; then
+# Five scripts shell out to an interpreter -- kit-finding.sh, kit-resolve.sh,
+# kit-review-record.sh, kit-claim.sh, kit-plan.sh -- and all of them hardcoded `python3`.
+# Windows ships `python.exe`, and `python3` there is frequently absent or a Microsoft Store
+# execution alias that is not an interpreter at all.
+#
+# THE SECOND ARM IS THE ONE THAT MATTERS. Before kit_python, an absent interpreter surfaced as
+# "finding rejected by the contract; nothing recorded" -- a claim about the DATA, from a check
+# that had never run -- and in kit-resolve.sh as "the event could not be serialised". Both are
+# false and both send the reader to the wrong place. A tool may fail; it may not misattribute.
+py=""; for c in python3 python; do command -v "$c" >/dev/null 2>&1 && py=$(command -v "$c") && break; done
+if [ -z "$py" ]; then
+  skip "no python interpreter on this machine to build the fixture from"        "the kit runs where only python is named python"
+else
+  pf="$WORK.pyfall"; rm -rf "$pf"; mkdir -p "$pf/.claude" "$pf/.project/tasks" "$pf/shim"
+  ( cd "$pf" || exit 1
+    git init -q -b main 2>/dev/null
+    git config user.email a@b.c; git config user.name T
+    { echo "---"; echo "paths.tasks:  .project/tasks"; echo "paths.state:  .project"
+      echo "tier.default: T1"; echo "---"; } > .claude/project-profile.md
+    printf -- '---
+id: T-x
+title: x
+tier: T2
+---
+b
+' > .project/tasks/T-x.md
+    git add -A && git commit -q --no-verify -m seed
+    # A shim named `python` ONLY, forwarding to whatever real interpreter this machine has.
+    printf '#!/usr/bin/env bash
+exec "%s" "$@"
+' "$py" > shim/python
+    chmod +x shim/python
+    # The REAL PATH minus every directory holding a python3, rather than a hand-built one.
+    # A narrow PATH was the first attempt and it proved nothing: without git the kit is
+    # correctly INERT, so the recorder exited 0 having written nothing and the arm read as a
+    # pass for the fix. Remove one tool; keep the rest of the environment intact.
+    nopy3=""
+    _oldifs=$IFS; IFS=:
+    for _d in $PATH; do
+      [ -n "$_d" ] || continue
+      if [ -x "$_d/python3" ] || [ -x "$_d/python3.exe" ]; then continue; fi
+      nopy3="$nopy3:$_d"
+    done
+    IFS=$_oldifs
+    nopy3="$PWD/shim$nopy3"
+    if PATH="$nopy3" command -v python3 >/dev/null 2>&1; then
+      echo "  fixture: python3 still reachable, the arm would prove nothing"; exit 1
+    fi
+    # Arm 1: python3 is NOT on PATH and a finding is still recorded.
+    PATH="$nopy3" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "recorded on a box where python3 does not exist" >/dev/null 2>&1 ||
+      { echo "  arm 1: no finding recorded when only python exists"; exit 1; }
+    n=$(grep -c '"kind":"finding"' .project/events.ndjson 2>/dev/null)
+    [ "${n:-0}" -ge 1 ] || { echo "  arm 1: recorder exited 0 but wrote nothing"; exit 1; }
+    # Arm 2: NEITHER interpreter. It must fail, and the message must name the interpreter
+    # rather than blaming the finding.
+    # Arm 2 strips the shim too, so NEITHER name resolves -- while keeping git, or the kit
+    # would be inert and exit 0, which is not the refusal this arm is looking for.
+    nopy=""
+    _oldifs=$IFS; IFS=:
+    for _d in $PATH; do
+      [ -n "$_d" ] || continue
+      if [ -x "$_d/python3" ] || [ -x "$_d/python3.exe" ] || [ -x "$_d/python" ] || [ -x "$_d/python.exe" ]; then continue; fi
+      nopy="$nopy:$_d"
+    done
+    IFS=$_oldifs
+    nopy=${nopy#:}
+    out=$(PATH="$nopy" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "this one cannot be recorded" 2>&1); rc=$?
+    [ "$rc" != 0 ] || { echo "  arm 2: recorded a finding with no interpreter at all"; exit 1; }
+    case "$out" in
+      *"no python3 (or python 3.x) on PATH"*) ;;
+      *) echo "  arm 2: failed without naming the interpreter -- said: $out"; exit 1 ;;
+    esac
+    case "$out" in
+      *"rejected by the contract"*)
+        echo "  arm 2: blamed the contract for a missing interpreter"; exit 1 ;;
+    esac
+    exit 0 )
+  check $? "a finding records with only python present, and a missing interpreter is named as one"
+  rm -rf "$pf"
+fi
 fi
 
 if step "provenance is recorded, defaulted and split out of the rate it would dilute"; then

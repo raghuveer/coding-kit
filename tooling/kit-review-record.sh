@@ -61,6 +61,15 @@
 # the one thing it must not be is silent.
 set -uo pipefail
 . "$(dirname "$0")/kit-lib.sh"
+
+# Resolved ONCE, and the failure says what THIS script cannot do. Before this, an absent
+# interpreter surfaced as "record this review" -- a claim about the
+# data, from a check that had never run. See kit_python in kit-lib.sh.
+PYBIN=$(kit_python) || {
+  kit_warn "no python3 (or python 3.x) on PATH -- cannot record this review"
+  kit_warn "  install Python 3, or set KIT_PYTHON to the interpreter to use"
+  exit 2
+}
 PY="$(dirname "$0")/kit_findings.py"
 FIND="$(dirname "$0")/kit-finding.sh"
 
@@ -192,7 +201,7 @@ while :; do
   # every remaining attempt and burn the budget reviewing nothing.
   # --original-file is the CALLER'S request every time, not the previous attempt's prompt: the
   # retry must restate what was asked, and compounding corrections would bury it.
-  correction=$(python3 "$PY" --correction --original-file "$prompt_file" \
+  correction=$("$PYBIN" "$PY" --correction --original-file "$prompt_file" \
                  < "$WORKDIR/reply"); crc=$?
   if [ "$crc" != 0 ] && [ "$crc" != 3 ]; then
     kit_warn "the validator failed with exit $crc, which is not a refusal; not retrying"
@@ -225,6 +234,6 @@ done
 # here is the open circuit this whole task exists to close: an empty finding table reads as
 # "nothing escaped" when it means "nothing was recorded".
 # shellcheck disable=SC2086
-gap=$(python3 "$PY" --gap-event rejected $ATTR --agent "$agent" --agent-id "$agent_id") &&
+gap=$("$PYBIN" "$PY" --gap-event rejected $ATTR --agent "$agent" --agent-id "$agent_id") &&
   printf '%s\n' "$gap" >> "$ROOT/$(kit_cfg "$(kit_profile "$ROOT")" paths.state ".project")/events.ndjson"
 exit 1

@@ -42,6 +42,15 @@
 set -uo pipefail
 . "$(dirname "$0")/kit-lib.sh"
 
+# Resolved ONCE, and the failure says what THIS script cannot do. Before this, an absent
+# interpreter surfaced as "record a finding" -- a claim about the
+# data, from a check that had never run. See kit_python in kit-lib.sh.
+PYBIN=$(kit_python) || {
+  kit_warn "no python3 (or python 3.x) on PATH -- cannot record a finding"
+  kit_warn "  install Python 3, or set KIT_PYTHON to the interpreter to use"
+  exit 2
+}
+
 # The one definition. Severity matches what the reviewer agents actually emit: a vocabulary
 # its own producers do not use is a vocabulary that silently discards their output.
 CLASSES="fail-open race false-rationale perf compliance correctness style unclassified"
@@ -53,7 +62,7 @@ SEVERITIES="critical major minor nit"
 # -- a T3 reviewer found the inconsistency.
 case "${1:-}" in
   --vocab) printf 'class:    %s\nseverity: %s\n' "$CLASSES" "$SEVERITIES"; exit 0 ;;
-  --contract) exec python3 "$(dirname "$0")/kit_findings.py" --contract ;;
+  --contract) exec "$PYBIN" "$(dirname "$0")/kit_findings.py" --contract ;;
 esac
 
 ROOT=$(kit_root) || exit 0
@@ -98,7 +107,7 @@ while [ $# -gt 0 ]; do
     # `kit-finding.sh --task T --vocab` exit 2 as an unknown argument -- a regression a
     # round-4 reviewer caught. Both spellings work from either position now.
     --vocab) printf 'class:    %s\nseverity: %s\n' "$CLASSES" "$SEVERITIES"; exit 0 ;;
-    --contract) exec python3 "$(dirname "$0")/kit_findings.py" --contract ;;
+    --contract) exec "$PYBIN" "$(dirname "$0")/kit_findings.py" --contract ;;
     # DERIVED, not a line range. This was `sed -n '4,8p'`, which silently truncated: it
     # already hid `--vocab` and `--contract` -- both real flags, both documented here, neither
     # ever printed by --help -- and it clipped this header again the moment it grew. A help
@@ -147,13 +156,13 @@ emit() {  # emit <stdin: reviewer JSON object>
   [ -n "$task" ] && set -- "$@" --task "$task"
   [ "$unattributed" = 1 ] && set -- "$@" --unattributed
   _ids="$*"
-  _out=$(python3 "$PY" --emit-events "$@" \
+  _out=$("$PYBIN" "$PY" --emit-events "$@" \
            --agent "$agent" --agent-id "$agent_id" --model "$model" \
            --industries "$(declared_industries)") || {
     # A REJECTED batch is the one case where findings genuinely exist and are lost, so it must
     # leave a row rather than a stderr line. Emitting only on the empty case -- which is what
     # the first version did -- recorded the harmless half and dropped the harmful one.
-    _gap=$(python3 "$PY" --gap-event rejected $_ids \
+    _gap=$("$PYBIN" "$PY" --gap-event rejected $_ids \
              --agent "$agent" --agent-id "$agent_id") &&
       printf '%s\n' "$_gap" >> "$EV"
     return 2
@@ -211,7 +220,7 @@ PY="$(dirname "$0")/kit_findings.py"
 # shares one id, and a warning repeated forty times is one nobody finishes reading. The first
 # draft of this sat beside EV at :112, where PY is still empty -- `bash -n` passes on that.
 if [ -n "$agent_id" ]; then
-  python3 "$PY" --check-agent-id "$EV" "$agent_id" || true
+  "$PYBIN" "$PY" --check-agent-id "$EV" "$agent_id" || true
 fi
 
 # The structured path: a reviewer returns DATA and this records it. No block is scraped out of
@@ -243,7 +252,7 @@ fi
 }
 validate "$class" "$sev" || exit 2
 
-python3 -c 'import json,sys
+"$PYBIN" -c 'import json,sys
 k=("class","severity","summary","lang","pattern","domain","carries_over")
 print(json.dumps({"findings":[{a:b for a,b in zip(k,sys.argv[1:]) if b!=""}]}))' \
   "$class" "$sev" "$summary" "$lang" "$pattern" "$domain" "$carries_over" | emit || {

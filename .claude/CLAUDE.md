@@ -29,12 +29,16 @@
   Run the suite locally only with a reason you can say out loud: a filtered `--only <name>` while
   iterating, or a defect you cannot reproduce in CI. A full local Windows run is now the exception.
 
-  **`conformance (windows-latest)` is expected red, and that is not a broken build.** It is NOT a
-  required check, deliberately, because it currently fails on one real defect — gawk 5.4.1 rejects
-  `globre`'s `/\052+/`, `T-20260817`. Read it for *new* failures against that baseline:
-  **31 FAIL / 71 PASS, 1 globre error, 37 `no such table`**, all one cascade. A required check that
-  is red locks the branch for everyone; promoting this leg is a separate decision, to be taken once
-  it is green.
+  **`conformance (windows-latest)` went GREEN on 2026-09-17: 139 passed, 0 failed, 0 skipped.**
+  It is still NOT a required check. Promoting it is a deliberate decision and has not been taken;
+  until it is, read the leg rather than assume it. A red Windows leg now means a REGRESSION, not
+  the known backlog it used to mean.
+
+  The baseline this file carried until today -- "expected red, 31 FAIL / 71 PASS" -- is gone
+  because both defects behind it are fixed: gawk 5.4.1 rejecting `globre`'s `/\052+/` (#144), and
+  `subprocess.run(["bash", ...])` reaching `C:\Windows\System32\bash.exe`, the WSL launcher,
+  instead of Git's bash (#146). The second hid the first: until the index could build, 53 steps
+  never ran at all, so "71 PASS" was never a measurement of anything.
 
   **A branch push alone triggers nothing** — the workflow fires on `pull_request` and on pushes to
   `main`. Open the PR, or CI never starts. PRs are also what keep `main` green: only verified work

@@ -2,7 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 # Copyright 2026 Raghuveer Dendukuri
 # kit-lib.sh — shared helpers. Sourced, never executed directly.
-# Dependencies: git, sqlite3, awk, sed. Nothing else, by design.
+# Dependencies: git, sqlite3, awk, sed -- and python3 in the five scripts that use
+# `kit_python` below. That last one was omitted from this line while five scripts already
+# depended on it, which is how a platform without it read as fourteen unrelated defects.
 
 kit_root() { git rev-parse --show-toplevel 2>/dev/null; }
 
@@ -69,6 +71,36 @@ kit_version() {
 }
 
 kit_warn() { printf 'kit: %s\n' "$*" >&2; }
+
+# kit_python -> prints the interpreter to use on stdout; returns 1 if there is none.
+#
+# ONE HOME, because five scripts shell out to an interpreter and the ones that did not check
+# reported its absence as a defect in the DATA: kit-finding.sh printed "finding rejected by the
+# contract" when the contract had never been read. A caller does
+#
+#     PYBIN=$(kit_python) || { kit_warn "..."; exit 2; }
+#
+# and gets to say what IT cannot do, which is the part a user can act on.
+#
+# `python3` first, then `python`. Windows is why the fallback exists: the platform ships
+# `python.exe`, and `python3` there is frequently either absent or a Microsoft Store execution
+# alias that is not an interpreter at all.
+#
+# THE VERSION PROBE IS NOT DECORATION. It is what makes the alias case safe -- the alias IS on
+# PATH, so `command -v` finds it, and only running it reveals it is not Python. The same probe
+# refuses a `python` that is still 2.x rather than selecting it and failing later inside a
+# script with a confusing message.
+#
+# KIT_PYTHON overrides both, for a machine whose interpreter is named neither.
+kit_python() {
+  if [ -n "${KIT_PYTHON:-}" ]; then printf '%s' "$KIT_PYTHON"; return 0; fi
+  for _kp in python3 python; do
+    command -v "$_kp" >/dev/null 2>&1 || continue
+    "$_kp" -c 'import sys; sys.exit(0 if sys.version_info[0] >= 3 else 1)' >/dev/null 2>&1 || continue
+    printf '%s' "$_kp"; return 0
+  done
+  return 1
+}
 
 # kit_plan_digest <index.db> -> an opaque string for "the backlog this plan was computed from".
 #

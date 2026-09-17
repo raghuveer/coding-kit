@@ -738,6 +738,47 @@ Task-Status: done"
 check $? "one row per transcript, agent rows from agent files, main loop unlabelled"
 fi
 
+if step "concurrent spend firings append one event, not one per firing" spend; then
+# kit-spend.sh reads the WHOLE event log into seen[] and only then appends, so two hooks firing
+# at once for the same transcript both read the pre-append state and both write. It needs one
+# hook registered TWICE for one transcript -- a local .claude/settings.json plus --plugin-dir.
+# Stop and SubagentStop alone key on DIFFERENT transcripts and never collide, which is why this
+# repository's own log is clean and why the step above -- four SEQUENTIAL firings -- passes
+# against the defect and could never have caught it.
+#
+# This asserts EVENTS, not rows. Rows were never wrong: last-write-wins collapses duplicates and
+# no cost figure moved. The committed append-only log is what a duplicate damages, and the event
+# count is the only place it is visible -- keeping those two halves apart is the point.
+#
+# THREE ROUNDS, not one. Measured on the unfixed script: 17 of 20 concurrent pairs duplicated,
+# so a single round would pass against the defect roughly one time in seven. Three rounds of
+# three firings puts a false pass below one in three hundred, and the message names the round.
+sc="$WORK.spendlock"; rm -rf "$sc"; mkdir -p "$sc/src"
+( cd "$sc" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf '{"type":"assistant","message":{"model":"m","usage":{"input_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":10,"output_tokens":5}}}
+' > sess.jsonl
+  bad=""
+  for round in 1 2 3; do
+    : > .project/events.ndjson
+    bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" &
+    bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" &
+    bash "$KIT/tooling/kit-spend.sh" --transcript "$PWD/sess.jsonl" &
+    wait
+    n=$(grep -c '"kind":"spend"' .project/events.ndjson 2>/dev/null)
+    [ "$n" = 1 ] || bad="$bad round$round=$n"
+  done
+  [ -n "$bad" ] && { echo "  concurrent firings duplicated:$bad (wanted 1 event each)"; exit 1; }
+  # A lock that outlives the hook makes every later firing pay the retry bound before falling
+  # through, so the cleanup is asserted rather than assumed.
+  [ -d .project/.spend.lock ] && { echo "  the lock directory outlived the hook"; exit 1; }
+  exit 0 )
+check $? "concurrent firings append one event, and the lock does not outlive them"
+rm -rf "$sc"
+fi
+
 if step "a reviewer's findings reach the table, and an unrecorded review is visible"; then
 # The defect: reviewers emitted correctly formatted blocks and NOTHING consumed them. A real
 # project that had run a T2 and a T3 review held zero finding rows, and every escape-rate number

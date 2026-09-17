@@ -55,7 +55,12 @@ done
 if [ "$CHECK_REFS" = 1 ]; then
   DEPMAP=$(kit_cfg "$PROFILE" paths.depmap "docs/dependency-map.tsv")
   TASKS_DIR=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
-  exec python3 "$(dirname "$0")/kit_refs.py" --tasks "$ROOT/$TASKS_DIR" --db "$DB" --map "$ROOT/$DEPMAP"
+  PYBIN=$(kit_python) || {
+    kit_warn "no python3 (or python 3.x) on PATH -- cannot check prose task references"
+    kit_warn "  install Python 3, or set KIT_PYTHON to the interpreter to use"
+    exit 2
+  }
+  exec "$PYBIN" "$(dirname "$0")/kit_refs.py" --tasks "$ROOT/$TASKS_DIR" --db "$DB" --map "$ROOT/$DEPMAP"
 fi
 
 # A MILESTONE'S STATE IS TEXT, and this is where it is decided. ADR 0004: the plan file is the

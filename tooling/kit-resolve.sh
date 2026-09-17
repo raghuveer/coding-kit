@@ -407,23 +407,33 @@ mkdir -p "$ROOT/$STATE_DIR"
 # retraction loses -- and `date -u` cannot produce it portably, because BSD date has no %N.
 _actor=$(git -C "$ROOT" config user.email 2>/dev/null ||
          git -C "$ROOT" config user.name 2>/dev/null || true)
+
+# Resolved before any writer runs, so a missing interpreter is reported as a missing
+# interpreter. Each branch below blames "the event could not be serialised" on a non-zero
+# exit -- true of a serialisation failure, false of an absent python3, and the operator acts
+# on the message rather than on the exit code.
+PYBIN=$(kit_python) || {
+  kit_warn "no python3 (or python 3.x) on PATH -- cannot record a disposition"
+  kit_warn "  install Python 3, or set KIT_PYTHON to the interpreter to use"
+  exit 2
+}
 if [ "$unass" = 1 ]; then
   # The blank-reason refusal lives in the writer, not here, so it holds for every caller rather
   # than for this one path. A mark that removes a finding from the criticals gate without saying
   # why is the laundering the whole disposition exists to avoid.
-  _out=$(python3 "$(dirname "$0")/kit_findings.py" --unassessable \
+  _out=$("$PYBIN" "$(dirname "$0")/kit_findings.py" --unassessable \
            --finding "$finding" --reason "$reason" \
            --task "${ftask:-}" --actor "$_actor") || {
     kit_warn "refusing to record: the event could not be serialised"; exit 1; }
 elif [ "$supers" = 1 ]; then
   # The blank --by refusal lives in the writer, not here, so it holds for every caller rather
   # than for this one path -- the same split as --reason on an unassessable mark.
-  _out=$(python3 "$(dirname "$0")/kit_findings.py" --superseded \
+  _out=$("$PYBIN" "$(dirname "$0")/kit_findings.py" --superseded \
            --finding "$finding" --by "$by" \
            --task "${ftask:-}" --actor "$_actor") || {
     kit_warn "refusing to record: the event could not be serialised"; exit 1; }
 else
-  _out=$(python3 "$(dirname "$0")/kit_findings.py" --resolve \
+  _out=$("$PYBIN" "$(dirname "$0")/kit_findings.py" --resolve \
            --finding "$finding" --fixed "$verdict" --commit "$commit" --note "$note" \
            --task "${ftask:-}" --actor "$_actor") || {
     kit_warn "refusing to record: the event could not be serialised"; exit 1; }

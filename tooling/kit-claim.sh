@@ -194,11 +194,11 @@ case "$*" in
   MAN_RECORDED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ 2>/dev/null)
   [ -n "$MAN_RECORDED_AT" ] || { kit_warn "could not read the clock"; exit 1; }
 
-  command -v python3 >/dev/null 2>&1 || { kit_warn "python3 is required to write the manifest"; exit 1; }
+  PYBIN=$(kit_python) || { kit_warn "python3 (or python 3.x) is required to write the manifest"; exit 1; }
   export MAN_PURPOSE MAN_SUBJECT_REPO MAN_SUBJECT_SHA MAN_SUBJECT_DIRTY MAN_SUBJECT_REMOTE
   export MAN_SOURCE_DOCUMENT MAN_AUDITOR_MODEL MAN_AUDITED_AT MAN_UNITS
   export MAN_KIT_SHA MAN_KIT_VERSION MAN_RECORDED_AT
-  _json=$(python3 "$(dirname "$0")/kit_manifest.py" --write) || exit 1
+  _json=$("$PYBIN" "$(dirname "$0")/kit_manifest.py" --write) || exit 1
 
   mkdir -p "$CDIR" || { kit_warn "could not create ${CDIR#$ROOT/}"; exit 1; }
   # TEMP FILE THEN RENAME. A half-written manifest beside artefacts that reference it is worse
@@ -284,8 +284,8 @@ case "${1:-}" in
   # It is NOT a dependency of the derive path and nothing here changes that.
   # T-20260809-one-json-reader-and-one-json-writer-at-t governs folding this into that one
   # reader; this is a second call site, named here rather than left to be found.
-  command -v python3 >/dev/null 2>&1 || { kit_warn "python3 is required to read the manifest"; exit 1; }
-  _verdict=$(MAN="$MAN" UNIT="$unit" python3 "$(dirname "$0")/kit_manifest.py") \
+  PYBIN=$(kit_python) || { kit_warn "python3 (or python 3.x) is required to read the manifest"; exit 1; }
+  _verdict=$(MAN="$MAN" UNIT="$unit" "$PYBIN" "$(dirname "$0")/kit_manifest.py") \
     || { kit_warn "could not read ${MAN#$ROOT/}"; exit 1; }
 
   case "$_verdict" in
@@ -343,7 +343,7 @@ case "${1:-}" in
   # `3e76f904`: the manifest names one source_document per census while each unit names its own
   # source, so until this check a census spanning two documents recorded a manifest that
   # contradicted its own units -- in the committed artefact, with no derivation involved.
-  _sv=$(MAN="$MAN" ART="$_dest" python3 "$(dirname "$0")/kit_manifest.py" --source) \
+  _sv=$(MAN="$MAN" ART="$_dest" "$PYBIN" "$(dirname "$0")/kit_manifest.py" --source) \
     || { kit_warn "the F1d source check could not run; ${_dest#$ROOT/} was KEPT"; exit 1; }
   case "$_sv" in
     OK) exit 0 ;;

@@ -1,0 +1,1 @@
+{"findings":[{"class":"correctness","severity":"nit","lang":"ba\"sh","pattern":"a\\b","domain":"x\"y","file":"a\"b.sh","line":42,"summary":"the guard reads \"x\" and a \\ breaks it"}]}

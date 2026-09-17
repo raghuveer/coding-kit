@@ -201,6 +201,36 @@ A new file is invisible to that check exactly once, and that once is the commit 
 The gate did its job at the first opportunity it had. The alternative was carrying a broken mode
 through however many commits until someone thought to ask CI.
 
+### 9.1 The corollary that expired, and what remained — 2026-09-17
+
+For a month the working agreement carried a longer version of this: Windows was in no CI matrix,
+its suite cost **an hour** locally against CI's 45 seconds, and the rule was to commit, push, and
+start the local run *in the same breath* so the two verifications overlapped. It also recorded,
+honestly, that the order had been inverted twice in one session after the lesson was already
+written down — the correction came from the operator asking, not from the note.
+
+That rule ended when `conformance (windows-latest)` was added in PR #137: **~5m 20s in CI against
+~60 min locally.** The rule said of itself, "when that gap closes, this belongs in history rather
+than in the working agreement", so it is here.
+
+**Three things outlived it, and they are the transferable part.**
+
+**An hour of local verification was never the price of Windows.** It was one machine spawning
+processes at ~1,015 ms against a stock runner's 12-14 ms — a **75x** fault, four causes tested and
+refuted (`T-20260822`). A cost attributed to a platform when it belongs to a machine is a cost
+nobody thinks to remove, and it had been paid, unexamined, for a month.
+
+**The leg that catches you is the one no green check can go red on.** Twenty-eight commits once
+shipped green on Windows and failed `macos-latest` for two GNU-only constructs in the *suite's own
+test code*. The reverse direction had no check at all until #137 — and on its first clean run it
+refuted a severity bound that `T-20260817` had written down as fact: "no supported platform is
+known to reject it at runtime". gawk 5.4.1 does.
+
+**Adding a platform is cheap; the discipline is refusing to make it required while it is red.** A
+required check that fails locks the branch for everyone, so a leg expected to go red before it goes
+green must report rather than gate. That is not a lowered bar — the baseline is written down
+(31 FAIL / 71 PASS, one cascade from one line) and read for *new* failures against it.
+
 ---
 
 ## 10. Decompose by technical property, not by organisational category

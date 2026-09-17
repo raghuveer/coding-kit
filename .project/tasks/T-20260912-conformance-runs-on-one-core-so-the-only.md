@@ -41,7 +41,39 @@ the suite itself, which is the evidence that the steps really are independent.
 - [ ] No two buckets share a `WORK` prefix, and a step proves two concurrent buckets cannot collide -- fixture isolation is the assumption the whole change rests on, so it is asserted, not assumed
 - [ ] The wall-clock and the job count are printed, so the gain is measured on each run rather than quoted once. A poor gain must be visible: if it proves I/O-bound on NTFS the honest conclusion is 'run it less', and that conclusion needs the number too
 - [ ] Verified against the serial suite step for step -- same steps, same verdicts -- before the parallel path is trusted for anything
-- [ ] `.claude/CLAUDE.md`'s working agreement is updated with the measured figure. It currently reads `Windows, local ~1 hour` and states it belongs in history once that gap closes
+- [x] `.claude/CLAUDE.md`'s working agreement is updated with the measured figure. It currently reads `Windows, local ~1 hour` and states it belongs in history once that gap closes
+
+## Amendment 2026-09-17 — the premise changed; what `--jobs` is worth is now an operator call
+
+**The Intent above says "Windows is in no CI matrix at all, so the local run is the only Windows
+signal that exists." That is no longer true.** `conformance (windows-latest)` was added in PR #137
+and runs the FULL suite in **~5m 20s**. The original text is left unedited; this supersedes it.
+
+**The last criterion is met and ticked.** `.claude/CLAUDE.md` now carries the measured figures --
+1m07s / 2m17s / 5m20s across the three legs, and ~1,015 ms vs 12-14 ms per process spawn -- and the
+block that called itself temporary has moved to `docs/LESSONS.md` §9.1, which is where it said it
+belonged once the gap closed.
+
+**What this does to the rest of the task.** Its stated value was "entirely the local Windows run",
+and it explicitly ruled CI out of scope because ubuntu was already fast. Both halves of that
+argument have moved:
+
+| | when filed (2026-09-12) | now |
+|---|---|---|
+| only Windows signal | a ~1 hour local run | a ~5m 20s CI leg |
+| what `--jobs` would save | that hour, on every change | an hour that should no longer be spent |
+
+So `--jobs` no longer buys the thing it was filed to buy. **It is not therefore worthless** -- a
+parallel suite still helps anyone iterating locally on a slow machine, and the aggregated-tally
+criterion is a genuine correctness property. But the case must be re-argued on those grounds rather
+than on the hour, and **the task is left open for the operator to decide** rather than closed here
+on an argument they did not make.
+
+**One thing the amendment does NOT weaken.** The Intent's list of Windows-only failures -- the two
+GNU-only constructs, the carriage return in config parsing, the false CRLF finding from
+`grep -c $'\r'` -- remains exactly as valid. Those are the reason a Windows leg had to exist at
+all, and #137 is the answer to them. The disagreement is only about where the run happens, never
+about whether it should.
 
 ## Notes
 

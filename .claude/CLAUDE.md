@@ -13,33 +13,37 @@
   that outranks the text they came from.
 - Never write outside the project root.
 
-- **Verify on the fast platform first. Work on a branch, push, and read CI before starting the
-  local suite.** Not a reordering of "verify then publish" — CI *is* the fast verifier here:
+- **Verify in CI, not locally. Push, open the PR, read three legs.** As of 2026-09-17 every
+  platform the kit supports runs the full suite in CI:
 
-      ubuntu-latest   ~45s     full suite
-      macos-latest    ~1m50s   full suite
-      Windows, local  ~1 hour  full suite, and the only Windows signal there is
+      conformance (ubuntu-latest)    ~1m 07s   required
+      conformance (macos-latest)     ~2m 17s   required
+      conformance (windows-latest)   ~5m 20s   REPORTING, not required
 
-  Both matter and neither substitutes for the other — Windows is in no CI matrix, and CI covers
-  two platforms this machine cannot. So run them **in parallel**: commit, push, and start the
-  local run in the same breath. Committing does not modify the working tree, so there is never a
-  reason to serialise them.
+  Windows joined the matrix in PR #137. It used to cost **an hour** on this machine, and the
+  earlier version of this rule told you to start that local run in parallel with the push. **Do
+  not.** That hour buys nothing CI does not deliver in five minutes, and the reason the local run
+  is slow is a fault on this machine, not a property of Windows — it spawns processes at
+  ~1,015 ms against a runner's 12-14 ms. See `T-20260822`.
 
-  **If CI goes red, stop the local run rather than letting it finish.** Fixing means editing the
-  files it is reading, which invalidates it anyway; a run whose tree changed under it measured a
-  state that never existed. Iterate against CI until green, then let Windows confirm.
+  Run the suite locally only with a reason you can say out loud: a filtered `--only <name>` while
+  iterating, or a defect you cannot reproduce in CI. A full local Windows run is now the exception.
 
-  **A branch push alone triggers nothing** — the workflow fires on `pull_request` and on pushes
-  to `main`. Open the PR, or CI never starts. PRs are also what keep `main` green: only verified
-  work merges.
+  **`conformance (windows-latest)` is expected red, and that is not a broken build.** It is NOT a
+  required check, deliberately, because it currently fails on one real defect — gawk 5.4.1 rejects
+  `globre`'s `/\052+/`, `T-20260817`. Read it for *new* failures against that baseline:
+  **31 FAIL / 71 PASS, 1 globre error, 37 `no such table`**, all one cascade. A required check that
+  is red locks the branch for everyone; promoting this leg is a separate decision, to be taken once
+  it is green.
 
-  This is written down because knowing it was not enough. The order was inverted twice in one
-  session after the lesson had already been recorded, and both times the correction came from the
-  operator asking rather than from the note. Treat it as a precondition on the ACT of running the
-  suite locally — *is this pushed?* — not as a strategy to remember.
+  **A branch push alone triggers nothing** — the workflow fires on `pull_request` and on pushes to
+  `main`. Open the PR, or CI never starts. PRs are also what keep `main` green: only verified work
+  merges.
 
-  **Temporary.** It is shaped by the Windows suite costing an hour against CI's 45 seconds. When
-  that gap closes, this belongs in history rather than in the working agreement.
+  **Never let a run finish against a tree you are editing.** If CI goes red, fix and push again —
+  do not read the output of a run whose inputs changed under it, because it measured a state that
+  never existed. This is the part of the old rule that was never about Windows.
+
 - Commits carrying real change carry `Task-Id:` and `Tier:` trailers.
 - `Via:` records HOW the work was done — `kit`, `agent`, `manual`. Optional; absent
   means `unknown`, which is reported as unknown. Escape rate is reported over the

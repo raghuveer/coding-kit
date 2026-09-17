@@ -85,6 +85,51 @@ fi
 [ -n "$TRANSCRIPT" ] && [ -f "$TRANSCRIPT" ] || exit 0
 
 EVENTS="$ROOT/$STATE_DIR/events.ndjson"
+
+# SERIALISING THE LOG'S READ-MODIFY-WRITE.
+#
+# The dedupe below reads the WHOLE log into seen[] and only then appends, so two hooks firing
+# concurrently for the same transcript both read the pre-append state and both write. Measured
+# 2026-09-17: 17 of 20 concurrent pairs duplicated. It needs one hook registered TWICE for one
+# transcript -- a local .claude/settings.json plus --plugin-dir is the case that found it. Stop
+# and SubagentStop alone never collide, because they key on different transcripts, which is why
+# this repository's own log is clean.
+#
+# It matters because events.ndjson is COMMITTED and append-only: a duplicate is permanent, and
+# every consumer counting EVENTS rather than derived rows reads it. Rows are unaffected either
+# way -- last-write-wins collapses them -- so no cost figure was ever wrong.
+#
+# mkdir is the primitive because it is atomic everywhere the kit runs and needs no flock(1),
+# which macOS does not ship.
+LOCK="$ROOT/$STATE_DIR/.spend.lock"
+_SPEND_LOCKED=""
+spend_unlock() { [ -n "$_SPEND_LOCKED" ] && rmdir "$LOCK" 2>/dev/null; _SPEND_LOCKED=""; return 0; }
+spend_lock() {
+  _t=0
+  until mkdir "$LOCK" 2>/dev/null; do
+    # A lock older than a minute is not contention, it is a hook killed before its trap ran.
+    # Break it, rather than making every later firing wait out the full retry bound.
+    if [ -n "$(find "$LOCK" -maxdepth 0 -mmin +1 2>/dev/null)" ]; then
+      rmdir "$LOCK" 2>/dev/null
+      continue
+    fi
+    _t=$((_t + 1))
+    # FALL THROUGH rather than give up. Past this bound the behaviour is exactly what it was
+    # before this lock existed -- a possible duplicate -- and that is strictly better than
+    # dropping a reading: a hook that silently loses a session's last Stop understates that
+    # session permanently, and understating is the failure this instrument exists to detect.
+    # A duplicate is visible in the log; a missing reading is not visible anywhere.
+    # 20 x 0.1s, not 40 x 0.05s: every iteration spawns sleep(1), and on a machine with slow
+    # process creation the spawns cost more than the waiting. Measured here, 40 iterations took
+    # 7s of wall clock against 2s of intended sleep. The bound covers ~2s of contention against
+    # a critical section measured at 0.16s.
+    [ "$_t" -gt 20 ] && return 0
+    sleep 0.1
+  done
+  _SPEND_LOCKED=1
+  return 0
+}
+trap 'spend_unlock' EXIT INT TERM
 SUBDIR="${TRANSCRIPT%.jsonl}/subagents"
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 mkdir -p "$ROOT/$STATE_DIR"
@@ -133,10 +178,12 @@ if [ -n "$AGENT_ID" ]; then
       _KIND=spend-untracked
       _WHY="stop fired for an unnamed agent with no transcript; not a subagent run"
     fi
+    spend_lock
     grep -q "\"$_KIND\".*\"agent_id\":\"$AGENT_ID\"" "$EVENTS" 2>/dev/null || \
     printf '{"task":"","kind":"%s","at":"%s","agent":"%s","agent_id":"%s","session":"%s","reason":"%s"}\n' \
       "$_KIND" "$NOW" "$(esc "$AGENT")" "$(esc "$AGENT_ID")" "$(esc "$SESSION")" "$_WHY" \
       >> "$EVENTS"
+    spend_unlock
     exit 0
   fi
 else
@@ -155,6 +202,7 @@ MAINKEY=""
 # Two streams into the same reader. `M` lines carry each agent's declared type from its
 # .meta.json, so a swept row can still say what kind of agent it was; `F` lines name the
 # transcripts to read. Meta first, so the join is already built when the data arrives.
+spend_lock
 {
   # Newline-delimited, and expanded without basename(1) or word splitting: a home directory
   # with a space in it is not an error condition, and one process per file is what this
@@ -264,3 +312,4 @@ MAINKEY=""
       NOW, esc(key), scope, esc(agent), esc(aid), esc(SESSION), esc(model), turns, tin, tout, tcr, tcw, ctx, packs
   }
 ' >> "$EVENTS"
+spend_unlock

@@ -129,7 +129,9 @@ Facts, so that any comparison starts from what is built rather than what is desi
 - **Risk-tiered review** (T0–T3) with tier floors by path, a trailer gate enforced in CI, and a
   findings record with dispositions that cannot be set by assertion alone.
 - **CI**: three jobs producing **four required checks** — `trailers`, `structure`, and `conformance`
-  across a `[ubuntu-latest, macos-latest]` matrix. Step count: `kit-charter.sh`.
+  across a `[ubuntu-latest, macos-latest]` matrix, plus `conformance (windows-latest)`, which
+  **reports and is not required**: it covers the platform the suite is authored on, where no leg
+  could previously go red. Step count: `kit-charter.sh`.
 - **The record itself**: tasks, findings and ADRs — counted by `kit-charter.sh`. What matters here
   and is not a count: **some ADRs are rejected and deliberately kept unedited**, so the record shows
   what was wrong rather than only what was decided.

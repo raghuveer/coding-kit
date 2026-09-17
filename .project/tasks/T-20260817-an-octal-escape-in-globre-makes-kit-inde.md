@@ -10,6 +10,10 @@ state: open
 
 ## Intent
 
+> **AMENDED 2026-09-17. The severity bound in this task is REFUTED — see the amendment below
+> the criteria. What follows is the original 2026-08-17 text, kept unedited because the record
+> should show what was believed, not only what turned out to be true.**
+
 `tooling/kit-index.sh:351`, inside `globre` — the glob-to-regex converter both tier-floor paths
 depend on:
 
@@ -83,6 +87,75 @@ portability failure nobody can demonstrate.
 - [ ] `docs/LESSONS.md` §12 records the construct alongside the two argument-permutation cases it
       already carries, with the detection. It is a third instance of the same lesson and the
       section is where the next person will look.
+
+## Amendment 2026-09-17 — this is a broken build on a stock awk, not a POSIX-mode curiosity
+
+**The section above headed "What this does NOT establish" is wrong, and it is wrong in the
+direction that matters.** It reads:
+
+> No supported platform is known to reject it at runtime. ... This is a `gawk --posix` result,
+> and `gawk --posix` is not any platform's awk.
+
+A `conformance (windows-latest)` leg was added to CI on 2026-09-17 (PR #137). On its first clean
+run it failed, and this construct is the cause:
+
+```
+awk: cmd. line:28: error: ? * + or {interval} not preceded by valid subpattern: /\052+/
+kit: task ingest read 0 of 2 task file(s)
+kit: the task ingest did not complete; the index at .project/index.db was NOT rebuilt.
+```
+
+**`POSIXLY_CORRECT` is not set anywhere in that run.** `grep -c POSIXLY_CORRECT tests/conformance.sh`
+is `0`, the workflow sets no such variable, and the error text differs from the one recorded above
+(`Invalid preceding regular expression`), so it is not the same code path reporting the same thing.
+
+| | gawk | `/\052+/` in DEFAULT mode |
+|---|---|---|
+| dev machine | **5.3.2** | accepts |
+| `windows-latest` runner | **5.4.1** | **rejects** |
+
+**Not bisected.** Two builds that differ in version behave differently; the change has not been
+traced to a specific gawk commit, and this note does not claim a cause beyond the two readings.
+
+### Why this raises the severity rather than merely adding a platform
+
+**It is not a Windows defect.** `conformance (ubuntu-latest)` runs mawk and `conformance
+(macos-latest)` runs BSD awk — neither is gawk, which is exactly why two green legs could coexist
+with this for a month. Any machine that reaches gawk 5.4.1 loses the ability to build the index,
+Linux included. The Windows leg did not find a Windows bug; it found the first machine in this
+project's CI running a gawk new enough to care.
+
+So the cost recorded above -- "not a broken build ... the cost is that the kit's own pre-push check
+cannot be run on its largest script" -- understates it. On gawk 5.4.1 it **is** a broken build:
+`kit-index.sh` cannot rebuild the index at all, and every consumer downstream reports
+`no such table`.
+
+### Blast radius measured, not estimated
+
+From that one run: **31 steps FAILed and 37 `no such table` errors** followed the single ingest
+refusal. The failures are a cascade from this line, not 31 independent defects. **One failure is
+separate and is NOT attributable here** — the CRLF step reports `kit_cfg leg: masked by $(...) on
+this shell` and needs its own look. The remainder were not individually attributed.
+
+**It still fails safely.** The ingest refuses, the previous index is left untouched, and the
+refusal is announced. Nothing in the original text about fail-safety is disturbed.
+
+### What this changes about the criteria
+
+**AC4's stated rationale is now false.** It says "the whole point is that ordinary CI is green
+either way — **no existing check can fail on this**, which is why one has to be added rather than
+relied upon." A check that fails on it now exists: `conformance (windows-latest)`, red at run
+`35166601466`. The criterion is still worth meeting — that leg is deliberately NOT a required
+check, and a `POSIXLY_CORRECT` step would fail on every platform rather than on whichever one
+happens to ship a new gawk — but it should be met knowing a check already catches it, not on the
+premise that none can.
+
+**AC1 is unaffected and remains the right shape.** AC2's equivalence proof should now also be run
+under **gawk 5.4.1**, since that is the awk that rejects the current construct and the one the
+replacement has to satisfy.
+
+**No criterion is ticked by this amendment.** Nothing here is a fix; the construct is unchanged at
+`tooling/kit-index.sh:351`.
 
 ## Notes
 

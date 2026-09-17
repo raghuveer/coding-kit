@@ -148,6 +148,14 @@ if step "environment"; then
 uname -srm 2>/dev/null || echo "(no uname)"
 bash --version | head -1; git --version; sqlite3 --version | awk '{print "sqlite3 "$1}'
 (awk --version 2>/dev/null || awk -W version 2>&1) | head -1
+# The kit shells out to python3 from kit-finding.sh, kit-resolve.sh, kit-review-record.sh,
+# kit-claim.sh and kit-plan.sh. It was not reported here, so a platform without it looked
+# like fourteen unrelated finding failures rather than one missing interpreter. Report every
+# interpreter the kit depends on, not only the ones that were interesting the day this was
+# written. Never fails the run -- it is the environment banner, not a gate.
+python3 --version 2>&1 | head -1 || echo "python3: ABSENT"
+command -v python3 >/dev/null 2>&1 || echo "python3: NOT ON PATH"
+python  --version 2>&1 | head -1 || echo "python: ABSENT"
 fi
 
 if step "scripts are executable in the git index"; then

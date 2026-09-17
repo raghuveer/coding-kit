@@ -182,6 +182,10 @@ b
   bash "$KIT/tooling/kit-finding.sh" --task T-d --agent implementation-reviewer     --class race --severity major --lang bash --summary "diagnostic probe, not a real finding" 2>&1 |
     sed 's/^/    /' | head -20
   echo "    exit=$? events=$(grep -c '"kind":"finding"' .project/events.ndjson 2>/dev/null)"
+  echo "--- which bash does each layer resolve? ---"
+  echo "    shell sees:  $(command -v bash)"
+  python3 -c "import shutil,sys; print('    python sees:', shutil.which('bash'))" 2>&1 | head -2
+  python3 -c "import subprocess,sys; r=subprocess.run(['bash','-c','echo ok'],capture_output=True); print('    bash -c echo ok -> rc=%s out=%r err=%r' % (r.returncode, r.stdout[:80], r.stderr[:80]))" 2>&1 | head -3
   echo "--- kit_findings.py --contract, stderr shown ---"
   python3 "$KIT/tooling/kit_findings.py" --contract 2>&1 | sed 's/^/    /' | head -5
   rm -rf "$pd" ) 2>&1 || true

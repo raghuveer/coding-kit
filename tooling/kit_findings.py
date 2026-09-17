@@ -49,6 +49,7 @@ import datetime
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -130,8 +131,16 @@ def vocabularies():
         # A hung or missing shell must not hang or crash the recorder. It must say so.
         raise Rejected("could not run `kit-finding.sh --vocab`: %s" % exc)
     if out.returncode != 0:
-        raise Rejected("`kit-finding.sh --vocab` failed: %s"
-                       % out.stderr.decode("utf-8", "replace").strip())
+        # EVERY informative part, not just stderr. This said only `failed: ` with an empty
+        # tail for a month of windows-latest runs -- a non-zero exit and silent stderr, which
+        # is the one combination the old message could not describe. Fourteen conformance
+        # steps then reported "recorded 0" and nothing anywhere said why. An error that omits
+        # the returncode, the stdout and WHICH interpreter it found is not an error message.
+        raise Rejected(
+            "`kit-finding.sh --vocab` failed: rc=%s bash=%s stderr=%r stdout=%r"
+            % (out.returncode, shutil.which("bash"),
+               out.stderr.decode("utf-8", "replace").strip()[:300],
+               out.stdout.decode("utf-8", "replace").strip()[:300]))
     vocab = {}
     for line in out.stdout.decode("utf-8", "replace").splitlines():
         if ":" in line:

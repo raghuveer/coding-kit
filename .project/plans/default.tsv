@@ -4,8 +4,8 @@
 #goal	default
 #created	2026-08-17T02:49:19Z
 #goal_state	in-progress
-#tasks_digest	49233406-12857
-#parked	7 163
+#tasks_digest	2183944930-12789
+#parked	7 162
 #columns	goal_id	task_id	layer	rank	score	cluster
 default	T-20260808-make-the-security-assurance-cadence-a-po	0	1	11.000	6
 default	T-20260912-a-declared-rung-whose-tooling-fails-has-	0	2	5.000	6
@@ -25,26 +25,26 @@ default	T-20260814-accelerator-binding-names-an-agent-the-k	0	15	1.000	6
 default	T-20260801-reviewer-agents-cannot-run-the-tools-the	0	16	0.000	6
 default	T-20260808-co-change-has-no-eval-harness-so-its-sco	0	17	6.000	3
 default	T-20260826-the-trial-environment-is-recorded-as-pro	0	18	6.000	3
-default	T-20260821-the-kit-does-not-measure-its-own-develop	0	19	5.000	3
-default	T-20260809-harden-the-schema-so-a-null-cannot-erase	0	20	3.000	3
-default	T-20260812-commits-vanish-between-rev-list-and-the-	0	21	3.000	3
-default	T-20260814-the-absent-counter-notice-fires-on-every	0	22	3.000	3
-default	T-20260821-if-stale-watches-the-head-file-which-git	0	23	3.000	3
-default	T-20260821-kit-trailers-never-checks-tier-against-t	0	24	3.000	3
-default	T-20260822-event-seq-is-ingest-order-so-a-commit-tr	0	25	3.000	3
-default	T-20260808-record-which-mechanism-produced-a-findin	0	26	2.000	3
-default	T-20260809-the-unverified-tier-floor-message-names-	0	27	2.000	3
-default	T-20260812-an-uninstrumented-project-reports-the-sa	0	28	2.000	3
-default	T-20260814-a-deliberate-compromise-cannot-be-record	0	29	2.000	3
-default	T-20260814-a-fresh-adoption-reports-none-outstandin	0	30	2.000	3
-default	T-20260814-a-review-narrative-has-nowhere-to-live	0	31	2.000	3
-default	T-20260814-a-reviewer-s-verdict-and-narrative-are-d	0	32	2.000	3
-default	T-20260821-the-fixed-commit-walk-spawns-one-git-per	0	33	2.000	3
-default	T-20260822-every-stop-fires-a-spend-gap-whose-agent	0	34	2.000	3
-default	T-20260825-the-provenance-vocabulary-cannot-express	0	35	2.000	3
-default	T-20260827-an-unknown-frontmatter-key-is-discarded-	0	36	2.000	3
-default	T-20260909-report-acceptance-criteria-per-task-so-d	0	37	2.000	3
-default	T-20260912-a-host-with-no-prompt-caching-prices-as-	0	38	2.000	3
+default	T-20260809-harden-the-schema-so-a-null-cannot-erase	0	19	3.000	3
+default	T-20260812-commits-vanish-between-rev-list-and-the-	0	20	3.000	3
+default	T-20260814-the-absent-counter-notice-fires-on-every	0	21	3.000	3
+default	T-20260821-if-stale-watches-the-head-file-which-git	0	22	3.000	3
+default	T-20260821-kit-trailers-never-checks-tier-against-t	0	23	3.000	3
+default	T-20260822-event-seq-is-ingest-order-so-a-commit-tr	0	24	3.000	3
+default	T-20260808-record-which-mechanism-produced-a-findin	0	25	2.000	3
+default	T-20260809-the-unverified-tier-floor-message-names-	0	26	2.000	3
+default	T-20260812-an-uninstrumented-project-reports-the-sa	0	27	2.000	3
+default	T-20260814-a-deliberate-compromise-cannot-be-record	0	28	2.000	3
+default	T-20260814-a-fresh-adoption-reports-none-outstandin	0	29	2.000	3
+default	T-20260814-a-review-narrative-has-nowhere-to-live	0	30	2.000	3
+default	T-20260814-a-reviewer-s-verdict-and-narrative-are-d	0	31	2.000	3
+default	T-20260821-the-fixed-commit-walk-spawns-one-git-per	0	32	2.000	3
+default	T-20260822-every-stop-fires-a-spend-gap-whose-agent	0	33	2.000	3
+default	T-20260825-the-provenance-vocabulary-cannot-express	0	34	2.000	3
+default	T-20260827-an-unknown-frontmatter-key-is-discarded-	0	35	2.000	3
+default	T-20260909-report-acceptance-criteria-per-task-so-d	0	36	2.000	3
+default	T-20260912-a-host-with-no-prompt-caching-prices-as-	0	37	2.000	3
+default	T-20260912-reduce-peak-context-per-session-and-meas	0	38	2.000	3
 default	T-20260912-the-spend-price-vector-is-hard-coded-to-	0	39	2.000	3
 default	T-20260914-finding-run-ids-and-spend-run-ids-are-tw	0	40	2.000	3
 default	T-20260914-the-escape-rate-numerator-has-no-writer-	0	41	2.000	3
@@ -156,10 +156,9 @@ default	T-20260808-trial-the-kit-on-one-unfamiliar-brownfie	1	4	1.000	2
 default	T-20260907-an-opt-in-adapter-for-structural-edges-s	1	5	3.000	3
 default	T-20260808-cluster-packs-are-generated-and-read-by-	1	6	2.000	3
 default	T-20260827-cost-per-verified-claim-is-stable-across	1	7	2.000	3
-default	T-20260912-reduce-peak-context-per-session-and-meas	1	8	2.000	3
-default	T-20260731-validate-the-priority-weights-against-es	1	9	1.000	3
-default	T-20260820-task-context-has-no-branch-for-a-missing	1	10	2.000	5
-default	T-20260819-nothing-computes-whether-a-change-is-hig	1	11	2.000	6
-default	T-20260819-researcher-carries-no-security-baseline-	1	12	2.000	6
-default	T-20260811-a-retro-artefact-that-closes-the-kaizen-	1	13	2.000	8
-default	T-20260811-an-accelerator-authoring-template-and-se	1	14	1.000	1
+default	T-20260731-validate-the-priority-weights-against-es	1	8	1.000	3
+default	T-20260820-task-context-has-no-branch-for-a-missing	1	9	2.000	5
+default	T-20260819-nothing-computes-whether-a-change-is-hig	1	10	2.000	6
+default	T-20260819-researcher-carries-no-security-baseline-	1	11	2.000	6
+default	T-20260811-a-retro-artefact-that-closes-the-kaizen-	1	12	2.000	8
+default	T-20260811-an-accelerator-authoring-template-and-se	1	13	1.000	1

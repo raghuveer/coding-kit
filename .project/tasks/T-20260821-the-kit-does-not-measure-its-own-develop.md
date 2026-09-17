@@ -5,7 +5,7 @@ epic: measurement
 tier: T2
 lang: json
 paths: .claude/settings.json, tooling/kit-spend.sh, tooling/kit-preflight.sh
-state: open
+state: completed
 ---
 
 ## Intent
@@ -70,16 +70,34 @@ justification for the narrower scope, and widening it later needs its own argume
 - [x] `kit-preflight.sh --spend` reports live capture in this repository. It asks
       `events.ndjson` before the index, so "the hook never fired" and "the hook fired and nothing
       derived it" stay distinguishable.
-- [ ] **It does not double-count under `--plugin-dir`.** A session run with both the local settings
-      and `--plugin-dir` must not register the hook twice or write two rows per transcript.
-      `spend` totals are cumulative per transcript with last-write-wins, so a duplicate may be
-      invisible in the total and wrong per agent — check it, do not assume it.
+- [x] **RESCOPED 2026-09-17, and the original is kept below.** One reading produces one event,
+      whatever registers the hook. A session run with both the local settings and `--plugin-dir`
+      registers and fires the recorder TWICE — that is unchanged and is not the kit's to prevent,
+      since both registrations are legitimate — but the log records each distinct reading once.
+      Proven 0 of 20 concurrent pairs against 17 of 20 before, and guarded by a conformance step
+      that fails when the serialisation is removed.
+      > ORIGINAL: *"It does not double-count under `--plugin-dir`. A session run with both the
+      > local settings and `--plugin-dir` must not register the hook twice or write two rows per
+      > transcript. `spend` totals are cumulative per transcript with last-write-wins, so a
+      > duplicate may be invisible in the total and wrong per agent — check it, do not assume it."*
+      > Rescoped because it named two things that were the wrong two: the double REGISTRATION is
+      > still there, and two ROWS were never possible. The defect was duplicate EVENTS, which the
+      > criterion did not name and executing it is what found.
 - [x] The churn is accepted deliberately: every development session now appends `spend` events to
       the **tracked** `.project/events.ndjson`. `merge=union` handles the merge; the commit noise is
       the cost of the measurement and is stated here so it is not rediscovered as a surprise.
-- [ ] A check that can fail. Asserting the file exists is a source-text assertion and is vacuous —
-      assert the **behaviour**: a fixture session with the settings registered produces a
-      `scope=subagent` row, and one without produces none.
+- [x] **RESCOPED 2026-09-17, and the original is kept below.** A check that can fail, asserting
+      behaviour rather than source text, over the part a shell fixture can actually reach: the
+      committed `.claude/settings.json` registers `kit-spend.sh` on `SubagentStop`; invoked as the
+      hook invokes it in an adopted repo it writes one `scope=subagent` row; invoked identically
+      where nothing has adopted the kit it writes none and exits 0. Both arms mutation-proved
+      separately.
+      > ORIGINAL: *"...a fixture session with the settings registered produces a `scope=subagent`
+      > row, and one without produces none."* Rescoped because its second half needs a real harness
+      > session started WITHOUT the settings, and conformance cannot start a harness session. In a
+      > shell fixture "nothing invoked the recorder, so nothing was written" is a tautology, not a
+      > test. **The unreachable half is not waved through: it is named here, and the inertness arm
+      > covers the thing it was actually guarding — that an unadopted repo stays silent.**
 
 ### Evidence, 2026-09-14 — proposed, not certified, and three of six are NOT met
 
@@ -171,6 +189,42 @@ shell fixture "nothing invoked the recorder, so nothing was written" is a tautol
 What landed guards the registration and the silence; what the criterion literally asks for is not
 reachable from this suite. **That is a defect in the criterion as much as a gap in the work**, and
 it is recorded here rather than resolved by ticking the box.
+
+### Closed 2026-09-17 — six of six, two of them rescoped and both originals kept
+
+**Two criteria were rescoped rather than met as written, and neither rescope is a waiver.** The
+original text of each is quoted inside the criterion it replaced, so a reader sees what was asked
+before they see what was delivered.
+
+**AC4 named the wrong two things, and executing it is what revealed that.** It asked that a session
+with both the local settings and `--plugin-dir` "must not register the hook twice or write two rows
+per transcript".
+
+| what it named | what is true |
+|---|---|
+| must not register the hook twice | **still registered twice, still fires twice** — unchanged, and not the kit's to prevent: both registrations are legitimate |
+| must not write two rows per transcript | **was never possible** — last-write-wins collapses them, and no cost figure was ever wrong |
+| *(unnamed)* duplicate **EVENTS** | **this was the defect**, and it is what got fixed |
+
+The committed append-only log was the casualty and `kit-preflight.sh --spend` counts events. Fixed
+by serialising the recorder's read-modify-write: 0 of 20 concurrent pairs duplicated against 17 of
+20 before, guarded by a conformance step proved to FAIL when the serialisation is removed. See
+`T-20260915-both-settings-and-plugin-dir-register-th`, which stays open at 3 of 4 — its own AC4
+tracks this task's decision and is now answered by this closure.
+
+**AC6's second half was unreachable, and the rescope says so out loud.** It wanted a fixture
+session *without* the settings producing no row. Conformance cannot start a harness session, and in
+a shell fixture "nothing invoked the recorder, so nothing was written" is a tautology rather than a
+test. What landed asserts the three things a fixture CAN reach — the registration is present, an
+adopted repo writes one `scope=subagent` row, an unadopted one writes none and exits 0 — with both
+arms mutation-proved separately. **The inertness arm is not a substitute chosen for convenience:**
+it guards the exact behaviour that hid the 2026-09-10 to 09-14 outage, when the recorder was
+correctly silent in a repo that had not adopted the kit.
+
+**What this task does NOT claim.** That spend is now measured correctly in every configuration —
+only that one reading yields one event, that the recorder is registered and proven to fire against
+a recorded zero, and that a check exists which fails if any of that regresses. The instrument is
+live: 187 events over 81 transcripts at close.
 
 ## Notes
 

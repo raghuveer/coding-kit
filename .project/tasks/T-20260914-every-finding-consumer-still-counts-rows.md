@@ -5,7 +5,7 @@ epic: feedback-loop
 tier: T3
 lang: sql
 paths: tooling/kit-accel.sh, tooling/kit-status.sh, tooling/kit-resolve.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -81,6 +81,28 @@ pass the step.
 
 **The open question in the Notes is untouched and stays open:** whether a carry-over chain should
 collapse to its root for **severity** as well as for counting. Severity is still read per row here.
+
+## Closed 2026-09-17 — what the close does and does not cover
+
+All four criteria verified against the merged tree rather than against their own checkboxes:
+`kit-accel.sh` (19 `defect_id` sites), the shared `UNFIXED` predicate in `kit-preflight.sh` and
+`kit-status.sh`, `COUNT(DISTINCT defect_id)` at `kit-status.sh:94`, and the conformance steps.
+
+**The Intent named three row-counting consumers and one is still untouched.**
+`tooling/kit-resolve.sh` has zero references to `defect_id` or `carries_over`, so `--list` still
+shows an operator one row per review round for a single defect. **No criterion covered it**, which
+is why this closes rather than staying open — but the close is by contract, not by Intent, and
+saying so here is the difference between a closed task and a forgotten one. It is benign for the
+gate: any marked round now clears the defect, so nobody is blocked. Filing it separately is
+proposed and awaiting the operator; it is not filed by this commit.
+
+**No finding rows were recorded on 2026-09-15**, the day this work was done. The Notes below assert
+"neither reviewer raised it". That assertion is not corroborated by the record, and a T3 closing
+with no recorded review is worth seeing rather than inferring.
+
+**Nothing on this repository changes numerically.** 0 of 635 findings carry a `carries_over` link,
+so every count is identical before and after; the behaviour is fixture-only until a review round
+records one.
 
 ## Notes
 

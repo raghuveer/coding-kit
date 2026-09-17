@@ -86,6 +86,14 @@ _FDANG=$(q "SELECT COUNT(*) FROM finding f WHERE COALESCE(f.carries_over,'')<>''
 # a zero, and a positive claim over a query that returned nothing is the fail-open this file
 # refuses everywhere else.
 _FHASCOL=$(q "SELECT COUNT(*) FROM pragma_table_info('finding') WHERE name='carries_over';")
+# THE HEADLINE AND THE GATE MUST COUNT DEFECTS THE SAME WAY, or this file contradicts itself --
+# which is the symptom that made the row-vs-defect problem findable at all. `rows - links` was a
+# second formula that happened to agree; `defect_id` is the one the criticals gate and the
+# accelerator earning rule now read, so agreement is by construction rather than by coincidence.
+# Empty against an index built before the column, and the printf falls back to the old formula.
+_FDEFECTS=$(q "SELECT COUNT(DISTINCT defect_id) FROM finding
+                WHERE defect_id IS NOT NULL;")
+[ -n "${_FDEFECTS:-}" ] && [ "${_FDEFECTS}" != 0 ] || _FDEFECTS=""
 if [ "${_FHASCOL:-0}" = 0 ]; then
   printf '
 > **This index predates carry-over links**, so rows cannot be distinguished from
@@ -96,7 +104,7 @@ elif [ "${_FROWS:-0}" != 0 ]; then
   printf '
 - **%s finding row(s)** over **%s distinct defect(s)** -- %s carried over from an
 ' \
-    "$_FROWS" "$(( ${_FROWS:-0} - ${_FLINK:-0} ))" "$_FLINK"
+    "$_FROWS" "${_FDEFECTS:-$(( ${_FROWS:-0} - ${_FLINK:-0} ))}" "$_FLINK"
   printf '  earlier round. Rows count review ROUNDS; defects count what was wrong.
 '
   [ "${_FDANG:-0}" = 0 ] ||
@@ -791,11 +799,24 @@ UNAMBIG="(COALESCE(f.vindicated_scope,'class') = 'finding'
           OR 1 = (SELECT COUNT(*) FROM finding g
                    WHERE COALESCE(g.task_id,'') = COALESCE(f.task_id,'')
                      AND COALESCE(g.class,'')   = COALESCE(f.class,'')))"
+# A DEFECT IS ADDRESSED WHEN ANY OF ITS ROUNDS IS. `carries_over` links a repeated finding to
+# the row it repeats, so a carried-over critical marked fixed once left its earlier rows unfixed
+# and held this gate open for work that was done -- while the header of this same file said
+# "N row(s) over M distinct defect(s)". One file, two counts of the same findings, disagreeing.
+#
+# COALESCE(defect_id, id) so an index built before the column degrades to exactly the old
+# row-level behaviour. Left as a bare `g.defect_id = f.defect_id`, NULLs make the comparison
+# never true, NOT EXISTS always true, and the fixed test silently stops applying.
+#
+# The same rule is in kit-preflight.sh --criticals, which is what the protocol runs.
+UNFIXED="NOT EXISTS (SELECT 1 FROM finding g
+                      WHERE COALESCE(g.defect_id, g.id) = COALESCE(f.defect_id, f.id)
+                        AND g.fixed_at IS NOT NULL)"
 CRITFALSE=$(q "SELECT COUNT(*) FROM finding f
-                WHERE f.severity='critical' AND f.fixed_at IS NULL AND f.vindicated=0
+                WHERE f.severity='critical' AND $UNFIXED AND f.vindicated=0
                   AND $UNAMBIG;")
 CRITAMBIG=$(q "SELECT COUNT(*) FROM finding f
-                WHERE f.severity='critical' AND f.fixed_at IS NULL AND f.vindicated=0
+                WHERE f.severity='critical' AND $UNFIXED AND f.vindicated=0
                   AND NOT $UNAMBIG;")
 # REFUTATIONS COUNTED BY SCOPE, and reported apart from fixed and from unassessable. A row
 # that was never a defect is a third thing: nothing was addressed, and it is perfectly
@@ -806,15 +827,15 @@ FALSEROW=$(q "SELECT COUNT(*) FROM finding f
                WHERE f.vindicated=0 AND COALESCE(f.vindicated_scope,'class')='finding';")
 FALSECLS=$(q "SELECT COUNT(*) FROM finding f
                WHERE f.vindicated=0 AND COALESCE(f.vindicated_scope,'class')='class';")
-OPENCRIT=$(q "SELECT COALESCE(NULLIF(f.task_id,''),'(unattributed)')||'  '||COUNT(*)||
+OPENCRIT=$(q "SELECT COALESCE(NULLIF(f.task_id,''),'(unattributed)')||'  '||COUNT(DISTINCT COALESCE(f.defect_id, f.id))||
                      '  ['||COALESCE(NULLIF(t.state,''),'no task file')||']'
                 FROM finding f LEFT JOIN task t ON t.id = f.task_id
-               WHERE f.severity='critical' AND f.fixed_at IS NULL
+               WHERE f.severity='critical' AND $UNFIXED
                  AND f.unassessable_at IS NULL
                  AND f.superseded_at IS NULL
                  AND NOT (COALESCE(f.vindicated,1) = 0 AND $UNAMBIG)
                GROUP BY f.task_id ORDER BY COUNT(*) DESC;"); OCRC=$?
-CRITTOT=$(q "SELECT COUNT(*) FROM finding f WHERE f.severity='critical' AND f.fixed_at IS NULL
+CRITTOT=$(q "SELECT COUNT(DISTINCT COALESCE(f.defect_id, f.id)) FROM finding f WHERE f.severity='critical' AND $UNFIXED
               AND f.unassessable_at IS NULL
               AND f.superseded_at IS NULL
               AND NOT (COALESCE(f.vindicated,1) = 0 AND $UNAMBIG);")
@@ -836,11 +857,16 @@ CRITSUPER=$(q "SELECT COUNT(*) FROM finding
 # critical on a done task did not count -- "fix it" and "close it" cleared the pre-flight
 # equally. Counted and named here, because it is the direction that hides work.
 CRITDONE=$(q "SELECT COUNT(*) FROM finding f JOIN task t ON t.id=f.task_id
-               WHERE f.severity='critical' AND f.fixed_at IS NULL
+               WHERE f.severity='critical' AND $UNFIXED
                  AND f.unassessable_at IS NULL
                  AND f.superseded_at IS NULL
                  AND NOT (COALESCE(f.vindicated,1) = 0 AND $UNAMBIG) AND t.state IN (SELECT state FROM state_class WHERE is_closed = 1);")
 CRITALL=$(q "SELECT COUNT(*) FROM finding WHERE severity='critical';")
+# ROWS AND DEFECTS ARE BOTH AVAILABLE, because the "all marked addressed" line below is otherwise
+# false the moment a defect spans two rounds: one mark addresses the DEFECT and leaves the other
+# ROW unmarked, so a sentence asserting a disposition for every row states something nobody did.
+# Same folding-into-one-number this section already refuses for unassessable and superseded.
+CRITALLDEF=$(q "SELECT COUNT(DISTINCT COALESCE(defect_id, id)) FROM finding WHERE severity='critical';")
 printf '\n## Outstanding criticals\n\n'
 if [ "$OCRC" != 0 ]; then
   printf -- '> **NOT MEASURED — the query failed.** This is not a report of zero. The usual\n'
@@ -874,8 +900,13 @@ else
     printf -- '- none actionable (%s critical finding(s) recorded; %s addressed, %s excluded — see below)\n' \
       "${CRITALL:-0}" "$(( ${CRITALL:-0} - _cother ))" "$_cother"
   else
-    printf -- '- none outstanding (%s critical finding(s) recorded, all marked addressed)\n' \
-      "${CRITALL:-0}"
+    if [ "${CRITALLDEF:-0}" != "${CRITALL:-0}" ]; then
+      printf -- '- none outstanding (%s critical finding row(s) over %s defect(s), every defect addressed)\n' \
+        "${CRITALL:-0}" "${CRITALLDEF:-0}"
+    else
+      printf -- '- none outstanding (%s critical finding(s) recorded, all marked addressed)\n' \
+        "${CRITALL:-0}"
+    fi
   fi
 fi
 

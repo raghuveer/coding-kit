@@ -1287,6 +1287,30 @@ cat <<'DERIVE'
 INSERT OR IGNORE INTO node
   SELECT DISTINCT task_id,'task',NULL,task_id FROM event WHERE task_id IS NOT NULL AND task_id<>'';
 
+-- DEFECT IDENTITY, DERIVED ONCE, because three consumers were each counting rows.
+--
+-- Resolved here rather than inside each gate query: a recursive CTE evaluated per candidate row
+-- is the same rule in three places and slow in all of them. Consumers read one column and join
+-- on equality.
+--
+-- A DANGLING LINK IS ITS OWN ROOT. `carries_over` naming a finding absent from this index is
+-- already counted apart by kit-status.sh; without the second base case such a row reaches no
+-- base at all, falls out of the recursion, and its defect_id is NULL -- which would drop it from
+-- the criticals gate. A gate may fail closed and may never fail open, so the row is its own
+-- defect instead.
+--
+-- The COALESCE is the same argument applied to a CYCLE. Nothing writes one today, but a cycle
+-- reaches no base case either, and "impossible input" is how a gate quietly empties.
+WITH RECURSIVE chain(id, defect_id) AS (
+  SELECT f.id, f.id FROM finding f
+   WHERE COALESCE(f.carries_over,'') = ''
+      OR NOT EXISTS (SELECT 1 FROM finding e WHERE e.id = f.carries_over)
+  UNION ALL
+  SELECT f.id, c.defect_id FROM finding f JOIN chain c ON f.carries_over = c.id
+)
+UPDATE finding
+   SET defect_id = COALESCE((SELECT defect_id FROM chain WHERE chain.id = finding.id), finding.id);
+
 -- git records what tier was actually used; frontmatter only declares an intent.
 -- LAST WINS, ordered by `seq` and not by `at`, at every one of these derivations.
 --

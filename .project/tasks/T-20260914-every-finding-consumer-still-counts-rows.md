@@ -29,13 +29,58 @@ task.
 
 ## Acceptance criteria
 
-- [ ] The accelerator earning rule counts distinct defects, not rows, or states in the query why
+- [x] The accelerator earning rule counts distinct defects, not rows, or states in the query why
       rows are the right unit there.
-- [ ] A carried-over critical, marked fixed once, leaves the criticals gate. Today it does not.
-- [ ] One generated `STATUS.generated.md` cannot contain two counts of the same findings that
+- [x] A carried-over critical, marked fixed once, leaves the criticals gate. Today it does not.
+- [x] One generated `STATUS.generated.md` cannot contain two counts of the same findings that
       disagree. That self-contradiction is the symptom that makes this findable.
-- [ ] A check that can fail: a fixture with one defect across two rounds, one `--fixed` mark, and
+- [x] A check that can fail: a fixture with one defect across two rounds, one `--fixed` mark, and
       an assertion that the gate reads zero.
+
+
+### Evidence, 2026-09-15 — all four met; the rule now has one home
+
+**`finding.defect_id` is derived in `kit-index.sh`, not computed per consumer.** A recursive CTE
+resolves each `carries_over` chain to its root once per rebuild. Two base cases, and the second is
+the one that matters: a row whose link **dangles** is its own defect. Without it such a row reaches
+no base case, its `defect_id` is NULL, and it drops out of the criticals gate — a gate may fail
+closed and may never fail open. The `COALESCE` wrapper applies the same argument to a cycle, which
+nothing writes today.
+
+Every consumer reads `COALESCE(defect_id, id)`, so **an index built before the column behaves
+exactly as it did**. Left as a bare comparison, NULLs make it never true, `NOT EXISTS` always true,
+and the fixed test silently stops applying.
+
+| AC | evidence |
+|---|---|
+| 1 — accelerator earns on defects | `kit-accel.sh`, all 17 row counts; the threshold line now says *"at least N DISTINCT DEFECTS"* |
+| 2 — carried-over critical fixed once leaves the gate | `kit-preflight.sh --criticals` and the four gate populations in `kit-status.sh` share one `UNFIXED` predicate: a defect is addressed when **any** of its rounds is |
+| 3 — one file cannot hold two disagreeing counts | the header's defect count was `rows - links`, a second formula that happened to agree. It now reads `COUNT(DISTINCT defect_id)` — the same column the gate reads, so agreement is by construction |
+| 4 — a check that can fail | two steps, three mutations, each run alone |
+
+**The mutations, separately, because a combined revert can pass while one slips through:**
+
+| mutation | result |
+|---|---|
+| `defect_id` stops following the chain | FAIL — *"distinct defects=2, wanted 1 — defect_id is not derived"* |
+| the gate returns to `f.fixed_at IS NULL` | FAIL — *"the gate reads 1 after the defect was addressed once, wanted 0"* |
+| the earning rule returns to `COUNT(*)` | FAIL — *"one defect seen twice earned a rule"* |
+
+**Two things the work found that the task did not name.**
+
+*"All marked addressed"* became false the moment a defect spanned two rounds: one mark addresses the
+**defect** and leaves the other **row** unmarked, so the sentence asserted a disposition nobody
+recorded. That is the same false claim this section had to remove once before for `unassessable`.
+It now prints *"N critical finding row(s) over M defect(s), every defect addressed"* when the two
+differ, and the step asserts `all marked addressed` is **absent**.
+
+The accelerator step's first assertion passed for the wrong reason — a bare `grep race` matched the
+proposal's **below-threshold** section, where `race` correctly appears. Scoped to `[earned]` lines,
+and the fixture now also carries a pair that **must** earn, so deleting the query outright cannot
+pass the step.
+
+**The open question in the Notes is untouched and stays open:** whether a carry-over chain should
+collapse to its root for **severity** as well as for counting. Severity is still read per row here.
 
 ## Notes
 

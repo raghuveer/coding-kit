@@ -89,11 +89,19 @@ propose)
     printf '# Accelerator contribution proposal\n\n'
     printf '<!-- GENERATED. Nothing here is applied automatically. Review each line,\n'
     printf '     then copy accepted ones into the shared accelerator marked [earned]. -->\n\n'
-    printf 'Threshold: at least %s occurrences, no refuted findings.\n\n' "$MIN"
+    printf 'Threshold: at least %s DISTINCT DEFECTS, no refuted findings. Repeated rounds of\n' "$MIN"
+    printf 'one defect count once — see `finding.defect_id`.\n\n'
 
     printf '## Technology candidates\n\n'
+    # COUNTS DEFECTS, NOT ROWS -- here and in every query below. A defect seen in three review
+    # rounds is three `finding` rows linked by `carries_over`, so under the old
+    # `HAVING COUNT(*) >= $MIN` one defect could earn a rule on its own and be promoted into
+    # shared config that every future project then loads. That is the laundering this file
+    # exists to prevent, arriving through the counter rather than through a refuted finding.
+    #
+    # COALESCE(defect_id, id) so an index built before the column behaves exactly as it did.
     tech=$(sqlite3 -separator ' | ' "$DB" "
-      SELECT lang, class, COUNT(*), SUM(COALESCE(vindicated,0))
+      SELECT lang, class, COUNT(DISTINCT COALESCE(defect_id, id)), SUM(COALESCE(vindicated,0))
         FROM finding
        WHERE lang IS NOT NULL AND lang <> ''
          -- a finding carrying a domain belongs to the industry accelerator;
@@ -101,8 +109,8 @@ propose)
          -- obligations that are not true of the language.
          AND (domain IS NULL OR domain = '')
        GROUP BY lang, class
-      HAVING COUNT(*) >= $MIN AND SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)=0
-       ORDER BY COUNT(*) DESC;" 2>/dev/null)
+      HAVING COUNT(DISTINCT COALESCE(defect_id, id)) >= $MIN AND SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)=0
+       ORDER BY COUNT(DISTINCT COALESCE(defect_id, id)) DESC;" 2>/dev/null)
     if [ -n "$tech" ]; then
       printf '%s\n' "$tech" | while IFS='|' read -r lang class n v; do
         printf -- '- [ ] `%s` / **%s** — seen%s times, %s confirmed  `[earned]`\n' \
@@ -114,12 +122,12 @@ propose)
 
     printf '\n## Industry candidates\n\n'
     ind=$(sqlite3 -separator ' | ' "$DB" "
-      SELECT domain, class, COUNT(*), SUM(COALESCE(vindicated,0))
+      SELECT domain, class, COUNT(DISTINCT COALESCE(defect_id, id)), SUM(COALESCE(vindicated,0))
         FROM finding
        WHERE domain IS NOT NULL AND domain <> ''
        GROUP BY domain, class
-      HAVING COUNT(*) >= $MIN AND SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)=0
-       ORDER BY COUNT(*) DESC;" 2>/dev/null)
+      HAVING COUNT(DISTINCT COALESCE(defect_id, id)) >= $MIN AND SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)=0
+       ORDER BY COUNT(DISTINCT COALESCE(defect_id, id)) DESC;" 2>/dev/null)
     if [ -n "$ind" ]; then
       printf '%s\n' "$ind" | while IFS='|' read -r dom class n v; do
         printf -- '- [ ] `%s` / **%s** — seen%s times, %s confirmed  `[earned]`\n' \
@@ -135,13 +143,13 @@ propose)
     # reuse the other two cannot express. It is also where amortisation lives: the design
     # cost is paid once and read by every later project that imports it.
     pat=$(sqlite3 -separator ' | ' "$DB" "
-      SELECT pattern, class, COUNT(*), SUM(COALESCE(vindicated,0)),
+      SELECT pattern, class, COUNT(DISTINCT COALESCE(defect_id, id)), SUM(COALESCE(vindicated,0)),
              COUNT(DISTINCT COALESCE(NULLIF(lang,''),'?'))
         FROM finding
        WHERE pattern IS NOT NULL AND pattern <> ''
        GROUP BY pattern, class
-      HAVING COUNT(*) >= $MIN AND SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)=0
-       ORDER BY 5 DESC, COUNT(*) DESC;" 2>/dev/null)
+      HAVING COUNT(DISTINCT COALESCE(defect_id, id)) >= $MIN AND SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)=0
+       ORDER BY 5 DESC, COUNT(DISTINCT COALESCE(defect_id, id)) DESC;" 2>/dev/null)
     if [ -n "$pat" ]; then
       printf '%s\n' "$pat" | while IFS='|' read -r pt class n v langs; do
         # Languages spanned is the signal that matters here: a pattern seen in one stack
@@ -156,8 +164,8 @@ propose)
 
     printf '\n## Below threshold (not proposed)\n\n'
     sqlite3 -separator ' | ' "$DB" "
-      SELECT COALESCE(NULLIF(lang,''),NULLIF(domain,''),'?'), class, COUNT(*)
-        FROM finding GROUP BY 1, class HAVING COUNT(*) < $MIN ORDER BY 3 DESC;" 2>/dev/null \
+      SELECT COALESCE(NULLIF(lang,''),NULLIF(domain,''),'?'), class, COUNT(DISTINCT COALESCE(defect_id, id))
+        FROM finding GROUP BY 1, class HAVING COUNT(DISTINCT COALESCE(defect_id, id)) < $MIN ORDER BY 3 DESC;" 2>/dev/null \
       | sed 's/^/- /' | head -20
     printf '\n_Single occurrences are not patterns. They stay here until they recur._\n'
   } > "$OUT"
@@ -191,25 +199,25 @@ export)
   [ -n "$KV" ] || { KV="unknown"; kit_warn "cannot read plugin.json — exporting kit version as 'unknown'"; }
   : > "$OUT"
   sqlite3 "$DB" "
-    SELECT 'technology', lang, class, COUNT(*), SUM(COALESCE(vindicated,0)),
+    SELECT 'technology', lang, class, COUNT(DISTINCT COALESCE(defect_id, id)), SUM(COALESCE(vindicated,0)),
            SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)
       FROM finding
      WHERE lang IS NOT NULL AND lang <> '' AND (domain IS NULL OR domain = '')
-     GROUP BY lang, class HAVING COUNT(*) >= $MIN;
-    SELECT 'industry', domain, class, COUNT(*), SUM(COALESCE(vindicated,0)),
+     GROUP BY lang, class HAVING COUNT(DISTINCT COALESCE(defect_id, id)) >= $MIN;
+    SELECT 'industry', domain, class, COUNT(DISTINCT COALESCE(defect_id, id)), SUM(COALESCE(vindicated,0)),
            SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)
       FROM finding
      WHERE domain IS NOT NULL AND domain <> ''
-     GROUP BY domain, class HAVING COUNT(*) >= $MIN;
+     GROUP BY domain, class HAVING COUNT(DISTINCT COALESCE(defect_id, id)) >= $MIN;
     -- Pattern candidates. Deliberately NOT filtered on lang or domain: a cache port
     -- degrades the same way in TypeScript and in Go, and the whole point of this axis is
     -- that the design is reusable where neither of the other two is. That also makes it
     -- the axis with the best amortisation -- the cost of designing it is paid once.
-    SELECT 'pattern', pattern, class, COUNT(*), SUM(COALESCE(vindicated,0)),
+    SELECT 'pattern', pattern, class, COUNT(DISTINCT COALESCE(defect_id, id)), SUM(COALESCE(vindicated,0)),
            SUM(CASE WHEN vindicated=0 THEN 1 ELSE 0 END)
       FROM finding
      WHERE pattern IS NOT NULL AND pattern <> ''
-     GROUP BY pattern, class HAVING COUNT(*) >= $MIN;" 2>/dev/null |
+     GROUP BY pattern, class HAVING COUNT(DISTINCT COALESCE(defect_id, id)) >= $MIN;" 2>/dev/null |
   while IFS='|' read -r kind key class n vind refuted; do
     [ -n "$kind" ] || continue
     printf '{"kind":"%s","key":"%s","class":"%s","n":%s,"vindicated":%s,"refuted":%s,"project":"%s","kit":"%s"}\n' \

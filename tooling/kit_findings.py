@@ -120,11 +120,33 @@ def _assert_flat(line):
         raise Rejected("internal: a newline survived into the event line; refusing to write.")
 
 
+def bash_exe():
+    r"""The interpreter to run the kit's own shell scripts with -- a PATH, not the word "bash".
+
+    On Windows `subprocess` uses CreateProcess, and its search order puts C:\Windows\System32
+    AHEAD of PATH. That directory holds bash.exe: the WSL launcher. With no distribution
+    installed it exits 1 and prints, in UTF-16, "Windows Subsystem for Linux has no installed
+    distributions" -- on STDOUT, leaving stderr empty.
+
+    That is what ran here for a month. `kit-finding.sh --vocab` came back non-zero and silent,
+    every finding was rejected by a validator that had never read a vocabulary, and fourteen
+    conformance steps on windows-latest reported "recorded 0" without naming a cause.
+
+    shutil.which() searches PATH ONLY, so it reported Git's bash.EXE while the call reached
+    WSL. The two disagreed, and passing which()'s answer as an absolute path is what makes
+    them agree -- CreateProcess does no searching when given a full path.
+
+    Found by conformance (windows-latest), which is the only leg that could see it: the shell
+    running the suite resolves bash correctly, so nothing outside Python ever noticed.
+    """
+    return shutil.which("bash") or "bash"
+
+
 def vocabularies():
     """The one definition, asked for rather than restated."""
     try:
         out = subprocess.run(
-            ["bash", os.path.join(HERE, "kit-finding.sh"), "--vocab"],
+            [bash_exe(), os.path.join(HERE, "kit-finding.sh"), "--vocab"],
             stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=30,
         )
     except (OSError, subprocess.SubprocessError) as exc:
@@ -138,7 +160,7 @@ def vocabularies():
         # the returncode, the stdout and WHICH interpreter it found is not an error message.
         raise Rejected(
             "`kit-finding.sh --vocab` failed: rc=%s bash=%s stderr=%r stdout=%r"
-            % (out.returncode, shutil.which("bash"),
+            % (out.returncode, bash_exe(),
                out.stderr.decode("utf-8", "replace").strip()[:300],
                out.stdout.decode("utf-8", "replace").strip()[:300]))
     vocab = {}

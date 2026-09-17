@@ -5,7 +5,7 @@ epic: portability
 tier: T3
 lang: bash
 paths: tooling/kit-index.sh, docs/LESSONS.md
-state: open
+state: completed
 ---
 
 ## Intent
@@ -70,7 +70,7 @@ portability failure nobody can demonstrate.
 
 - [x] `POSIXLY_CORRECT=1 bash tooling/kit-index.sh` completes and rebuilds the index, so §12's
       technique covers this file.
-- [ ] The replacement is **proved equivalent, not assumed**. `/[*]+/` is a candidate and was
+- [x] The replacement is **proved equivalent, not assumed**. `/[*]+/` is a candidate and was
       checked on five realistic globs — `tooling/**`, `src/*.go`, `a/**/b`,
       `tooling/kit-index.sh`, `**` — producing byte-identical output under gawk and under
       `POSIXLY_CORRECT=1` gawk. Re-run that comparison as part of the fix rather than trusting
@@ -201,6 +201,37 @@ step** -- it runs everywhere, because the defect is a gawk version and gawk runs
 
 **AC3 -- 13 `\001`/`\003` separator escapes remain untouched.** They are string context, not regex
 literals, and the task says not to tidy them.
+
+### AC2 proved on gawk 5.4.1, 2026-09-17 — closed
+
+The one piece of evidence this machine could not produce. `conformance (windows-latest)` on PR #144
+ran the suite under **gawk 5.4.1**, the version that rejects the old construct in default mode:
+
+| | baseline (#138..#143) | with the fix |
+|---|---|---|
+| `/\052+/` parse errors | 1 | **0** |
+| `no such table` | 37 | **0** |
+| FAIL | 31 | **14** |
+| PASS | 71 | **124** |
+
+And the new step passed there by name -- *"kit-index parses under POSIXLY_CORRECT and derives the
+same floor either way"* -- so the converter is exercised on the awk that rejected it, not only on
+the two that never did.
+
+**The index now builds on gawk 5.4.1, which is the whole of this task.** All five criteria met.
+
+**What the numbers also reveal, and it is not this task's to fix.** PASS went 71 -> 124 because 53
+steps that previously could not run now run. **The suite has never actually executed on Windows
+before** -- every earlier "31 FAIL / 71 PASS" was one cascade from one unbuildable index, and the
+124 is the first real Windows measurement this repository has.
+
+The 14 remaining failures are therefore NEW information rather than a residue, and they cluster:
+undeclared-domain handling, and then twelve steps across finding recording, dispositions
+(`unassessable`, `superseded`, refutation by id), the finding vocabulary, run-id joins and defect
+counting. That is `kit-finding.sh` / `kit-resolve.sh` / `kit-vindicate.sh` territory and it looks
+like one or two roots rather than fourteen, the same shape this task turned out to be. **Filed
+separately or not at all -- not folded in here**, and no cause is claimed for them from reading a
+tally.
 
 ## Notes
 

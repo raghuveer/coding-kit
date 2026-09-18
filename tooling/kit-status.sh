@@ -580,8 +580,12 @@ if [ "${SPENT:-0}" -gt 0 ]; then
   # main-loop transcripts, cache_read is 76.5% of main-loop BTE against 0.01% fresh input -- so
   # per-turn cost IS mean context, near enough, and there is no other term worth reporting.
   #
-  # Session length is the axis because it is the one an operator controls. Context grows
-  # monotonically within a session, so a turn taken late necessarily re-reads more than a turn
+  # Session length is the axis because it is the one an operator controls. Context
+  # TENDS to grow within a session, so a turn taken late generally re-reads more than a turn
+  # taken early. CORRECTED 2026-09-18: this said "grows monotonically", and the peak column
+  # added in the same change refutes it -- one transcript here peaks at 963k and ENDS at
+  # 270k, because compaction reclaims context. The trend argument survives; the word
+  # monotonic did not, and it was the word doing the work.
   # taken early; that part is mechanical rather than correlational. The BRIEF row is therefore
   # the floor -- what a turn costs with no accumulated context -- and the gap between it and the
   # LONG row is the part attributable to session length rather than to the work.
@@ -613,6 +617,32 @@ if [ "${SPENT:-0}" -gt 0 ]; then
     printf '> the distance from it to LONG is session length rather than work. **That distance is\n'
     printf '> a bound, not a saving** — realising any of it needs a cheap cold start, which is what\n'
     printf '> the plan, the derived state and the cluster packs are for.\n'
+  fi
+
+  # PEAK, not the last reading. `context` is whatever the series ended on; a session that
+  # compacted ends low and its pressure is invisible in it. "Reduce peak context" cannot be
+  # asked of a final reading at all, which is what this column exists for.
+  #
+  # The population is reported BEFORE the finding, because peak == final has two meanings and
+  # only one is about context: a series that never fell, or no series at all. Most rows here
+  # are the second, and a bare "1 of 81" would read as a rarity rather than a thin denominator.
+  PK=$(q "SELECT (SELECT COUNT(*) FROM spend WHERE readings>1)||' of '||(SELECT COUNT(*) FROM spend)
+                 ||' transcript(s) carry more than one reading; '
+                 ||(SELECT COUNT(*) FROM spend WHERE context_peak>context)||' peak above final'
+                 ||COALESCE((SELECT ', widest '||CAST(context_peak/1000 AS INT)||'k peak against '
+                                    ||CAST(context/1000 AS INT)||'k final'
+                              FROM spend WHERE context>0 AND context_peak>context
+                             ORDER BY 1.0*context_peak/context DESC LIMIT 1), '');")
+  if [ -n "$PK" ]; then
+    printf '\n**Peak context**\n\n'
+    printf -- '- %s\n' "$PK"
+    printf '\n> `context` is the LAST reading of a transcript; `context_peak` is the highest in\n'
+    printf '> its series. They differ because context FALLS as well as rises -- compaction\n'
+    printf '> reclaims it -- so a final reading understates pressure by whatever was reclaimed.\n'
+    printf '>\n'
+    printf '> **A floor, not the peak.** kit-spend.sh appends an event only when TOKEN totals\n'
+    printf '> move, and context is NOT in that key, so a context move with no token move is\n'
+    printf '> invisible here. Where the two move together this is exact; where they do not, low.\n'
   fi
 
   # And by provenance, because "did the kit pay for itself" is a comparison, and a comparison

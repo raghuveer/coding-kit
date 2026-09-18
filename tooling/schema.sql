@@ -326,6 +326,25 @@ CREATE TABLE spend (
   cache_read  INTEGER,
   cache_write INTEGER,
   context     INTEGER,
+  -- The HIGHEST context reading seen across this transcript's event series, where
+  -- `context` above is the LAST one. They are not the same number and the gap is not
+  -- small: measured on this repository, one transcript reports final=270,398 against
+  -- peak=963,201 -- 3.6x. Context falls as well as rises (compaction), so a final
+  -- reading understates pressure by however much was reclaimed before the session ended,
+  -- and "reduce peak context" cannot be asked of the final one at all.
+  --
+  -- DERIVED FROM THE EVENT SERIES, not recorded: kit-spend.sh appends a new event when a
+  -- transcript's totals move, so the log already holds the series and no new recording
+  -- was needed. KNOWN HOLE, stated rather than discovered later: the recorder's dedupe
+  -- key is tok_in|tok_out|cache_read|cache_write|pack_loads and does NOT include context,
+  -- so a context move with no token move appends nothing and its peak is invisible here.
+  -- In practice they move together; where they do not, this is a floor on the peak.
+  context_peak INTEGER,
+  -- How many spend events this transcript contributed. Without it, context_peak = context
+  -- has two meanings that must not be confused: the series never fell, or there IS no series
+  -- because only one reading was ever appended. 81 transcripts here, 9 with more than one
+  -- reading -- so most rows are the second case and cannot speak to peak at all.
+  readings     INTEGER,
   -- How many cluster packs this transcript loaded, counted from the transcript itself by
   -- kit-spend.sh rather than declared by the session. 0 is a real reading and not an absence:
   -- it is what separates the arms of "do packs lower context per turn", which cannot be asked

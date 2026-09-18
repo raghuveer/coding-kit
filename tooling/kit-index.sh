@@ -933,7 +933,14 @@ if [ "$SRC_EVENTS" = ndjson ] && [ -f "$EV" ]; then
           # from the session transcript. The cost is real and is kept; the label is dropped,
           # because a wrong label is believed and an absent one is not.
           if (sc == "") { sc = "legacy"; ag = "" }
-          printf "INSERT OR REPLACE INTO spend(transcript,scope,agent,agent_id,session,model,at,turns,tok_in,tok_out,cache_read,cache_write,context,pack_loads) VALUES(\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,%d,%d,%d,%d,%d,%d,%d);\n", q(tr), q(sc), q(ag), q(jf($0,"agent_id")), q(jf($0,"session")), q(jf($0,"model")), q(a), jn($0,"turns"), jn($0,"tok_in"), jn($0,"tok_out"), jn($0,"cache_read"), jn($0,"cache_write"), jn($0,"context"), jn($0,"pack_loads")
+          # The running peak across the series for this transcript. Events arrive sorted by
+          # timestamp (see above), and the LAST emission for a transcript is the one that
+          # survives INSERT OR REPLACE -- so it carries the max of every event seen for it,
+          # which is the peak. Context FALLS as well as rises, so the final reading is not it.
+          _ctx = jn($0,"context")
+          if (!(tr in ctxpeak) || _ctx > ctxpeak[tr]) ctxpeak[tr] = _ctx
+          ctxn[tr]++
+          printf "INSERT OR REPLACE INTO spend(transcript,scope,agent,agent_id,session,model,at,turns,tok_in,tok_out,cache_read,cache_write,context,context_peak,readings,pack_loads) VALUES(\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,\047%s\047,%d,%d,%d,%d,%d,%d,%d,%d,%d);\n", q(tr), q(sc), q(ag), q(jf($0,"agent_id")), q(jf($0,"session")), q(jf($0,"model")), q(a), jn($0,"turns"), jn($0,"tok_in"), jn($0,"tok_out"), jn($0,"cache_read"), jn($0,"cache_write"), jn($0,"context"), ctxpeak[tr], ctxn[tr], jn($0,"pack_loads")
         }
       }
       if (k=="vindication") {

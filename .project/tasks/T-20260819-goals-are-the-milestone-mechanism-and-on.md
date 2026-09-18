@@ -42,7 +42,11 @@ at adoption, and the kit currently decides entry mode once and never revisits it
       genuinely independent (`default: in-progress`, `trial-2: completed`) and the packs are
       written per goal, so the mechanism carries a milestone's identity — it just does not carry
       its scope. **This criterion is therefore not met and is now blocked on a decision rather
-      than on an experiment:** what SELECTS a task into a goal. Discovered while auditing
+      than on an experiment:** what SELECTS a task into a goal. **PROPOSED 2026-09-18 as ADR 0013:
+      a goal is an independently ordered VIEW of the whole backlog, not a subset; membership is
+      deferred, with a named trigger that reopens it. If accepted, this criterion is already
+      satisfied on that reading — but reading a criterion as met is the operator's call, so the
+      box stays unticked until the ADR is accepted.** Discovered while auditing
       `#goal_state`; the ordering half of that is `T-20260914-a-goal-state-is-a-label-the-planner-neve`.
 - [ ] `kit-status.sh` reports per goal. Today every figure is implicitly `default`, so a second
       goal would silently merge into aggregate counts and no one would see it.

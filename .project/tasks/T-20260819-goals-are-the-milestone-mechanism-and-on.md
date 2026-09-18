@@ -32,7 +32,7 @@ at adoption, and the kit currently decides entry mode once and never revisits it
 
 ## Acceptance criteria
 
-- [x] A second goal can be planned, packed and worked without the first being disturbed —
+- [ ] A second goal can be planned, packed and worked without the first being disturbed —
       demonstrated, not asserted. Two goals sharing a task is the interesting case, and what
       happens then must be decided rather than discovered.
       **Demonstrated 2026-09-14, and the answer is that they share EVERYTHING.** A fixture with
@@ -42,14 +42,17 @@ at adoption, and the kit currently decides entry mode once and never revisits it
       genuinely independent (`default: in-progress`, `trial-2: completed`) and the packs are
       written per goal, so the mechanism carries a milestone's identity — it just does not carry
       its scope. **This criterion is therefore not met and is now blocked on a decision rather
-      than on an experiment:** what SELECTS a task into a goal. **ANSWERED by ADR 0013, ACCEPTED 2026-09-18 by the
-      operator:** a goal is an independently ordered VIEW of the whole backlog, not a subset;
-      membership is deferred, with a named trigger that reopens it — the first time two goals must
-      disagree about whether a task is in scope. **This criterion was never blocked on work, only
-      on knowing what a goal is supposed to be**, and the 2026-09-14 fixture had already
-      demonstrated the rest. Ticked on that acceptance. The known cost is recorded in 0013:
-      scope-by-parking is GLOBAL, so a task cannot be in one milestone and out of another. Discovered while auditing
-      `#goal_state`; the ordering half of that is `T-20260914-a-goal-state-is-a-label-the-planner-neve`.
+      than on an experiment:** what SELECTS a task into a goal. **ANSWERED by the operator on 2026-09-14 — see the
+      Decision section below, not ADR 0013.** A goal is a ROOT TASK plus its `blocked_by` closure.
+      **This criterion is NOT met:** that membership is a design, not an implementation — nothing
+      derives it, so a second goal today still shares the whole backlog, which is the very thing
+      the 2026-09-14 demonstration showed.
+      **Ticked in error on 2026-09-18 and unticked the same day.** ADR 0013 was drafted without
+      reading this file past the criteria, proposed the opposite of the decision already recorded
+      below, was accepted, and is now SUPERSEDED. The sentence above saying this was "blocked on a
+      decision" was a stale forward-reference when ADR 0013 was written — the decision was four
+      days old and eleven lines further down.
+
 - [ ] `kit-status.sh` reports per goal. Today every figure is implicitly `default`, so a second
       goal would silently merge into aggregate counts and no one would see it.
 - [ ] The **project's entry mode is derived, not fixed at adoption** — the predicate above run on

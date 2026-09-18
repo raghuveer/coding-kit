@@ -3,7 +3,40 @@
 
 # ADR 0013: A goal is an independently ordered view of the whole backlog, not a subset of it
 
-- **Date:** 2026-09-18   **Status:** **Accepted**   **Accepted:** 2026-09-18 by the operator
+- **Date:** 2026-09-18   **Status:** **SUPERSEDED — do not implement**   **Superseded-by:** the
+  operator's decision of 2026-09-14, recorded in
+  `.project/tasks/T-20260819-goals-are-the-milestone-mechanism-and-on.md`
+
+> **SUPERSEDED 2026-09-18, hours after it was accepted, by a decision that already existed.**
+> Kept unedited below rather than deleted, on the same grounds as 0005 and 0006: the record
+> should show what was believed and why it was wrong.
+>
+> **The operator decided this on 2026-09-14 and I did not read it.** That task file carries a
+> section headed *"Decision, 2026-09-14 — operator: a goal is a ROOT TASK plus its `blocked_by`
+> closure"*, below the criteria. I read AC1, saw its note say *"blocked on a decision"*, and
+> designed an answer without reading to the end of the file where the answer already was. The
+> note was a stale forward-reference; the decision was four days old.
+>
+> **The decision is the opposite of this ADR.** A goal IS a subset: one root task plus everything
+> reachable through `blocked_by`, and nothing else selects into it.
+>
+> **This ADR's central argument was not merely overruled, it was WRONG — and the counter was
+> already in the file.** It rejected closure on density: *"26 of 216 tasks carry any `blocked_by`
+> at all"*, so a goal would come out nearly empty. That measures **global edge density** when what
+> matters is **whether one root plus its closure forms a meaningful set**. The operator's note
+> names a real one: `T-20260808-trial-the-kit-on-one-unfamiliar-brownfie` **plus its 13 blockers**,
+> which exists *"because a real milestone needed it rather than because a design imagined one"*.
+> Verified on re-check: 13 blockers, 17 files referencing it.
+>
+> **Two more of its arguments were pre-empted by the same note.** It proposed an explicit `goals:`
+> frontmatter list as the thing to build if a trigger fired; the operator had already rejected that
+> as *"a second place to say what `blocked_by` already says"*, citing nine instances of
+> `T-20260826-two-artefacts-carrying-one-fact-with-not`. And its "deferral" rests on no milestone
+> having been attempted — the decision names the attempt.
+>
+> **What survives:** nothing load-bearing. The one statement worth carrying forward is the cost it
+> identified — scope-by-parking is global, because state belongs to the task and not to the
+> task-in-a-goal — which remains true and is **not** answered by closure membership either.
 - **Related:** [[0004-where-the-plan-lives]], [[0012-which-ordering-governs-what-to-do-next]]
 - **Answers:** the decision `T-20260819-goals-are-the-milestone-mechanism-and-on` AC1 is blocked
   on — *what selects a task into a goal*

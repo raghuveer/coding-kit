@@ -1634,10 +1634,10 @@ if [ -d "$PLANS_DIR" ]; then
       # place the gap is observable. Checked, not written: silently editing a project's
       # .gitattributes from the indexer would be a write nobody asked for.
       if [ -f "$ROOT/.gitattributes" ] &&
-         ! grep -qxF '.project/plans/*.tsv text eol=lf' "$ROOT/.gitattributes" 2>/dev/null; then
+         ! grep -qxF "$STATE_DIR/plans/*.tsv text eol=lf" "$ROOT/.gitattributes" 2>/dev/null; then
         kit_warn "the plan is committed but .gitattributes does not pin it to LF"
         kit_warn "  A CRLF checkout carries a CR into the goal id and the digest, which marks"
-        kit_warn "  every plan stale against itself. Add: .project/plans/*.tsv text eol=lf"
+        kit_warn "  every plan stale against itself. Add: $STATE_DIR/plans/*.tsv text eol=lf"
       fi
     fi
     # No digest at all is an OLDER plan file, not a fresh one. Treated as stale and said so:

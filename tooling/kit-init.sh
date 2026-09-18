@@ -9,7 +9,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 # .project, and this script had no profile reader until then.
 . "$HERE/kit-lib.sh"
 
-mkdir -p "$ROOT/.claude" "$ROOT/.project/tasks"
+mkdir -p "$ROOT/.claude"
 
 if [ -f "$ROOT/.claude/project-profile.md" ]; then
   ADOPTED=1
@@ -24,6 +24,18 @@ else
   tr -d '\r' < "$HERE/../templates/project-profile.md" > "$ROOT/.claude/project-profile.md"
   echo "created .claude/project-profile.md  <- fill this in; the kit is inert until you do"
 fi
+
+# DERIVED HERE AND NOT SOONER. The state directory is a profile key, and the profile may not
+# have existed a moment ago -- this script creates it. Everything below writes rules ABOUT
+# these paths, so reading them once, after the profile is settled, is what lets the rules
+# follow the key instead of asserting `.project`.
+#
+# The directory creation moved down with them: it ran on line 12 against a hardcoded
+# `.project/tasks`, which RE-CREATED that directory on every run even for a project that had
+# moved its state elsewhere, leaving an empty `.project/tasks` beside the real one.
+_ST=$(kit_cfg "$ROOT/.claude/project-profile.md" paths.state ".project")
+_TD=$(kit_tasks_dir "$ROOT/.claude/project-profile.md")
+mkdir -p "$ROOT/$_TD"
 
 # Generate rather than symlink: the plugin's location is machine-specific, and the hooks
 # directory is never shared by git. Each developer regenerates their own.
@@ -81,7 +93,7 @@ GI="$ROOT/.gitignore"
 # with `index.db.failed`, and an EXIT trap cannot fire on a kill or a power loss. An
 # exact-match ignore left those untracked, where the next `git add -A` stages a derived
 # database into a repository whose ignore comment says never to commit one.
-grep -qxF '.project/index.db*' "$GI" 2>/dev/null || printf '\n# derived, rebuildable — never commit\n.project/index.db*\n' >> "$GI"
+grep -qxF "$_ST/index.db*" "$GI" 2>/dev/null || printf '\n# derived, rebuildable — never commit\n%s/index.db*\n' "$_ST" >> "$GI"
 grep -qxF 'STATUS.generated.md' "$GI" 2>/dev/null || echo 'STATUS.generated.md' >> "$GI"
 # Cluster packs are a snapshot of the index for one plan. Committing them would put a
 # stale copy of derived state in the repo — the second-truth problem this design avoids.
@@ -91,7 +103,7 @@ grep -qxF 'STATUS.generated.md' "$GI" 2>/dev/null || echo 'STATUS.generated.md' 
 # Ignoring the plan is what made it machine-local, and machine-local state that no text
 # rebuilds is exactly what kit-index.sh dropped on every run. If you are adding an ignore line
 # for it, read that ADR first — the packs beside it are the ones that belong here.
-grep -qxF '.project/packs/' "$GI" 2>/dev/null || echo '.project/packs/' >> "$GI"
+grep -qxF "$_ST/packs/" "$GI" 2>/dev/null || echo "$_ST/packs/" >> "$GI"
 # kit-entry.sh's four artefacts, for the same reason and one more: they are a snapshot of ONE
 # machine's working copy at one moment, and nothing detects them going stale against the tree.
 # This was found by a fixture rather than by inspection -- the adoption .gitignore did not carry
@@ -100,7 +112,7 @@ grep -qxF '.project/packs/' "$GI" 2>/dev/null || echo '.project/packs/' >> "$GI"
 # measurement it reports is the second-truth problem with a feedback loop attached.
 # paths.state, not a hardcoded .project: kit-entry.sh writes into whatever the profile declares,
 # so a subject that configured a different state directory would have had these committed.
-_ST=$(kit_cfg "$ROOT/.claude/project-profile.md" paths.state ".project")
+# _ST is derived once, above, before anything writes a rule about it.
 # THREE, NOT FOUR. `entry-candidates.md` was in this list and is deliberately NOT ignored any
 # more: kit-entry.sh does not write it -- the model does, following docs/ENTRY-PROPOSAL.md -- so
 # it is a PROPOSAL a human reviews rather than derived output, and a re-run cannot reproduce the
@@ -119,9 +131,27 @@ echo "updated .gitignore"
 # appending on the same day produce a conflict on every pull. Union takes both sides;
 # ordering does not matter because the indexer sorts by timestamp.
 GA="$ROOT/.gitattributes"
-grep -q 'events.ndjson' "$GA" 2>/dev/null || \
-  printf '\n# append-only shared log: take both sides rather than conflicting\n.project/events.ndjson merge=union\n' >> "$GA"
-echo "updated .gitattributes (events.ndjson merge=union)"
+# ASK GIT, and print the message only when it is true.
+#
+# This was `grep -q 'events.ndjson'` -- a SUBSTRING -- so once the file held a rule for the OLD
+# location, moving paths.state satisfied the check, nothing was written for the new one, and the
+# success line printed anyway: the operator was told a protection was in place that was not.
+#
+# An exact-line grep was the first fix and it was WRONG IN THE OTHER DIRECTION. This repository
+# already carries `.project/events.ndjson merge=union text eol=lf` -- the same rule with a second
+# attribute -- which an exact match does not recognise, so kit-init appended a duplicate. Caught
+# by running it here before committing.
+#
+# `git check-attr` asks the question actually being asked: is this path already union-merged? It
+# is immune to spacing, ordering, extra attributes and which file the rule came from -- and it is
+# what the conformance step asserts with, so the check and its test agree by construction.
+if [ "$(git -C "$ROOT" check-attr merge -- "$_ST/events.ndjson" 2>/dev/null | sed 's/.*: //')" = union ]; then
+  echo ".gitattributes already takes both sides of the event log"
+else
+  printf '\n# append-only shared log: take both sides rather than conflicting\n%s/events.ndjson merge=union\n' "$_ST" >> "$GA" &&
+    echo "updated .gitattributes (events.ndjson merge=union)" ||
+    kit_warn "could not set merge=union on $_ST/events.ndjson in .gitattributes"
+fi
 
 # The plan (ADR 0004) is committed and READ AS DATA by kit-index.sh, so a CRLF checkout would
 # carry a CR into the goal id and the task digest -- which would mark every plan stale against
@@ -133,14 +163,47 @@ echo "updated .gitattributes (events.ndjson merge=union)"
 # repo already had (`plans/*.pdf binary` is enough) and silently suppressed the pin — while the
 # success line below printed anyway, telling the operator a protection was in place when it was
 # not. The failure then surfaces as every plan reading stale against itself.
-if grep -qxF '.project/plans/*.tsv text eol=lf' "$GA" 2>/dev/null; then
+if [ "$(git -C "$ROOT" check-attr eol -- "$_ST/plans/x.tsv" 2>/dev/null | sed 's/.*: //')" = lf ]; then
   echo ".gitattributes already pins the plan to LF"
 else
-  printf '\n# the plan: read as data, so pin the line endings. NOT merge=union -- see ADR 0004\n.project/plans/*.tsv text eol=lf\n' >> "$GA" &&
+  printf '\n# the plan: read as data, so pin the line endings. NOT merge=union -- see ADR 0004\n%s/plans/*.tsv text eol=lf\n' "$_ST" >> "$GA" &&
     echo "updated .gitattributes (plans pinned to LF)" ||
-    kit_warn "could not pin .project/plans/*.tsv to LF in .gitattributes"
+    kit_warn "could not pin $_ST/plans/*.tsv to LF in .gitattributes"
 fi
 
+
+# LINES THIS SCRIPT WROTE FOR A DIFFERENT STATE DIRECTORY.
+#
+# kit-init records no previous location, so they are found by their SHAPE. The suffixes below
+# are exactly the rules this script writes; a line carrying one under a prefix that is not the
+# current paths.state was written by an earlier run against an earlier layout. That is a
+# heuristic and is stated as one -- it can only ever match the kit's own rule shapes, which is
+# why an adopter's unrelated `plans/*.pdf binary` cannot be caught by it.
+#
+# REPORTED, NEVER REMOVED. This writer only appends (see the entry-* loop above), an adopter's
+# own lines live in the same two files, and a script that deletes from .gitignore on an
+# adopter's behalf is a write nobody asked for. The exact text is printed so the line can be
+# found and judged; the judgement is the operator's.
+_STALE=""
+for _f in "$GI" "$GA"; do
+  [ -f "$_f" ] || continue
+  while IFS= read -r _line; do
+    case "$_line" in
+      "$_ST"/*) continue ;;
+      */index.db\*|*/packs/|*/entry-facts.tsv|*/entry-comment-runs.tsv|*/entry-report.md) ;;
+      "*/events.ndjson merge=union"|"*/plans/\*.tsv text eol=lf") ;;
+      *) continue ;;
+    esac
+    _STALE="$_STALE  $_line
+"
+  done < "$_f"
+done
+if [ -n "$_STALE" ]; then
+  kit_warn "these lines name a state directory other than $_ST, and this script wrote them:"
+  printf '%s' "$_STALE" >&2
+  kit_warn "  NOT removed -- this writer only appends, and your own lines share these files."
+  kit_warn "  Delete them once you are satisfied they are the kit's and the old path is gone."
+fi
 
 # ---- can the shared files actually be shared? --------------------------------------------
 #
@@ -185,7 +248,7 @@ else
   echo "next:"
   echo "  1. fill in commands.* and tier.rule in .claude/project-profile.md"
   echo "  2. append templates/CLAUDE.kit.md to your CLAUDE.md"
-  echo "  3. commit .claude/project-profile.md and .project/tasks/ — the team shares them"
+  echo "  3. commit .claude/project-profile.md and $_TD/ — the team shares them"
   echo "  4. delete any hand-maintained STATUS.md or task CSV — a surviving copy WILL be edited"
   # The hook only protects developers who ran this script. Git cannot share .git/hooks, so
   # for anyone who skipped it there is no enforcement at all and the repo merely looks

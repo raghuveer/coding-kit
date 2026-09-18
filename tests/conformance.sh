@@ -1853,6 +1853,89 @@ check $? "the default follows paths.state, a misplaced backlog is named, and an 
 rm -rf "$pt.a" "$pt.b" "$pt.c"
 fi
 
+if step "the state directory moves: rules, attributes and messages follow paths.state" ; then
+# Reproduced twice in fresh repositories on 2026-09-11: adopt, set paths.state to something other
+# than .project, re-run kit-init.sh, and the derived database and the packs are UNTRACKED rather
+# than ignored -- so the next `git add -A` commits them -- while the event log loses merge=union
+# and the plan loses its LF pin. kit-init's own checks pass in exactly that configuration and
+# print their success lines anyway.
+#
+# THE ORDER MATTERS AND IS THE POINT: adopt at the DEFAULT layout first, so the old kit-written
+# lines exist, THEN move. A fixture that configures the new layout before adopting never
+# exercises the case an adopter is actually in.
+#
+# Asserted through git check-ignore and git check-attr rather than string matching. The defect
+# was a substring check believing itself -- asserting on the text of .gitignore would repeat the
+# original mistake in the test.
+mv="$WORK.movedstate"; rm -rf "$mv"; mkdir -p "$mv/src"
+( cd "$mv" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  echo x > src/a; git add -A; git commit -q --no-verify -m seed
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+
+  # Move the state directory, the way an adopter would whose repo already ignores .project.
+  sed -i.bak 's|^paths.state:.*|paths.state:  .kit|; s|^paths.tasks:.*|paths.tasks:  .kit/tasks|'     .claude/project-profile.md 2>/dev/null || exit 1
+  grep -q '^paths.state:  .kit' .claude/project-profile.md ||
+    { echo "  fixture: the profile did not take the new paths.state"; exit 1; }
+  rm -f .claude/project-profile.md.bak
+  mkdir -p .kit/tasks
+  # The FIRST adoption created .project/tasks legitimately -- that was the layout then. Clear it,
+  # so what the assertion below sees is RE-creation by the second run and not the leftovers of
+  # the first. kit-init.sh:12 used to mkdir a hardcoded .project/tasks on every run, leaving an
+  # empty one beside the real backlog for a project that had moved.
+  rm -rf .project
+  out=$(bash "$KIT/tooling/kit-init.sh" 2>&1)
+
+  printf -- '---\nid: T-m\ntitle: m\ntier: T2\n---\nb\n' > .kit/tasks/T-m.md
+  git add -A >/dev/null 2>&1; git commit -q --no-verify -m "chore: seed the moved layout" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-plan.sh"  >/dev/null 2>&1
+  git add -A >/dev/null 2>&1; git commit -q --no-verify -m "chore: plan" >/dev/null 2>&1
+  idxout=$(bash "$KIT/tooling/kit-index.sh" 2>&1)
+
+  ign() { git check-ignore -q "$1"; }
+  att() { git check-attr "$1" -- "$2" 2>/dev/null | sed 's/.*: //'; }
+
+  ign .kit/index.db   || { echo "  .kit/index.db is NOT ignored -- the next git add commits it"; exit 1; }
+  ign .kit/packs/x.md || { echo "  .kit/packs/ is NOT ignored"; exit 1; }
+  [ "$(att merge .kit/events.ndjson)" = union ] ||
+    { echo "  .kit/events.ndjson merge is $(att merge .kit/events.ndjson), wanted union"; exit 1; }
+  [ "$(att eol .kit/plans/default.tsv)" = lf ] ||
+    { echo "  .kit/plans/default.tsv eol is $(att eol .kit/plans/default.tsv), wanted lf"; exit 1; }
+  [ ! -d .project ] || { echo "  kit-init RE-CREATED .project after paths.state moved"; exit 1; }
+
+  # kit-init must NAME the lines it wrote for the old location, by their exact text, or an
+  # adopter has no way to find them -- it records no previous location.
+  case "$out" in
+    *".project/index.db*"*) ;;
+    *) echo "  kit-init did not name the stale .project/index.db* line it wrote earlier"; exit 1 ;;
+  esac
+
+  # THE STALE PIN GOES FIRST, and that ordering is the whole value of this arm.
+  #
+  # The first adoption wrote `.project/plans/*.tsv text eol=lf`. Leave it in place and a
+  # kit-index that still checks the LITERAL finds it, stays quiet, and the assertion below
+  # passes for entirely the wrong reason -- which is what it did until a mutation said so.
+  # With only the CURRENT location pinned, a literal check has nothing to find and must warn.
+  grep -v '^.project/plans/\*.tsv text eol=lf$' .gitattributes > .gitattributes.t &&
+    mv .gitattributes.t .gitattributes
+  grep -qxF '.kit/plans/*.tsv text eol=lf' .gitattributes ||
+    { echo "  fixture: the pin for the moved location is missing, so this arm proves nothing"; exit 1; }
+  case "$(bash "$KIT/tooling/kit-index.sh" 2>&1)" in
+    *"does not pin it to LF"*) echo "  a LF-pin warning fired while the pin for $PWD was present"; exit 1 ;;
+  esac
+  # ...and one after it is removed too. A check that cannot complain is not a check.
+  grep -v 'plans/\*.tsv text eol=lf' .gitattributes > .gitattributes.t && mv .gitattributes.t .gitattributes
+  case "$(bash "$KIT/tooling/kit-index.sh" 2>&1)" in
+    *"does not pin it to LF"*) ;;
+    *) echo "  no LF-pin warning after the pin was removed"; exit 1 ;;
+  esac
+  exit 0 )
+check $? "index.db and packs ignored, log union, plan lf, no .project, stale lines named"
+rm -rf "$mv"
+fi
+
 if step "the kit runs where only python is named python, and says so when neither exists"; then
 # Five scripts shell out to an interpreter -- kit-finding.sh, kit-resolve.sh,
 # kit-review-record.sh, kit-claim.sh, kit-plan.sh -- and all of them hardcoded `python3`.

@@ -20,7 +20,7 @@ set -uo pipefail
 ROOT=$(kit_root) || { kit_warn "not a git repository"; exit 0; }
 kit_active "$ROOT" || exit 0            # inert in repos that never opted in
 PROFILE=$(kit_profile "$ROOT")
-TASKS_DIR=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
+TASKS_DIR=$(kit_tasks_dir "$PROFILE")
 
 CMD=${1:-}; shift 2>/dev/null || true
 FORCE=""; ARG=""

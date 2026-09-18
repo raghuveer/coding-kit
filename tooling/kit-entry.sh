@@ -164,7 +164,7 @@ fi
 
 PROFILE=$(kit_profile "$ROOT")
 STATE=$(kit_cfg "$PROFILE" paths.state ".project")
-TASKS=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
+TASKS=$(kit_tasks_dir "$PROFILE")
 OUTDIR="$ROOT/$STATE"
 mkdir -p "$OUTDIR" || exit 1
 

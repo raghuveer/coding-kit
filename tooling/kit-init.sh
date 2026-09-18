@@ -166,7 +166,7 @@ fi
 # line is within this script's remit; silently reversing somebody's deliberate exclusion is
 # not. So: report precisely, print the remedy, and let a human apply it.
 BLOCKED=""
-for _rel in ".claude/project-profile.md" "$(kit_cfg "$ROOT/.claude/project-profile.md" paths.tasks '.project/tasks')"; do
+for _rel in ".claude/project-profile.md" "$(kit_tasks_dir "$ROOT/.claude/project-profile.md")"; do
   [ -n "$_rel" ] || continue
   if git -C "$ROOT" check-ignore -q "$_rel" 2>/dev/null; then
     BLOCKED="$BLOCKED$_rel|$(git -C "$ROOT" check-ignore -v "$_rel" 2>/dev/null | head -1 | awk '{print $1}')

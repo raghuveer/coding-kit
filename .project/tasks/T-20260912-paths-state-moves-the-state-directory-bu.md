@@ -71,7 +71,7 @@ that clash, and it is exactly the move that breaks here.
       by matching its own rule shapes under a different prefix.
 - [ ] Presence checks match exact lines, not substrings (`kit-init.sh:122`), and each confirmation
       is printed only when it is true (`:124`).
-- [ ] `paths.tasks` has one default, `$STATE_DIR/tasks` — today's `kit-charter` and `kit-criteria`
+- [x] `paths.tasks` has one default, `$STATE_DIR/tasks` — today's `kit-charter` and `kit-criteria`
       default — defined once in `kit-lib.sh`. `kit-index.sh` warns when task files exist under the
       other location instead of silently indexing zero, and a conformance check covers that
       warning.
@@ -88,6 +88,59 @@ that clash, and it is exactly the move that breaks here.
       is no LF-pin warning while the derived pin is present, and one after it is removed. Mutations, each of
       which must fail the step: restoring the literal `.project/index.db*`; restoring the substring
       match at `kit-init.sh:122`; and restoring the literal checked at `kit-index.sh:1494`.
+
+### Evidence, 2026-09-18 — criterion 3 only; the other four are untouched
+
+**One default, in one place.** `kit_tasks_dir` in `kit-lib.sh` resolves `paths.tasks`, falling back
+to `$STATE_DIR/tasks`. Nine call sites now use it and **no hardcoded `.project/tasks` default
+remains** in `tooling/`:
+
+| was | sites |
+|---|---|
+| `$STATE_DIR/tasks` | kit-charter, kit-criteria |
+| hardcoded `.project/tasks` | kit-entry, kit-index, kit-init, kit-plan, kit-status, kit-task, kit-trailers |
+
+**The recorded line numbers had drifted** and were re-derived rather than trusted: `kit-status` is
+at `:171`, not `:73`, and `kit-plan:57` and `kit-init:169` were not in the task at all.
+
+**It takes the profile alone, not a state directory.** Passing one in would have been a trap with
+three existing victims: `kit-index.sh` read `paths.tasks` on the line BEFORE it computed
+`STATE_DIR`, and `kit-task.sh` and `kit-trailers.sh` never computed one at all.
+
+**Nothing changes for an adopter who never moved anything** — with `paths.state` at its own
+default this resolves to `.project/tasks`, exactly as before.
+
+**The defect, before and after**, on a fixture with `paths.state: .kit` and no `paths.tasks`:
+
+    before   0 tasks indexed, and the only warning was about a stale plan
+    after    1 task indexed
+
+**The warning, and why it exists even though the default now covers this case.** An empty backlog
+and a misconfigured one produced identical output. The default following `paths.state` removes one
+cause; a typo in `paths.tasks` produces the same silence, and **the fix for a silent wrong answer
+is never only to remove one of its causes**. It looks only where the kit itself would have looked
+-- the two historical defaults -- and warns rather than fails, because a genuinely empty backlog is
+legitimate and every adopting repository has one.
+
+**Three arms, each mutation-proved separately:**
+
+| mutation | arm that caught it |
+|---|---|
+| the default reverts to a hardcoded `.project/tasks` | 1 — *"indexed 0 task(s), wanted 1"* |
+| the misplaced-backlog warning is disabled | 2 — *"produced no warning"* |
+| the warning fires unconditionally | 3 — *"an empty backlog was reported as misconfigured"* |
+
+**Arm 3 is what keeps arm 2 honest.** A warning that fired on an empty backlog would be a nag an
+adopter learns to ignore, and every adopting repository is empty by definition — so that arm is
+not hypothetical.
+
+**NOT done:** criteria 1, 2, 4 and 5. The `.gitignore` and `.gitattributes` rules, the exact-line
+presence checks, the messages that name state paths, and the full adopt-then-move conformance
+fixture are all untouched. This criterion was taken first because it is contained and does not
+touch the `kit-init.sh` lines that `T-20260911-kit-init-prints-the-claude-remedy-when-t`,
+`T-20260908-kit-init-pins-less-for-an-adopter-than-t` and
+`T-20260812-kit-init-leaves-a-footprint-in-an-adopte` contend over, which the Notes below warn to
+land together.
 
 ## Notes
 

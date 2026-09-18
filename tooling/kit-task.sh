@@ -15,7 +15,7 @@ set -uo pipefail
 ROOT=$(kit_root) || { kit_warn "not a git repository"; exit 1; }
 kit_active "$ROOT" || { kit_warn "kit not adopted here (no .claude/project-profile.md)"; exit 1; }
 PROFILE=$(kit_profile "$ROOT")
-TASKS_DIR=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
+TASKS_DIR=$(kit_tasks_dir "$PROFILE")
 
 title=""; tier=""; lang=""; epic=""; blocked=""; paths=""; state=""; via=""
 while [ $# -gt 0 ]; do

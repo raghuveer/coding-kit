@@ -12,7 +12,7 @@ ROOT=$(kit_root) || { kit_warn "not a git repository"; exit 0; }
 kit_active "$ROOT" || exit 0                    # inert in repos that never opted in
 PROFILE=$(kit_profile "$ROOT")
 
-TASKS_DIR=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
+TASKS_DIR=$(kit_tasks_dir "$PROFILE")
 STATE_DIR=$(kit_cfg "$PROFILE" paths.state  ".project")
 ADOPT=$(kit_cfg "$PROFILE" git.adopted_at "")   # commit-ish; history before it has no trailers
 # Same key the commit-msg hook uses. Read here so the untagged counter and the hook
@@ -314,6 +314,39 @@ elif [ -d "$ROOT/$TASKS_DIR" ]; then
   for f in "$ROOT/$TASKS_DIR"/*.md; do
     if [ -e "$f" ]; then HAVE_TASKS=1; break; fi
   done
+fi
+
+# AN EMPTY BACKLOG AND A MISCONFIGURED ONE LOOK IDENTICAL, and only one of them is fine.
+#
+# Reproduced 2026-09-11: with `paths.state` moved and `paths.tasks` absent, seven scripts
+# defaulted to `.project/tasks` while the tasks were under the new state directory. kit-index
+# indexed ZERO tasks, said nothing about it, and warned only that the plan was stale. Every
+# figure downstream then reported a healthy repository with no work in it.
+#
+# `kit_tasks_dir` now makes the default follow `paths.state`, so that exact case cannot recur.
+# This says so out loud anyway, because the default is not the only way to point the key at the
+# wrong directory -- a typo in `paths.tasks` produces the same silence, and the fix for a silent
+# wrong answer is never only to remove one of its causes.
+#
+# It looks ONLY where the kit itself would have looked: the resolved directory is empty, so the
+# candidates are the two historical defaults. It is a WARNING and not a failure -- a genuinely
+# empty backlog is a legitimate state, and an adopting repository has one by definition.
+if [ "$SRC_TASKS" = files ] && [ "$HAVE_TASKS" = 0 ]; then
+  _elsewhere=""
+  for _cand in "$STATE_DIR/tasks" ".project/tasks"; do
+    [ "$_cand" = "$TASKS_DIR" ] && continue
+    [ -d "$ROOT/$_cand" ] || continue
+    for _f in "$ROOT/$_cand"/*.md; do
+      [ -e "$_f" ] || continue
+      case " $_elsewhere " in *" $_cand "*) ;; *) _elsewhere="$_elsewhere $_cand" ;; esac
+      break
+    done
+  done
+  if [ -n "$_elsewhere" ]; then
+    kit_warn "no task files under paths.tasks ($TASKS_DIR), but task files EXIST under:$_elsewhere"
+    kit_warn "  indexing zero tasks and reporting a healthy backlog is the failure this refuses."
+    kit_warn "  Set paths.tasks in .claude/project-profile.md, or move the files."
+  fi
 fi
 if [ "$HAVE_TASKS" = 1 ]; then
   # Expanded ONCE, into the positional parameters, and used for both the awk arguments and the

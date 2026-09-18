@@ -10,6 +10,33 @@ kit_root() { git rev-parse --show-toplevel 2>/dev/null; }
 
 kit_profile() { printf '%s/.claude/project-profile.md' "$1"; }
 
+# kit_tasks_dir <profile> -> the task directory, relative to the repo root.
+#
+# ONE DEFAULT, because there were TWO. `$STATE_DIR/tasks` in kit-charter and kit-criteria;
+# a hardcoded `.project/tasks` in kit-entry, kit-index, kit-init, kit-plan, kit-status,
+# kit-task and kit-trailers. With `paths.state` moved and `paths.tasks` absent, those seven
+# looked in the OLD place, found nothing, and kit-index.sh indexed ZERO TASKS while warning
+# only about a stale plan -- an empty backlog reported as a healthy one. Reproduced twice in
+# fresh repositories on 2026-09-11; see T-20260912-paths-state-moves-the-state-directory-bu.
+#
+# `$STATE_DIR/tasks` is the survivor because it FOLLOWS `paths.state`, which is the entire
+# point of that key. Where `paths.state` is its own default, this resolves to `.project/tasks`
+# and NOTHING changes for an adopter who never moved anything.
+#
+# It takes the profile alone, not a state directory, so a caller cannot get the order wrong.
+# kit-index.sh read `paths.tasks` on the line BEFORE it computed STATE_DIR, and kit-task.sh
+# and kit-trailers.sh never computed one at all -- passing it in would have made this helper
+# a trap with three existing victims.
+#
+# Two kit_cfg calls only when the key is ABSENT. The common case is one: an adopted profile
+# declares paths.tasks, and the default is never computed.
+kit_tasks_dir() {
+  _ktd=$(kit_cfg "$1" paths.tasks "")
+  if [ -n "$_ktd" ]; then printf '%s' "$_ktd"; return 0; fi
+  printf '%s/tasks' "$(kit_cfg "$1" paths.state ".project")"
+}
+
+
 # The kit is inert in any repo that has not opted in.
 kit_active() { [ -f "$(kit_profile "$1")" ]; }
 

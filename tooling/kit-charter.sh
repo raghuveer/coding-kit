@@ -34,7 +34,7 @@ ROOT=$(kit_root) || exit 0
 kit_active "$ROOT" || exit 0
 PROFILE=$(kit_profile "$ROOT")
 STATE_DIR=$(kit_cfg "$PROFILE" paths.state ".project")
-TASK_DIR="$ROOT/$(kit_cfg "$PROFILE" paths.tasks "$STATE_DIR/tasks")"
+TASK_DIR="$ROOT/$(kit_tasks_dir "$PROFILE")"
 DB="$ROOT/$STATE_DIR/index.db"
 
 row() { printf '  %-26s %s\n' "$1" "$2"; }

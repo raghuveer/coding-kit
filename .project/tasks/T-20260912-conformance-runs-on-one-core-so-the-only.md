@@ -5,7 +5,7 @@ epic: validation
 tier: T3
 lang: bash
 paths: tests/conformance.sh, .claude/CLAUDE.md
-state: created
+state: cancelled
 ---
 
 ## Intent
@@ -74,6 +74,40 @@ GNU-only constructs, the carriage return in config parsing, the false CRLF findi
 `grep -c $'\r'` -- remains exactly as valid. Those are the reason a Windows leg had to exist at
 all, and #137 is the answer to them. The disagreement is only about where the run happens, never
 about whether it should.
+
+## Cancelled 2026-09-18 — it no longer buys the thing it was filed to buy
+
+**Operator decision.** The amendment above records that the premise changed; this records what was
+done about it.
+
+The task existed to reclaim the local hour. Two measurements kill that, and neither is new:
+
+| | |
+|---|---|
+| `conformance (windows-latest)` | **~5m20s**, green at 139-140 passed / 0 failed |
+| parallelism on this machine, measured in `T-20260822` | **1.16x, not 8x** — 65s to 56s over 160 spawns on sixteen idle cores |
+
+The suite is spawn-bound (`~2s user` against `~58s sys`), so `--jobs 8` turns an hour into roughly
+**52 minutes** — and `T-20260822` already abandoned `xargs -P` over these same fixtures on exactly
+that evidence. So the remaining prize is about **eight minutes** on a run that CI now does in five,
+and the six unmet criteria are all build work for it.
+
+**`cancelled` is the closest available state and it is not the right one.** ADR 0008 defines
+`cancelled` as *"this should not be done at all"* and `abandoned` as *"we stopped"* — attempt
+versus work. This was **genuine work when filed** and nothing was attempted, so neither fits: it
+is work that stopped being worth doing, which the vocabulary cannot say.
+`T-20260808-task-state-cannot-express-no-longer-rele` is the open task recording that gap, and this
+is now a concrete instance of it rather than a prospective one. **Whoever takes that task should
+cite this file.**
+
+**What is NOT cancelled with it.** The Intent's list of real Windows-only failures — two GNU-only
+constructs, a carriage return in config parsing, `grep -c $''` degrading to an empty pattern and
+producing a false CRLF finding in a trial record — remains entirely valid. Those are why a Windows
+leg had to exist, and PR #137 is the answer to them. The disagreement was only ever about WHERE the
+run happens.
+
+**AC7 stays ticked.** `.claude/CLAUDE.md` was updated with the measured figures, which was this
+task's one delivered criterion.
 
 ## Notes
 

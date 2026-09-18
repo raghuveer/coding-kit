@@ -12,8 +12,9 @@
 # squash turns main red immediately instead of quietly costing a task. Detection, not
 # prevention.
 
-# THE JOB NAMES BELOW ARE LOAD-BEARING. Branch protection on `main` requires these four checks
-# by name -- `structure`, `trailers`, `conformance (ubuntu-latest)`, `conformance (macos-latest)`.
+# THE JOB NAMES BELOW ARE LOAD-BEARING. Branch protection on `main` requires these FIVE checks
+# by name -- `structure`, `trailers`, `conformance (ubuntu-latest)`, `conformance (macos-latest)`
+# and, since 2026-09-18, `conformance (windows-latest)`.
 # A required check that never reports blocks every merge forever, so renaming a job, or changing
 # the matrix so a leg reports under a different name, silently locks the branch until someone
 # edits the protection rule to match. Rename here and there, in the same change, or not at all.
@@ -22,9 +23,10 @@
 # check that protection does not require, which is harmless; removing one leaves a required
 # check with nothing to satisfy it, which is not.
 #
-# `conformance (windows-latest)` is the fifth check and is deliberately one of the harmless
-# kind: reporting, not required. Promoting it to required is a separate decision, to be taken
-# once it has been green for long enough to mean something. See the job comment below.
+# `conformance (windows-latest)` was added reporting-only and PROMOTED TO REQUIRED on
+# 2026-09-18, after six green observations with no failure -- three consecutive on `main` and
+# three on PRs -- following the two defects it was added to find. Removing it from protection
+# is the escape hatch if it proves flaky, and takes seconds.
 
 name: kit trailers
 
@@ -115,10 +117,11 @@ jobs:
   # workflow rather than the code. Twenty-eight commits once shipped green locally and failed
   # macos-latest; the reverse direction has never had a check at all.
   #
-  # It is deliberately NOT added to branch protection. Both that task and
-  # T-20260808-the-conformance-suite-shipped-two-gnu-on record portability defects shipping
-  # inside the SUITE'S OWN test code, so this leg is expected to go red before it goes green,
-  # and a required check that is red locks the branch for everyone.
+  # It was deliberately NOT in branch protection while it was expected to go red -- both that
+  # task and T-20260808-the-conformance-suite-shipped-two-gnu-on record portability defects
+  # shipping inside the SUITE'S OWN test code. It went green on 2026-09-17 at 139 passed / 0
+  # failed and was PROMOTED TO REQUIRED on 2026-09-18. A red leg now blocks merges, which is the
+  # point; removing the context from protection is the escape hatch.
   conformance:
     strategy:
       fail-fast: false

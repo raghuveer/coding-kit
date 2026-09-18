@@ -18,7 +18,7 @@
 
       conformance (ubuntu-latest)    ~1m 07s   required
       conformance (macos-latest)     ~2m 17s   required
-      conformance (windows-latest)   ~5m 20s   REPORTING, not required
+      conformance (windows-latest)   ~5m 20s   required (since 2026-09-18)
 
   Windows joined the matrix in PR #137. It used to cost **an hour** on this machine, and the
   earlier version of this rule told you to start that local run in parallel with the push. **Do
@@ -29,12 +29,17 @@
   Run the suite locally only with a reason you can say out loud: a filtered `--only <name>` while
   iterating, or a defect you cannot reproduce in CI. A full local Windows run is now the exception.
 
-  **`conformance (windows-latest)` went GREEN on 2026-09-17: 139 passed, 0 failed, 0 skipped.**
-  It is still NOT a required check. Promoting it is a deliberate decision and has not been taken;
-  until it is, read the leg rather than assume it. A red Windows leg now means a REGRESSION, not
-  the known backlog it used to mean.
+  **`conformance (windows-latest)` is a REQUIRED check as of 2026-09-18.** All five must be green
+  to merge. It was advisory from #137 until then, and was promoted on six green observations with
+  no failures after the two defects below were fixed -- three consecutive on `main`, three on PRs.
 
-  The baseline this file carried until today -- "expected red, 31 FAIL / 71 PASS" -- is gone
+  **A red Windows leg now blocks merges.** That is the point of promoting it, and it is reversible
+  in seconds: remove the context from branch protection. The one demonstrated flake is a network
+  one -- `choco` returned a 504 mid-session on 2026-09-17 -- which the install step now answers
+  with three retries, a sqlite.org fallback, and a hard `command -v sqlite3` verify that fails
+  closed. If the leg reddens on an install rather than an assertion, read that step first.
+
+  The baseline this file carried until 2026-09-17 -- "expected red, 31 FAIL / 71 PASS" -- is gone
   because both defects behind it are fixed: gawk 5.4.1 rejecting `globre`'s `/\052+/` (#144), and
   `subprocess.run(["bash", ...])` reaching `C:\Windows\System32\bash.exe`, the WSL launcher,
   instead of Git's bash (#146). The second hid the first: until the index could build, 53 steps

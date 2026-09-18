@@ -52,6 +52,43 @@ number is owned rather than tolerated, and so it visibly falls.
 - [ ] `templates/task.md` emits a canonical state, so new files never add to the count. Check
       whether `kit-task.sh` does too — it writes `state:` at creation.
 
+### Measured 2026-09-18 — the debt has a second face, and it is worse than a spelling
+
+Triaging the 14 tasks `kit-criteria.sh --closed-with-open` reports produced a result this task
+should carry, because **7 of them are this debt rather than sloppy closing**.
+
+| group | n | what it actually is |
+|---|---|---|
+| **A** — file says `open`, trailer says `done`, index says `completed` | **7** | closed BY TRAILER; the file was never touched |
+| **B** — closed in file, and the unmet criterion is NAMED deliberately | 3 | legitimate, and documented in the file |
+| **B** — closed in file, criteria unticked, no reason recorded | **4** | the only group that is a closing-side concern |
+
+**Group A is not a criteria problem at all.** Their boxes are unticked because **nobody edited the
+file**, not because the work was unmet. The `Task-Status:` trailer closed them and the index
+followed it; the file kept the state it was filed with.
+
+**Six of the seven are dated 2026-08-15** — one session, closing a batch by trailer. That is the
+shape to expect again rather than a scatter.
+
+**Why this belongs here and not in a new task.** The Intent above says legacy spellings "resolve
+through `state_alias` when the index is built, so no file had to change and none is broken today".
+That holds for the SPELLING. It does not hold for the reader: a file saying `state: open` with six
+unticked boxes reads as open work, while the index calls it `completed`. **Two answers to one
+question, and the one a human opens is the stale one.**
+
+Migrating the spellings does not fix this and would make it sharper — the file would say `created`
+while the index says `completed`. What would fix it is the file being written when the trailer
+closes the task, which is a different change from a spelling migration and is **not proposed here**.
+
+**The 4 unexplained Group B tasks are NOT filed by this note**, deliberately —
+`T-20260808-the-conformance-suite-shipped-two-gnu-o` (1 of 3),
+`T-20260821-kit-plan-writes-two-meta-keys-the-indexe` (4 of 4),
+`T-20260907-ac7-names-a-corpus-that-no-longer-exists` (4 of 4),
+`T-20260911-kit-status-re-decides-pack-withholding-w` (3 of 3). Each needs a judgement about
+whether its criteria were met, rescoped or dropped, and that judgement is the operator's.
+
+**No criterion of this task is ticked by this note.** It is a measurement, not work.
+
 ## Notes
 
 Filed 2026-08-22 on the operator's request, while ADR 0008 was being implemented: *"done is old

@@ -3,8 +3,7 @@
 
 # ADR 0013: A goal is an independently ordered view of the whole backlog, not a subset of it
 
-- **Date:** 2026-09-18   **Status:** **Proposed**   **Accepted:** not yet — an ADR here is
-  accepted by the operator
+- **Date:** 2026-09-18   **Status:** **Accepted**   **Accepted:** 2026-09-18 by the operator
 - **Related:** [[0004-where-the-plan-lives]], [[0012-which-ordering-governs-what-to-do-next]]
 - **Answers:** the decision `T-20260819-goals-are-the-milestone-mechanism-and-on` AC1 is blocked
   on — *what selects a task into a goal*
@@ -80,8 +79,15 @@ Not a date, and not "when we have time". A named condition, so the deferral cann
 a decision nobody revisits — which is the other failure mode this repository records, as folklore
 in `T-20260822`'s "an open investigation with no owner becomes folklore".
 
-## What this does not decide
+## The consequence for `T-20260819` AC1, now that this is accepted
 
-It does not tick `T-20260819` AC1. That criterion asks for a second goal *planned, packed and
-worked without the first being disturbed*, and under this ADR that is **already true** — but
-reading a criterion as satisfied is the operator's call, not a consequence this ADR may assert.
+AC1 asks for a second goal *planned, packed and worked without the first being disturbed —
+demonstrated, not asserted*. The 2026-09-14 fixture demonstrated exactly that: two goals, two
+independent orderings, independent states, packs written per goal. The only thing it did **not**
+show was membership — and under this ADR membership is not part of what a goal is.
+
+**So AC1 is met, and it is ticked on the strength of this acceptance rather than on the ADR's own
+say-so.** The criterion was never blocked on work; it was blocked on knowing what a goal is
+supposed to be.
+
+The other five criteria of that task are untouched and remain open.

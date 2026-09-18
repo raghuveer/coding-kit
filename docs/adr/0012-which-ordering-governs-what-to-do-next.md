@@ -3,8 +3,7 @@
 
 # ADR 0012: Which ordering governs "what next", and what the planner is for
 
-- **Date:** 2026-09-18   **Status:** **Proposed**   **Accepted:** not yet — this records a
-  proposal, and an ADR here is accepted by the operator
+- **Date:** 2026-09-18   **Status:** **Accepted**   **Accepted:** 2026-09-18 by the operator
 - **Related:** [[0004-where-the-plan-lives]], [[0008-the-task-state-vocabulary-and-its-partitions]]
 - **Answers:** the question `design-input/2026-09-14-state-and-context.md` §6.1 left open
 

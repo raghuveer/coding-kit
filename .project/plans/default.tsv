@@ -4,7 +4,7 @@
 #goal	default
 #created	2026-08-17T02:49:19Z
 #goal_state	in-progress
-#tasks_digest	3642033932-12654
+#tasks_digest	1217357306-12654
 #parked	7 160
 #columns	goal_id	task_id	layer	rank	score	cluster
 default	T-20260808-make-the-security-assurance-cadence-a-po	0	1	11.000	6
@@ -60,14 +60,14 @@ default	T-20260817-a-touches-edge-is-never-checked-against-	0	50	3.000	5
 default	T-20260811-restore-session-state-from-checkpoint-co	0	51	2.000	5
 default	T-20260817-task-context-reads-the-task-spec-at-step	0	52	2.000	5
 default	T-20260818-nothing-reviews-the-plan-so-a-wrong-orde	0	53	2.000	5
-default	T-20260822-a-task-has-no-authored-assignee-so-a-cla	0	54	2.000	5
-default	T-20260822-a-truncated-slug-makes-two-different-tit	0	55	2.000	5
-default	T-20260822-derived-owner-flips-to-whoever-committed	0	56	2.000	5
-default	T-20260912-task-intent-is-free-form-and-the-two-tas	0	57	2.000	5
-default	T-20260914-a-goal-state-is-a-label-the-planner-neve	0	58	2.000	5
-default	T-20260801-kit-plan-has-no-notion-of-prerequisite-w	0	59	1.000	5
-default	T-20260822-legacy-state-spellings-in-task-files-sho	0	60	1.000	5
-default	T-20260819-goals-are-the-milestone-mechanism-and-on	0	61	0.000	5
+default	T-20260819-goals-are-the-milestone-mechanism-and-on	0	54	2.000	5
+default	T-20260822-a-task-has-no-authored-assignee-so-a-cla	0	55	2.000	5
+default	T-20260822-a-truncated-slug-makes-two-different-tit	0	56	2.000	5
+default	T-20260822-derived-owner-flips-to-whoever-committed	0	57	2.000	5
+default	T-20260912-task-intent-is-free-form-and-the-two-tas	0	58	2.000	5
+default	T-20260914-a-goal-state-is-a-label-the-planner-neve	0	59	2.000	5
+default	T-20260801-kit-plan-has-no-notion-of-prerequisite-w	0	60	1.000	5
+default	T-20260822-legacy-state-spellings-in-task-files-sho	0	61	1.000	5
 default	T-20260912-paths-state-moves-the-state-directory-bu	0	62	6.000	19
 default	T-20260908-kit-init-pins-less-for-an-adopter-than-t	0	63	2.000	19
 default	T-20260911-kit-init-prints-the-claude-remedy-when-t	0	64	2.000	19

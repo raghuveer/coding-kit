@@ -820,6 +820,65 @@ check $? "concurrent firings append one event, and the lock does not outlive the
 rm -rf "$sc"
 fi
 
+if step "spend records the peak context of a series, not only the reading it ended on" spend; then
+# `context` is the LAST reading a transcript produced. Context FALLS as well as rises --
+# compaction reclaims it -- so a session that peaked high and ended low reports the low number,
+# and "reduce peak context" cannot be asked of it at all. Measured on this repository before the
+# column existed: one transcript ends at 270k having peaked at 963k, 3.6x apart.
+#
+# THE SERIES ALREADY EXISTED. kit-spend.sh appends a new event whenever a transcript's totals
+# move, so the log holds the readings and nothing new is recorded -- the peak is derived.
+#
+# `readings` is asserted alongside, because peak == final has TWO meanings and only one of them
+# is about context: a series that never fell, or no series at all. A fixture that cannot tell
+# them apart would pass against a build that dropped the peak entirely.
+pk="$WORK.peak"; rm -rf "$pk"; mkdir -p "$pk/.claude" "$pk/.project/tasks"
+( cd "$pk" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-k\ntitle: k\ntier: T2\n---\nb\n' > .project/tasks/T-k.md
+  git add -A && git commit -q --no-verify -m seed
+  # A series whose TOKEN totals rise (they are cumulative) while CONTEXT rises then falls --
+  # the real shape, and the one a final reading gets wrong. Distinct, well-formed timestamps
+  # matter: the ingest sorts by timestamp THEN total, so a malformed `at` silently reorders the
+  # series and the highest-total row wins instead of the last one. That was this step's first
+  # fixture, and it failed for that reason rather than for the defect it is about.
+  {
+    printf '{"task":"","kind":"spend","at":"2026-01-01T00:00:00Z","transcript":"tfall","scope":"main","agent":"","agent_id":"","session":"s","model":"m","turns":10,"tok_in":1,"tok_out":100,"cache_read":0,"cache_write":0,"context":100,"pack_loads":0}\n'
+    printf '{"task":"","kind":"spend","at":"2026-01-02T00:00:00Z","transcript":"tfall","scope":"main","agent":"","agent_id":"","session":"s","model":"m","turns":20,"tok_in":1,"tok_out":200,"cache_read":0,"cache_write":0,"context":900,"pack_loads":0}\n'
+    printf '{"task":"","kind":"spend","at":"2026-01-03T00:00:00Z","transcript":"tfall","scope":"main","agent":"","agent_id":"","session":"s","model":"m","turns":30,"tok_in":1,"tok_out":300,"cache_read":0,"cache_write":0,"context":250,"pack_loads":0}\n'
+  } >> .project/events.ndjson
+  # A single-reading transcript, so the two meanings of peak == final are distinguishable.
+  printf '{"task":"","kind":"spend","at":"2026-01-09T00:00:00Z","transcript":"tonce","scope":"main","agent":"","agent_id":"","session":"s","model":"m","turns":5,"tok_in":1,"tok_out":5,"cache_read":0,"cache_write":0,"context":500,"pack_loads":0}\n' >> .project/events.ndjson
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  Q() { sqlite3 .project/index.db "$1" | tr -d '\015'; }
+  fin=$(Q "SELECT context      FROM spend WHERE transcript='tfall';")
+  pkv=$(Q "SELECT context_peak FROM spend WHERE transcript='tfall';")
+  rds=$(Q "SELECT readings     FROM spend WHERE transcript='tfall';")
+  one=$(Q "SELECT readings     FROM spend WHERE transcript='tonce';")
+  [ "$fin" = 250 ] || { echo "  final reading is $fin, wanted 250 (the series ends low)"; exit 1; }
+  [ "$pkv" = 900 ] || { echo "  peak is $pkv, wanted 900 -- the peak is not being derived"; exit 1; }
+  [ "$rds" = 3 ]   || { echo "  readings is $rds, wanted 3"; exit 1; }
+  [ "$one" = 1 ]   || { echo "  single-reading transcript reports readings=$one, wanted 1"; exit 1; }
+  # And the report must SAY it, or the column is derived into a file nobody reads.
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'Peak context' STATUS.generated.md || { echo "  the status file does not report peak context"; exit 1; }
+  # AND an index predating the column must SAY so rather than drop the section. kit-status's q()
+  # sends stderr to /dev/null and returns empty on a missing column, so "no such column" and
+  # "nothing to report" are one string -- without this the section would silently vanish from a
+  # generated file and read as "no peaks", which is the absent-read-as-benign shape this
+  # repository keeps paying for.
+  sqlite3 .project/index.db "ALTER TABLE spend DROP COLUMN context_peak;" >/dev/null 2>&1 ||
+    { echo "  could not drop the column to test the stale-index arm"; exit 1; }
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'UNAVAILABLE: this index predates' STATUS.generated.md ||
+    { echo "  a stale index dropped the peak section instead of naming it"; exit 1; }
+  exit 0 )
+check $? "a series that ends low still reports its peak, and a lone reading is not a peak"
+rm -rf "$pk"
+fi
+
 if step "a reviewer's findings reach the table, and an unrecorded review is visible"; then
 # The defect: reviewers emitted correctly formatted blocks and NOTHING consumed them. A real
 # project that had run a T2 and a T3 review held zero finding rows, and every escape-rate number

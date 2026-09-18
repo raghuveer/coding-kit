@@ -633,7 +633,17 @@ if [ "${SPENT:-0}" -gt 0 ]; then
                                     ||CAST(context/1000 AS INT)||'k final'
                               FROM spend WHERE context>0 AND context_peak>context
                              ORDER BY 1.0*context_peak/context DESC LIMIT 1), '');")
-  if [ -n "$PK" ]; then
+  # AN INDEX THAT PREDATES THE COLUMN MUST SAY SO, not omit the section. q() sends stderr to
+  # /dev/null and returns empty on a missing column, so "no such column: context_peak" and
+  # "nothing to report" are the same string here -- and the section would simply vanish from
+  # a generated file, which is the absent-read-as-benign shape this repository keeps paying
+  # for. Asked of the schema rather than inferred from an empty result.
+  PKCOL=$(q "SELECT COUNT(*) FROM pragma_table_info('spend') WHERE name='context_peak';")
+  if [ "${PKCOL:-0}" = 0 ]; then
+    printf '\n**Peak context** — UNAVAILABLE: this index predates the `context_peak` column.\n'
+    printf '> Run `kit-index.sh` and read this again. The readings are already in the event\n'
+    printf '> log; only the derivation is missing.\n'
+  elif [ -n "$PK" ]; then
     printf '\n**Peak context**\n\n'
     printf -- '- %s\n' "$PK"
     printf '\n> `context` is the LAST reading of a transcript; `context_peak` is the highest in\n'

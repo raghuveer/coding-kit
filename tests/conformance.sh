@@ -864,6 +864,16 @@ pk="$WORK.peak"; rm -rf "$pk"; mkdir -p "$pk/.claude" "$pk/.project/tasks"
   # And the report must SAY it, or the column is derived into a file nobody reads.
   bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
   grep -q 'Peak context' STATUS.generated.md || { echo "  the status file does not report peak context"; exit 1; }
+  # AND an index predating the column must SAY so rather than drop the section. kit-status's q()
+  # sends stderr to /dev/null and returns empty on a missing column, so "no such column" and
+  # "nothing to report" are one string -- without this the section would silently vanish from a
+  # generated file and read as "no peaks", which is the absent-read-as-benign shape this
+  # repository keeps paying for.
+  sqlite3 .project/index.db "ALTER TABLE spend DROP COLUMN context_peak;" >/dev/null 2>&1 ||
+    { echo "  could not drop the column to test the stale-index arm"; exit 1; }
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'UNAVAILABLE: this index predates' STATUS.generated.md ||
+    { echo "  a stale index dropped the peak section instead of naming it"; exit 1; }
   exit 0 )
 check $? "a series that ends low still reports its peak, and a lone reading is not a peak"
 rm -rf "$pk"

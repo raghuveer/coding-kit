@@ -54,7 +54,7 @@ done
 # anywhere, and the kit hardcodes no project's layout.
 if [ "$CHECK_REFS" = 1 ]; then
   DEPMAP=$(kit_cfg "$PROFILE" paths.depmap "docs/dependency-map.tsv")
-  TASKS_DIR=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
+  TASKS_DIR=$(kit_tasks_dir "$PROFILE")
   PYBIN=$(kit_python) || {
     kit_warn "no python3 (or python 3.x) on PATH -- cannot check prose task references"
     kit_warn "  install Python 3, or set KIT_PYTHON to the interpreter to use"

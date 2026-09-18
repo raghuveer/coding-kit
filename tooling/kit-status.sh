@@ -168,7 +168,7 @@ printf -- '- %s completed, %s cancelled, %s abandoned\n' \
 # LEGACY SPELLINGS, COUNTED SO THEY DRAIN. Task files may carry `open`/`done`/`progress` forever
 # and the indexer resolves them; silence about that is how two vocabularies become permanent. This
 # is a number to watch fall, not a warning to act on -- no work is required to reduce it.
-_TASKDIR=$(kit_cfg "$PROFILE" paths.tasks ".project/tasks")
+_TASKDIR=$(kit_tasks_dir "$PROFILE")
 _LEG=0; _LEGBREAK=""
 for _p in $(kit_state_legacy); do
   _n=$(grep -l "^state: ${_p%%:*}\$" "$ROOT/$_TASKDIR"/*.md 2>/dev/null | wc -l | tr -d ' ')

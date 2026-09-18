@@ -1799,6 +1799,60 @@ check $? "kit-index parses under POSIXLY_CORRECT and derives the same floor eith
 rm -rf "$px"
 fi
 
+if step "paths.tasks has one default, it follows paths.state, and a misplaced backlog is named" ; then
+# `paths.tasks` had TWO defaults: `$STATE_DIR/tasks` in kit-charter and kit-criteria, and a
+# hardcoded `.project/tasks` in seven other scripts. Reproduced 2026-09-11 in fresh repositories:
+# move `paths.state` and omit `paths.tasks`, and those seven look in the OLD place, find nothing,
+# and kit-index indexes ZERO TASKS while warning only that the plan is stale. An empty backlog
+# and a misconfigured one are the same output, and only one of them is fine.
+#
+# THREE ARMS, and the third is the one that keeps the second honest. A warning that fires on a
+# genuinely empty backlog would be a nag an adopter learns to ignore -- and every adopting
+# repository is empty by definition, so that arm is not hypothetical.
+pt="$WORK.pathstasks"; rm -rf "$pt"
+mk() { # mk <dir> <state> <tasksline> <taskdir>
+  rm -rf "$1"; mkdir -p "$1/.claude" "$1/$4"
+  ( cd "$1" || exit 1
+    git init -q -b main 2>/dev/null
+    git config user.email a@b.c; git config user.name T
+    { echo "---"; echo "paths.state: $2"; [ -n "$3" ] && echo "$3"
+      echo "tier.default: T1"; echo "---"; } > .claude/project-profile.md
+    printf -- '---\nid: T-p\ntitle: p\ntier: T2\n---\nb\n' > "$4/T-p.md"
+    git add -A >/dev/null 2>&1; git commit -q --no-verify -m seed >/dev/null 2>&1 )
+}
+(
+  # Arm 1 -- THE DEFECT ITSELF. paths.state moved, paths.tasks absent. The default must follow
+  # the state directory, so the task is found. Before this it indexed zero and said nothing.
+  mk "$pt.a" ".kit" "" ".kit/tasks"
+  ( cd "$pt.a" && bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1 )
+  n=$(sqlite3 "$pt.a/.kit/index.db" "SELECT COUNT(*) FROM task;" 2>/dev/null | tr -d '\015')
+  [ "${n:-0}" = 1 ] || { echo "  arm 1: paths.state moved and paths.tasks absent indexed ${n:-0} task(s), wanted 1"; exit 1; }
+
+  # Arm 2 -- a misplaced backlog is NAMED, not silently indexed as zero.
+  mk "$pt.b" ".project" "paths.tasks: .kit/tasks" ".project/tasks"
+  out=$( cd "$pt.b" && bash "$KIT/tooling/kit-index.sh" 2>&1 )
+  case "$out" in
+    *"task files EXIST under"*) ;;
+    *) echo "  arm 2: tasks under .project/tasks with paths.tasks elsewhere produced no warning"; exit 1 ;;
+  esac
+
+  # Arm 3 -- a genuinely EMPTY backlog must stay silent, or the warning is a nag and an
+  # adopting repository trips it on day one.
+  rm -rf "$pt.c"; mkdir -p "$pt.c/.claude" "$pt.c/.project/tasks"
+  ( cd "$pt.c" || exit 1
+    git init -q -b main 2>/dev/null
+    git config user.email a@b.c; git config user.name T
+    { echo "---"; echo "paths.state: .project"; echo "tier.default: T1"; echo "---"; } > .claude/project-profile.md
+    git add -A >/dev/null 2>&1; git commit -q --no-verify -m seed >/dev/null 2>&1 )
+  out=$( cd "$pt.c" && bash "$KIT/tooling/kit-index.sh" 2>&1 )
+  case "$out" in
+    *"task files EXIST under"*) echo "  arm 3: an empty backlog was reported as misconfigured"; exit 1 ;;
+  esac
+  exit 0 )
+check $? "the default follows paths.state, a misplaced backlog is named, and an empty one is not"
+rm -rf "$pt.a" "$pt.b" "$pt.c"
+fi
+
 if step "the kit runs where only python is named python, and says so when neither exists"; then
 # Five scripts shell out to an interpreter -- kit-finding.sh, kit-resolve.sh,
 # kit-review-record.sh, kit-claim.sh, kit-plan.sh -- and all of them hardcoded `python3`.

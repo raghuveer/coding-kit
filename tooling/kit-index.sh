@@ -434,6 +434,8 @@ if [ "$HAVE_TASKS" = 1 ]; then
   # reporting. Nor is that an ingest failure; expected and read are both zero, consistently.
   if [ "$#" -gt 0 ]; then
   KIT_PREFIX="$ROOT/" KIT_RULES="$TIER_RULES" KIT_SEEN="$KIT_SEEN" KIT_VIA="$(kit_via_vocab)" KIT_DECL_OUT="$DECL_OUT" awk '
+    # Assigned ONCE, not re-evaluated per write. See the note at the declout printf below.
+    BEGIN { declout = ENVIRON["KIT_DECL_OUT"] }
     function q(s){ gsub(/\047/,"\047\047",s); return s }
     # glob -> regex. * and ** both cross directory separators, which matches SQLite GLOB, so
     # the two floor sources agree with each other. That over-matches `a/*.ts` against
@@ -522,8 +524,21 @@ if [ "$HAVE_TASKS" = 1 ]; then
       # first task file but on the SECOND, so the symptom reads "ingest read 1 of 220" rather than
       # a parse error. `floorof(v["paths"])` above survives only because passing it as a function
       # argument types it on the way in.
-      if (ENVIRON["KIT_DECL_OUT"] != "" && (v["paths"] "") != "")
-        printf "%s\t%s\n", id, (v["paths"] "") > ENVIRON["KIT_DECL_OUT"]
+      # REDIRECT TO A PLAIN VARIABLE, AND PARENTHESISE THE printf. Both matter, and the reason is
+      # measured rather than stylistic: mawk -- `/usr/bin/awk` on ubuntu-latest -- SEGFAULTED on
+      # `printf ... > ENVIRON["KIT_DECL_OUT"]`, core dumped, against the real backlog of this repository.
+      #
+      # This is the SECOND mawk crash from the same few lines. The first was
+      # `malloc_consolidate(): invalid chunk size` from doing the splitting here; moving that work
+      # into shell changed the signature to a segfault and did not remove it, because the redirect
+      # was never the part that moved. gawk on the development machine runs both forms without
+      # complaint, and the conformance suite passed on the same Ubuntu runner both times -- only
+      # the job that indexes the real 220-file backlog ever saw it.
+      #
+      # `declout` is assigned once in BEGIN below. A redirect target that is an array-subscript
+      # expression is re-evaluated per write, which is what mawk cannot survive here.
+      if (declout != "" && (v["paths"] "") != "")
+        printf("%s\t%s\n", id, (v["paths"] "")) > declout
       # `via` from frontmatter, and anything outside the vocabulary becomes `unknown` rather
       # than being stored. Unknown is the honest default: on a brownfield back-fill nobody
       # remembers how each item was done, and a wrong label is worse than an absent one

@@ -219,7 +219,14 @@ KIT_PLAN_REFUSED=$(mktemp); export KIT_PLAN_REFUSED
 trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT"' EXIT
 mkdir -p "$ROOT/$STATE_DIR"
 ADAPTER_FAILED=0
-INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""
+# DECL_OUT IS INITIALISED HERE FOR THE SAME REASON KIT_SEEN IS, and omitting it cost more than
+# itself. Both are assigned only inside `if [ "$HAVE_TASKS" = 1 ]`, and the EXIT trap below names
+# both unconditionally. Under `set -u` an unset one makes the WHOLE trap fail before it runs, so a
+# repository with no task files -- which this script elsewhere calls a legitimate state by
+# definition -- leaked EVERY temp file, not just this one. Reproduced on a fresh kit-init repo:
+# `DECL_OUT: unbound variable`, three mktemp files left behind on every invocation. Found by a
+# blind reviewer; the analogy to KIT_SEEN one token away was there to copy and was not copied.
+INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""; DECL_OUT=""
 
 # The whole build is assembled before the existing index is touched. An ingest source can
 # now fail -- an adapter for a remote backend fails whenever the network does -- and
@@ -247,7 +254,11 @@ INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""
 # without it C-quotes such names, and a path recorded under a quoted name matches no glob at
 # all, which is the failure recorded further down this file for `"src/i\j.go"`.
 echo "CREATE TEMP TABLE kit_tracked(path TEXT PRIMARY KEY);"
-echo "CREATE TEMP TABLE kit_declared(task TEXT, glob TEXT);"
+# PRIMARY KEY, because the two counters it feeds are what AC5 asks a reader to trust. A task
+# whose `paths:` repeats a glob would otherwise inflate declared_globs_total and, if the
+# glob matches nothing, declared_globs_unmatched with it. The `declares` EDGES were never
+# at risk -- `edge` has its own primary key -- so this protects the reported numbers.
+echo "CREATE TEMP TABLE kit_declared(task TEXT, glob TEXT, PRIMARY KEY(task, glob));"
 # NUL IN, NUL OUT. `read -d ''` consumes the NUL delimiter `-z` emits, so a path containing a
 # literal newline -- legal on POSIX filesystems -- arrives whole. The first version piped through
 # `tr '\0' '\n'`, which collapsed the delimiter onto the one byte a filename may itself contain
@@ -600,7 +611,12 @@ if [ "$HAVE_TASKS" = 1 ]; then
   # it. Both now happen.
   _DREFN=0; _DREFT=""
   if [ -s "$DECL_OUT" ]; then
-    while IFS="$(printf '\t')" read -r _dtask _dpaths; do
+    # The separator is computed ONCE. Inside the `while` header it is a command substitution, so
+    # it forks a subshell per iteration -- about 190 of them on this backlog -- which is exactly
+    # the anti-pattern the comment above warns about, reintroduced a few lines below where it was
+    # avoided. A blind reviewer measured it at ~7.3s of a ~21s rebuild.
+    _KTAB=$(printf '\t')
+    while IFS="$_KTAB" read -r _dtask _dpaths; do
       [ -n "$_dtask" ] && [ -n "$_dpaths" ] || continue
       # Same rule as the tracked loop: split with parameter expansion, not with a pipeline.
       #
@@ -624,7 +640,7 @@ if [ "$HAVE_TASKS" = 1 ]; then
         esac
         _dge=${_dg//\'/\'\'}
         _dte=${_dtask//\'/\'\'}
-        printf "INSERT INTO kit_declared VALUES('%s','%s');\n" "$_dte" "$_dge"
+        printf "INSERT OR IGNORE INTO kit_declared VALUES('%s','%s');\n" "$_dte" "$_dge"
         printf "INSERT OR IGNORE INTO node SELECT 'f:'||path,'file',path,NULL FROM kit_tracked WHERE path GLOB '%s';\n" "$_dge"
         printf "INSERT OR IGNORE INTO edge SELECT '%s','f:'||path,'declares' FROM kit_tracked WHERE path GLOB '%s';\n" "$_dte" "$_dge"
       done

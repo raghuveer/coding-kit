@@ -686,7 +686,14 @@ npacks=$(sq -separator $'\t' "$DB" "
              ROW_NUMBER() OVER (
                PARTITION BY p.cluster,
                             CASE WHEN COUNT(DISTINCT CASE WHEN e.rel='touches' THEN e.src END) > 0 THEN 0 ELSE 1 END
-               ORDER BY COUNT(DISTINCT e.src) DESC, n.path) AS rn
+               -- REL-FILTERED, like the bucketing and the printed counts. Ranking on the
+               -- combined DISTINCT count let a file touched once but declared by several
+               -- tasks outrank a file touched three times inside the SAME touched bucket --
+               -- an ordering rule nobody stated, in a query whose whole point is keeping the
+               -- two sources apart. Each bucket now ranks on the count that defines it.
+               ORDER BY COUNT(DISTINCT CASE WHEN e.rel='touches' THEN e.src END) DESC,
+                        COUNT(DISTINCT CASE WHEN e.rel='declares' THEN e.src END) DESC,
+                        n.path) AS rn
         FROM plan_item p
         JOIN edge e ON e.src=p.task_id AND e.rel IN ('touches','declares')
         JOIN node n ON n.id=e.dst

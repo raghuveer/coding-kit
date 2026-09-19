@@ -95,7 +95,7 @@ the fixed code, and it passed. That pass measured nothing. Re-done with
 
 **AC5 — an unmatched glob contributes no edge, so no pack can name a path that does not exist**,
 which is the failure `T-20260817-a-touches-edge-is-never-checked-against-` covers from the other
-direction. The count is recorded in `meta` AND reported by `kit-status.sh` (59 of 496 at the time of writing, and the command is `kit-status.sh`),
+direction. The count is recorded in `meta` AND reported by `kit-status.sh` (59 of 497 at the time of writing, and the command is `kit-status.sh`),
 because a count nothing reads is the defect
 `T-20260808-cluster-packs-are-generated-and-read-by-` names one file over. It is a notice, not a
 warning: a glob may legitimately be declared before the file is written.
@@ -148,7 +148,7 @@ PATHNAME-expands: the shell globbed every declared pattern against the working d
 SQLite saw it, and shell `*` does not cross `/`. `src/*.go` arrived as `src/alpha.go`. I had
 written a comment warning that shell globbing would be wrong for exactly this reason, then walked
 into it. `set -f` fixes it. **Every count taken before that arm existed was measured against
-shell-expanded paths.** Re-derived after: 437 edges, 59 of 496 unmatched, 108 declared-untouched
+shell-expanded paths.** Re-derived after: 438 edges, 59 of 497 unmatched, 109 declared-untouched
 tasks, 9 of 19 to 17 of 19 clusters — unchanged, because this repository's declared paths are
 almost all literal, so the broken path was never exercised here. Latent, real, and found only by
 the arm.
@@ -156,6 +156,56 @@ the arm.
 **Figures corrected:** 494 to 496 (the same commit had widened this task's own `paths:`, so the
 number went stale inside the commit that wrote it), and 109 to 108, which both readers measured
 independently and I had not.
+
+### Rung 5, round two — one REVISE, one REJECT, and the numbers stale a third time
+
+Re-run against a clean tree, which both readers confirmed stayed clean. That was the process
+failure from round one and it did not recur.
+
+**The REJECT found a major neither earlier reader had: a temp-file leak I introduced.** The EXIT
+trap names `$DECL_OUT` unconditionally, but `DECL_OUT` is assigned only inside
+`if [ "$HAVE_TASKS" = 1 ]`. Under `set -u` an unset variable makes the WHOLE trap fail before it
+runs, so on a repository with **no task files** -- which this script elsewhere calls a legitimate
+state by definition -- every temp file leaked, not just that one. Reproduced on a fresh `kit-init`
+repo. `KIT_SEEN=""` sits on the same initialisation line for exactly this reason; the analogy was
+one token away and I did not copy it. Fixed, and the reason is now written beside it.
+
+**The REVISE found that I violated my own principle three lines from where I wrote it.**
+`while IFS="$(printf '	')" read ...` is a command substitution in a loop header, so it forks a
+subshell per iteration -- about 190 -- under a comment that says *"NO SUBPROCESS PER PATH"*.
+Measured by the reader at ~7.3s of a ~21s rebuild. Hoisted.
+
+**My cost claim was wrong, and wrong in a way worth naming.** I reported ~20s against ~12.7s, about
+60%. **The 12.7s was the previous round's reader's number, not mine** -- I compared my measurement
+to someone else's, taken on a different machine state, which is the same defect as carrying a
+figure forward from an earlier document. Measured properly, back to back in a worktree on this
+machine: `main` 16.5s and 15.5s, this branch **15.2s and 15.2s**. The regression is gone. It is
+still not a CI measurement, and this repository's own agreement says that is where cost claims
+belong, because this machine's process-spawn cost is a documented local artefact.
+
+**Also fixed:** `kit_declared` gained `PRIMARY KEY(task, glob)` and `INSERT OR IGNORE`, so a task
+repeating a glob can no longer inflate the two counters AC5 asks a reader to trust; the window
+`ORDER BY` now ranks each bucket on the count that defines it, instead of ranking both on a
+combined total the display never shows; and the schema comment no longer offers its grep as an
+authoritative list of all seven relations when it finds four -- the other three are written
+elsewhere or not at all, and it now says which.
+
+**Numbers stale a THIRD time, from a third cause.** 437/496/108 became 438/497/109 because the
+commit that recorded them added a task file which itself declares a path. The first drift was this
+task widening its own `paths:`; the second was the same shape; this one was a spin-off task filed
+in the same commit. Corrected, and the lesson is the one already written into `kit-index.sh` and
+`kit-lib.sh` this session: **do not write a live count into prose at all.** These figures survive
+here only because a closing measurement has to say something; the command that answers each is
+`kit-status.sh`.
+
+**Deliberately not done, with reasons.** Over-match is pinned by an arm and a comment but not
+counted in `meta` -- the reader is right that this applies the "a count nothing reads" principle
+unevenly, and counting it means computing match depth per glob, which is a mechanism rather than a
+report; deferred rather than smuggled in. The unchecked exit status of `git ls-files` matches the
+file's existing convention for its other git readers, which the REJECT confirmed, so changing it
+here alone would make one reader louder than its siblings for no stated reason. The clustering gap
+the REVISE found is filed as
+`T-20260919-cluster-assignment-is-touches-only-so-a`.
 
 ## Notes
 

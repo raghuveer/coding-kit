@@ -248,3 +248,5 @@ T-20260919-three-closed-state-counts-are-hardcoded-	T-20260812-the-empty-spend-n
 T-20260817-a-cluster-pack-file-list-ignores-declare	T-20260808-cluster-packs-are-generated-and-read-by-	related
 T-20260919-blast-radius-for-tier-classify-still-rea	T-20260817-a-cluster-pack-file-list-ignores-declare	split-from
 T-20260817-a-cluster-pack-file-list-ignores-declare	T-20260919-blast-radius-for-tier-classify-still-rea	split-from
+T-20260919-cluster-assignment-is-touches-only-so-a	T-20260817-a-cluster-pack-file-list-ignores-declare	split-from
+T-20260919-cluster-assignment-is-touches-only-so-a	T-20260919-blast-radius-for-tier-classify-still-rea	related

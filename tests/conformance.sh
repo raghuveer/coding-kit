@@ -5789,6 +5789,139 @@ check $? "controlled, mutation-proved by an eighth closed state, and its empty-v
 rm -rf "$cs" "$csk"
 fi
 
+if step "a pack names files a task has only DECLARED, and says which is which"; then
+# THE PACK IS READ WHEN WORK STARTS, and a `touches` edge exists only once work has been committed
+# under a Task-Id. So the section `skills/task-context` step 7 tells an agent not to re-derive was
+# empty for most of a real backlog, and an agent told not to re-derive an empty list has been told
+# to work blind. Measured on this repository before the fix: 9 of 19 clusters carried any file.
+#
+# ARM 2 IS THE ONE THAT GOES RED ON THE PRE-FIX CODE. Arm 1 is the control that makes arm 2 mean
+# something: it proves the fixture's task has NO touches edge, so the files in arm 2 cannot have
+# arrived through the old source.
+dc="$WORK.declpack"; rm -rf "$dc"; mkdir -p "$dc"
+( cd "$dc" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  mkdir -p src
+  printf 'a\n' > src/alpha.go
+  printf 'b\n' > src/beta.go
+  # Declares two real files and one glob that matches nothing. No commit will carry this id.
+  printf -- '---\nid: T-decl\ntitle: d\ntier: T2\npaths: src/*.go, docs/nothing-here/*.md\n---\nb\n' > .project/tasks/T-decl.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  # ARM 1 -- the control.
+  t=$(sqlite3 .project/index.db "SELECT COUNT(*) FROM edge WHERE src='T-decl' AND rel='touches';" | tr -d '\015')
+  [ "$t" = "0" ] ||
+    { echo "  1: T-decl carries $t touches edge(s), so arm 2 could pass through the old source"; exit 1; }
+
+  bash "$KIT/tooling/kit-plan.sh" >/dev/null 2>&1
+  pack=$(ls .project/packs/default/*.md 2>/dev/null | head -1)
+  [ -n "$pack" ] || { echo "  2: no pack was written"; exit 1; }
+
+  # ARM 2 -- the declared files are named. On the pre-fix code this section is the empty notice.
+  grep -q 'src/alpha.go' "$pack" || { echo "  2: the pack names no declared file"; exit 1; }
+  grep -q 'src/beta.go'  "$pack" || { echo "  2: the pack names one declared file but not the other"; exit 1; }
+
+  # ARM 3 -- EVIDENCE AND CLAIM STAY APART. A file nothing has committed must not read as touched.
+  grep -q 'src/alpha.go  (0 touched, 1 declared)' "$pack" ||
+    { echo "  3: a declared-only file is not marked as such"; exit 1; }
+
+  # ARM 4 -- A GLOB MATCHING NOTHING NAMES NOTHING. A pack carrying a path that does not exist is
+  # the failure T-20260817-a-touches-edge-is-never-checked-against- is about, and this change
+  # could introduce it from the opposite direction. It must be counted rather than guessed at.
+  if grep -q 'nothing-here' "$pack"; then
+    echo "  4: the pack names a path from a glob that matched no file"; exit 1
+  fi
+  u=$(sqlite3 .project/index.db "SELECT value FROM meta WHERE key='declared_globs_unmatched';" | tr -d '\015')
+  [ "${u:-0}" -ge 1 ] || { echo "  4: an unmatched declared glob was not counted (meta says [${u:-unset}])"; exit 1; }
+  # ARM 5 -- `*` CROSSES `/`, PINNED SO IT IS KNOWN RATHER THAN DISCOVERED. `src/*.go` matching a
+  # nested file is SQLite GLOB semantics, accepted deliberately because narrowing it would mean a
+  # second matcher. If this arm ever goes red, the matcher changed and every declared blast radius
+  # changed with it.
+  mkdir -p src/deep
+  printf 'c\n' > src/deep/gamma.go
+  git add -A && git commit -q --no-verify -m "chore: nested"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-plan.sh" >/dev/null 2>&1
+  pack=$(ls .project/packs/default/*.md 2>/dev/null | head -1)
+  grep -q 'src/deep/gamma.go' "$pack" ||
+    { echo "  5: a nested file no longer matches a shallow declared glob; the matcher changed"; exit 1; }
+
+  # ARM 6 -- THE STATUS NOTICE IS A CONSUMER AND CONSUMERS GET CHECKED. AC5 says the unmatched
+  # count is REPORTED, not merely recorded; asserting the meta row alone would leave the half a
+  # reader actually sees untested, which is the shape of defect this project files against
+  # generated-and-read-by-nothing.
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'declared path glob(s) match no tracked file' STATUS.generated.md ||
+    { echo "  6: kit-status does not report the unmatched declared globs it recorded"; exit 1; }
+
+  # ARM 7 -- A REFUSED GLOB IS COUNTED AND REPORTED, not only warned about on a terminal. The
+  # sibling tier.rule refusal records to meta for exactly this reason, and this one did not until
+  # a blind reviewer said so.
+  printf -- '---\nid: T-refuse\ntitle: r\ntier: T2\npaths: src/[ab].go\n---\nb\n' > .project/tasks/T-refuse.md
+  git add -A && git commit -q --no-verify -m "chore: refused glob"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  r=$(sqlite3 .project/index.db "SELECT value FROM meta WHERE key='declared_globs_refused';" | tr -d '\015')
+  [ "${r:-0}" -ge 1 ] || { echo "  7: a refused declared glob was not counted (meta says [${r:-unset}])"; exit 1; }
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'were REFUSED, not merely unmatched' STATUS.generated.md ||
+    { echo "  7: kit-status does not report a refused declared glob"; exit 1; }
+  exit 0 )
+check $? "declared paths reach the pack, marked apart from committed ones, unmatched globs counted"
+rm -rf "$dc"
+fi
+
+if step "the indexer cleans up after itself on a repository with no task files"; then
+# THE EXIT TRAP NAMES EVERY TEMP FILE, AND UNDER set -u ONE UNSET NAME BREAKS THE WHOLE TRAP.
+# That is not a hypothetical: `DECL_OUT` was added to the trap and assigned only inside the
+# `HAVE_TASKS = 1` branch, so on a repository with no task files -- which this script's own
+# comment calls a legitimate state by definition, and which every adopting repository is on day
+# one -- the trap died on the unbound name and left EVERY mktemp file behind, not just that one.
+#
+# A blind reviewer found it by running the scenario. Nothing in this suite ran it, so nothing
+# would have found it again. This step is that scenario, kept.
+#
+# TMPDIR is redirected into the fixture so the count is exact: mktemp honours it, and counting a
+# shared system temp directory would be a measurement other processes can move.
+tc="$WORK.tmpclean"; rm -rf "$tc"; mkdir -p "$tc/repo" "$tc/tmp"
+( cd "$tc/repo" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  git add -A && git commit -q --no-verify -m "chore: adopt, no tasks yet"
+
+  # ARM 1 -- no task files at all. The leaking case.
+  before=$(ls -1 "$tc/tmp" 2>/dev/null | wc -l | tr -d ' ')
+  err=$(TMPDIR="$tc/tmp" bash "$KIT/tooling/kit-index.sh" 2>&1 >/dev/null)
+  after=$(ls -1 "$tc/tmp" 2>/dev/null | wc -l | tr -d ' ')
+  [ "$before" = "$after" ] ||
+    { echo "  1: a repository with no task files leaked $((after - before)) temp file(s)"; exit 1; }
+
+  # ARM 2 -- SEPARATE ASSERTION, because a leak and an unbound name are different failures and a
+  # future change could produce either alone. An unset variable under set -u is also the one
+  # symptom that reaches a user directly.
+  case "$err" in
+    *"unbound variable"*) echo "  2: the indexer reported an unbound variable: $err"; exit 1 ;;
+  esac
+
+  # ARM 3 -- the same repository once it HAS a task file, so arm 1 is not passing because the
+  # script did nothing at all on an empty repo.
+  printf -- '---\nid: T-t\ntitle: t\ntier: T2\npaths: README.md\n---\nb\n' > .project/tasks/T-t.md
+  printf 'r\n' > README.md
+  git add -A && git commit -q --no-verify -m "chore: one task"
+  before=$(ls -1 "$tc/tmp" 2>/dev/null | wc -l | tr -d ' ')
+  TMPDIR="$tc/tmp" bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  after=$(ls -1 "$tc/tmp" 2>/dev/null | wc -l | tr -d ' ')
+  [ "$before" = "$after" ] ||
+    { echo "  3: a repository WITH task files leaked $((after - before)) temp file(s)"; exit 1; }
+  [ -f .project/index.db ] || { echo "  3: no index was built, so arm 1 proved nothing"; exit 1; }
+  exit 0 )
+check $? "no temp file survives an indexer run, with task files or without"
+rm -rf "$tc"
+fi
+
 
 if step "a finding joins the reviewer run that produced it, or is reported as unjoinable"; then
 # THE FLAG EXISTED AND THE COLUMN DID NOT. kit-finding.sh has accepted --agent-id since it was

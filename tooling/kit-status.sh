@@ -152,6 +152,33 @@ OPEN=$(q "SELECT t.id||'  '||COALESCE(NULLIF(n.title,''),t.id)||'  ['||COALESCE(
           WHERE t.state NOT IN (SELECT state FROM state_class WHERE is_closed = 1) ORDER BY t.state, t.id;")
 [ -n "$OPEN" ] && printf '%s\n' "$OPEN" | sed 's/^/- /' || printf '_none_\n'
 
+
+# A DECLARED GLOB THAT MATCHES NO FILE IS REPORTED, because a count nothing reads is the defect
+# `T-20260808-cluster-packs-are-generated-and-read-by-` names one file over. It is a NOTICE and
+# never a warning: a task may legitimately declare a path for a file it has not written yet, and
+# the number is only meaningful beside the total. What it guarantees is the other direction --
+# an unmatched glob contributes no `declares` edge, so no cluster pack can ever name a path that
+# does not exist, which is what `T-20260817-a-touches-edge-is-never-checked-against-` is about.
+_DGU=$(q "SELECT value FROM meta WHERE key='declared_globs_unmatched';"); _DGU=${_DGU:-0}
+_DGT=$(q "SELECT value FROM meta WHERE key='declared_globs_total';");     _DGT=${_DGT:-0}
+case "$_DGU" in ''|*[!0-9]*) _DGU=0 ;; esac
+case "$_DGT" in ''|*[!0-9]*) _DGT=0 ;; esac
+if [ "$_DGU" -gt 0 ]; then
+  printf '\n> **%s of %s declared path glob(s) match no tracked file.** Each contributes nothing to\n' "$_DGU" "$_DGT"
+  printf '> a cluster pack, so no pack names a path that does not exist. A glob may be declared\n'
+  printf '> before the file is written, so this is a number to read beside the total, not a fault.\n'
+fi
+_DGR=$(q "SELECT value FROM meta WHERE key='declared_globs_refused';"); _DGR=${_DGR:-0}
+case "$_DGR" in ''|*[!0-9]*) _DGR=0 ;; esac
+if [ "$_DGR" -gt 0 ]; then
+  # REFUSED IS NOT UNMATCHED, and the two must not be added together. An unmatched glob is a
+  # legitimate declaration whose file does not exist yet. A refused one was never read at all,
+  # so the task's blast radius is short by however many it named and nothing else says so.
+  printf '\n> **%s declared path glob(s) were REFUSED, not merely unmatched.** Each carries `[`, `]`\n' "$_DGR"
+  printf '> or `?`, which SQLite GLOB and the awk matcher read differently, so it was never\n'
+  printf '> expanded. The tasks that declared them have a blast radius short by that much:\n'
+  printf '> `%s`\n' "$(q "SELECT value FROM meta WHERE key='declared_globs_refused_text';")"
+fi
 printf '\n## Closed\n\n'
 # THREE COUNTS, NOT TWO, AND cancelled IS WHY THE THIRD EXISTS. `abandoned` judges the ATTEMPT --
 # we stopped; `cancelled` judges the WORK -- it should not be done at all. Reporting them as one

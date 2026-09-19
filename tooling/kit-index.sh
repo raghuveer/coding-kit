@@ -216,15 +216,67 @@ if [ "${1:-}" = "--if-stale" ] && [ -f "$DB" ] && [ ! -e "$FAILED_MARK" ]; then
 fi
 SQL=$(mktemp); KIT_REFUSED=$(mktemp); export KIT_REFUSED
 KIT_PLAN_REFUSED=$(mktemp); export KIT_PLAN_REFUSED
-trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN"' EXIT
+KIT_TRAP_RM='rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT" "$RAW" "$NEW"'
+trap "$KIT_TRAP_RM" EXIT
 mkdir -p "$ROOT/$STATE_DIR"
 ADAPTER_FAILED=0
-INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""
+# DECL_OUT IS INITIALISED HERE FOR THE SAME REASON KIT_SEEN IS, and omitting it cost more than
+# itself. Both are assigned only inside `if [ "$HAVE_TASKS" = 1 ]`, and the EXIT trap below names
+# both unconditionally. Under `set -u` an unset one makes the WHOLE trap fail before it runs, so a
+# repository with no task files -- which this script elsewhere calls a legitimate state by
+# definition -- leaked EVERY temp file, not just this one. Reproduced on a fresh kit-init repo:
+# `DECL_OUT: unbound variable`, three mktemp files left behind on every invocation. Found by a
+# blind reviewer; the analogy to KIT_SEEN one token away was there to copy and was not copied.
+INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""; DECL_OUT=""; RAW=""
 
 # The whole build is assembled before the existing index is touched. An ingest source can
 # now fail -- an adapter for a remote backend fails whenever the network does -- and
 # destroying the index first would turn a transient outage into an empty backlog.
 { echo "BEGIN;"
+
+# ---- the tracked-file list, for declared paths -------------------------------
+# A DECLARED PATH CANNOT BE RESOLVED AGAINST THE COMMIT HISTORY, which is the whole point of
+# declaring it. File nodes come from commit diffs carrying a Task-Id (section 2 below), so on
+# this repository 161 of 379 tracked files had a node and a task that has not been worked on
+# yet matches none of them. Expanding a declared glob against `node` would therefore return
+# nothing for exactly the tasks `T-20260817-a-cluster-pack-file-list-ignores-declare` is about.
+#
+# So the working tree's tracked files are loaded here, and the matching happens in SQL.
+#
+# SQLITE GLOB IS THE ONE MATCHER, and that is a correctness requirement rather than a
+# convenience. `globre()` in the awk below exists to MIRROR SQLite GLOB -- its own comment
+# records it as differentially fuzzed against it at 401,265 glob/subject pairs -- and the tier
+# floor over touched files already matches with `dst GLOB 'f:<glob>'` at the bottom of this
+# file. A third matcher, in shell or in awk, is the two-expanders-disagree defect that section
+# was written about. Shell globbing in particular would be wrong twice over: its `*` does not
+# cross `/` and SQLite's does.
+#
+# -z because a path with a space, a quote or a non-ASCII byte must arrive intact; `git ls-files`
+# without it C-quotes such names, and a path recorded under a quoted name matches no glob at
+# all, which is the failure recorded further down this file for `"src/i\j.go"`.
+echo "CREATE TEMP TABLE kit_tracked(path TEXT PRIMARY KEY);"
+# PRIMARY KEY, because the two counters it feeds are what AC5 asks a reader to trust. A task
+# whose `paths:` repeats a glob would otherwise inflate declared_globs_total and, if the
+# glob matches nothing, declared_globs_unmatched with it. The `declares` EDGES were never
+# at risk -- `edge` has its own primary key -- so this protects the reported numbers.
+echo "CREATE TEMP TABLE kit_declared(task TEXT, glob TEXT, PRIMARY KEY(task, glob));"
+# NUL IN, NUL OUT. `read -d ''` consumes the NUL delimiter `-z` emits, so a path containing a
+# literal newline -- legal on POSIX filesystems -- arrives whole. The first version piped through
+# `tr '\0' '\n'`, which collapsed the delimiter onto the one byte a filename may itself contain
+# and split such a path into two rows that match nothing: it defeated the exact guarantee `-z`
+# was chosen for, silently. Found by a blind reviewer, who could not reproduce it on NTFS and
+# said so; the fix does not depend on reproducing it.
+#
+# Process substitution rather than a pipe, so the loop runs in THIS shell and the counter below
+# survives it.
+while IFS= read -r -d '' _tf; do
+  [ -n "$_tf" ] || continue
+  # NO SUBPROCESS PER PATH. `${_tf//\'/\'\'}` is parameter expansion; the obvious
+  # `$(printf ... | sed ...)` spawns two processes per tracked file, and process creation costs
+  # about a second on the development machine -- `T-20260822-process-creation-costs-one-second-on-the`
+  # measured it, and a blind reviewer measured this loop at 49s for 379 files before the change.
+  printf "INSERT OR IGNORE INTO kit_tracked VALUES('%s');\n" "${_tf//\'/\'\'}"
+done < <(git -C "$ROOT" ls-files -z 2>/dev/null)
 
 # ---- tier floors -------------------------------------------------------------
 # tier.rule is `<path-glob> <tier>`, repeatable. A floor RAISES a tier and never lowers it,
@@ -373,6 +425,11 @@ if [ "$HAVE_TASKS" = 1 ]; then
     fi
   done
   KIT_SEEN=$(mktemp); : > "$KIT_SEEN"
+  # One line per task with a declared `paths:`, written by the awk below and consumed by the
+  # shell stage after it. A side file rather than the SQL stream, because what awk emits here is
+  # DATA to be split, not a statement to be executed.
+  DECL_OUT=$(mktemp); : > "$DECL_OUT"
+  RAW=$(mktemp); : > "$RAW"
   # `if`, not `&&`: with every task file empty there is nothing to hand awk, and awk with no
   # file operands reads stdin and hangs -- a worse failure than the empty backlog it would be
   # reporting. Nor is that an ingest failure; expected and read are both zero, consistently.
@@ -439,13 +496,32 @@ if [ "$HAVE_TASKS" = 1 ]; then
       }
       return best
     }
-    function emit(   id, ti, st, bb, parts, nd, j, fl) {
+    function emit(   id, ti, st, bb, parts, nd, j, fl, pdecl) {
       id = v["id"]
       if (id == "") { printf "kit: no id in frontmatter, skipped: %s\n", rel > "/dev/stderr"; return }
       ti = (v["title"] != "" ? v["title"] : id)
       st = (v["state"] != "" ? v["state"] : "created")
       printf "INSERT OR REPLACE INTO node VALUES(\047%s\047,\047task\047,\047%s\047,\047%s\047);\n", q(id), q(rel), q(ti)
-      fl = floorof(v["paths"])
+      # THE PATHS VALUE IS COPIED INTO A SCALAR BEFORE ANYTHING READS IT, and every previous
+      # attempt failed because it did not do this. `v["paths"]` on a task file with no `paths:`
+      # key is an UNTYPED array element, and two different awks fall over on it in two different
+      # ways: gawk 5.4.1 aborts with `fatal: internal error: fixtype: expected Node_val: got
+      # Node_var`, and mawk SEGFAULTS. One cause, two symptoms -- which is a better explanation
+      # than the three separate construct bugs I diagnosed and fixed in turn, none of which were
+      # it. The file redirect, the ENVIRON subscript and the splitting were all removed on those
+      # theories and the segfault survived all three.
+      #
+      # `("paths" in v)` tests without creating or evaluating the element; the copy that follows
+      # is an ordinary scalar assignment. Nothing downstream touches the array element again,
+      # including floorof, which was reading it directly.
+      pdecl = ""
+      if ("paths" in v) pdecl = v["paths"] ""
+      fl = floorof(pdecl)
+      # A MARKED LINE ON STDOUT. The marker is stripped in shell; an unmarked line is SQL and
+      # passes straight through. See the scalar copy above for why this is not a redirect, and
+      # the note at the awk invocation for what the shell does with it.
+      if (pdecl != "")
+        printf("--KITDECL\t%s\t%s\n", id, pdecl)
       # `via` from frontmatter, and anything outside the vocabulary becomes `unknown` rather
       # than being stored. Unknown is the honest default: on a brownfield back-fill nobody
       # remembers how each item was done, and a wrong label is worse than an absent one
@@ -503,7 +579,91 @@ if [ "$HAVE_TASKS" = 1 ]; then
       }
     }
     END { if (pending) emit() }
-  ' "$@" || INGEST_FAILED=1
+  ' "$@" > "$RAW" || INGEST_FAILED=1
+
+  # THE AWK WRITES NO FILES. It printed the declared-path lines to a file named by an ENVIRON
+  # subscript, and mawk -- /usr/bin/awk on ubuntu-latest -- SEGFAULTED on this program three
+  # times: once while it also did the splitting, once after the splitting moved to shell, and
+  # once more after the redirect target was hoisted into a BEGIN variable and the printf was
+  # parenthesised. Each fix was plausible, each was verified under gawk here, and each was
+  # refuted by the only instrument that can see mawk, which is CI.
+  #
+  # So the construct is gone rather than corrected again. The awk now emits an ordinary marked
+  # line on STDOUT, alongside the SQL it already writes, and the separation happens in shell.
+  # Nothing about awk file handling is left to be portable about.
+  #
+  # `|| :` on both greps because grep exits 1 when it matches nothing -- a backlog where no task
+  # declares a path is legitimate -- and this script runs under `set -o pipefail`.
+  grep '^--KITDECL	' "$RAW" | sed 's/^--KITDECL	//' > "$DECL_OUT" || :
+  grep -v '^--KITDECL	' "$RAW" || :
+
+  # DECLARED PATHS -> `declares` EDGES, split here in shell and matched in SQLite.
+  #
+  # The awk above wrote `<task-id><TAB><paths as authored>` per task and did nothing else with
+  # it; see the note there for why the work is not done in awk. Shell splits a delimiter list.
+  # It never matches a path -- `path GLOB` below is the only matcher, which is the same one the
+  # tier floor over touched files already uses at the bottom of this file, and the one `globre`
+  # in the awk exists to mirror.
+  #
+  # SQLITE GLOB'S `*` CROSSES `/`, AND FOR A CLAIM THAT IS NOT FREE. `src/*.go` matches
+  # `src/deep/nested/file.go`, not only the files directly under `src/`. The tier floor accepts
+  # that over-match because a floor only ever RAISES a tier, so matching too much fails safe.
+  # A `declares` edge is not conservative in the same direction: over-matching INFLATES the
+  # claim, crediting a task with declaring files it never named. Stated here rather than
+  # inherited silently, because a blind reviewer found the tier-floor rationale had been reused
+  # for a consumer it does not fit. It is accepted rather than narrowed -- the alternative is a
+  # second matcher, and two matchers that disagree is the defect this whole section avoids --
+  # and the conformance suite pins the behaviour so it is known rather than discovered.
+  #
+  # `[`, `]` and `?` are refused for the measured reason the tier.rule reader refuses them:
+  # SQLite GLOB reads `[ab]` as a character class and `?` as one character while the awk side
+  # matches a byte, so a glob carrying them cannot mean one thing on both sides.
+  # A REFUSAL THAT ONLY REACHES STDERR IS NOT A REFUSAL ANYONE HEARS. The tier.rule reader above
+  # records its refusals into meta as well as warning, and its own comment says why: kit-status.sh
+  # and kit-preflight.sh run the indexer with stderr discarded, so a terminal warning is lost on
+  # every path that is not a human watching a live run. This mirror was half-ported when it was
+  # first written -- the refusal was copied, the recording was not -- and a blind reviewer found
+  # it. Both now happen.
+  _DREFN=0; _DREFT=""
+  if [ -s "$DECL_OUT" ]; then
+    # The separator is computed ONCE. Inside the `while` header it is a command substitution, so
+    # it forks a subshell per iteration -- about 190 of them on this backlog -- which is exactly
+    # the anti-pattern the comment above warns about, reintroduced a few lines below where it was
+    # avoided. A blind reviewer measured it at ~7.3s of a ~21s rebuild.
+    _KTAB=$(printf '\t')
+    while IFS="$_KTAB" read -r _dtask _dpaths; do
+      [ -n "$_dtask" ] && [ -n "$_dpaths" ] || continue
+      # Same rule as the tracked loop: split with parameter expansion, not with a pipeline.
+      #
+      # `set -f` IS LOAD-BEARING AND WAS MISSING. The unquoted `$_dpaths` below is there to word
+      # split, but an unquoted expansion also PATHNAME-expands, so the shell globbed each pattern
+      # against the working directory before SQLite ever saw it -- and shell `*` does not cross
+      # `/` while SQLite GLOB does. `src/*.go` arrived as `src/alpha.go` and a nested file was
+      # silently never declared. Caught by the conformance arm written to pin the over-match
+      # behaviour, which failed the moment it existed; every count taken before that arm was
+      # measured against shell-expanded paths and was wrong.
+      _dpaths=${_dpaths//,/ }
+      set -f
+      for _dg in $_dpaths; do
+        [ -n "$_dg" ] || continue
+        case "$_dg" in
+          *'['*|*']'*|*'?'*)
+            kit_warn "$_dtask declares a path carrying [ ] or ?, which cannot mean one thing to SQLite GLOB and to the awk matcher; skipped: $_dg"
+            _DREFN=$((_DREFN + 1))
+            [ ${#_DREFT} -lt 400 ] && _DREFT="$_DREFT $_dtask:$_dg"
+            continue ;;
+        esac
+        _dge=${_dg//\'/\'\'}
+        _dte=${_dtask//\'/\'\'}
+        printf "INSERT OR IGNORE INTO kit_declared VALUES('%s','%s');\n" "$_dte" "$_dge"
+        printf "INSERT OR IGNORE INTO node SELECT 'f:'||path,'file',path,NULL FROM kit_tracked WHERE path GLOB '%s';\n" "$_dge"
+        printf "INSERT OR IGNORE INTO edge SELECT '%s','f:'||path,'declares' FROM kit_tracked WHERE path GLOB '%s';\n" "$_dte" "$_dge"
+      done
+      set +f
+    done < "$DECL_OUT"
+  fi
+  printf "INSERT OR REPLACE INTO meta VALUES('declared_globs_refused','%s');\n" "$_DREFN"
+  printf "INSERT OR REPLACE INTO meta VALUES('declared_globs_refused_text','%s');\n" "$(printf '%s' "${_DREFT# }" | sed "s/'/''/g")"
   fi
   TASKS_EXPECTED=$#
 fi
@@ -1523,6 +1683,14 @@ printf '%s' "$TIER_RULES" | tr '\036' '\n' | while IFS="$(printf '\t')" read -r 
   printf "UPDATE task SET tier_floor = MAX(COALESCE(tier_floor,''),'%s') WHERE id IN (SELECT src FROM edge WHERE rel='touches' AND dst GLOB 'f:%s');\n" "$_t" "$_g"
 done
 
+# A DECLARED GLOB THAT MATCHES NOTHING IS COUNTED, NOT GUESSED AT. It contributes no `declares`
+# edge, so no pack can name a path that does not exist -- which is the failure
+# `T-20260817-a-touches-edge-is-never-checked-against-` covers, and this change could otherwise
+# have introduced it from the opposite direction. The count is reported rather than warned about:
+# a glob may legitimately match nothing on a task whose files are not written yet.
+echo "INSERT OR REPLACE INTO meta VALUES('declared_globs_unmatched',(SELECT COUNT(*) FROM kit_declared d WHERE NOT EXISTS(SELECT 1 FROM kit_tracked k WHERE k.path GLOB d.glob)));"
+echo "INSERT OR REPLACE INTO meta VALUES('declared_globs_total',(SELECT COUNT(*) FROM kit_declared));"
+
 echo "COMMIT;"
 } > "$SQL"
 
@@ -1574,7 +1742,14 @@ fi
 # previous index exactly as it was, with its previous mtime -- which is what makes the next
 # run notice the sources are newer and try again, loudly, instead of trusting a corpse.
 NEW="$DB.new"
-trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_SEEN" "$NEW"' EXIT
+# ONE LIST, NAMED ONCE. A second `trap ... EXIT` REPLACES the first rather than adding to it,
+# and the replacement here used to retype the names and drop `$KIT_PLAN_REFUSED` -- so every
+# successful index left one mktemp file behind, on main as well, for as long as both traps
+# have existed. Two hand-kept lists of the same thing drift; this one drifted by omission and
+# nothing noticed until a conformance step counted the files. `$NEW` is added to the shared
+# list rather than kept separate, because it is empty until it is assigned and `rm -f ""` is
+# a no-op. See T-20260919-the-second-exit-trap-drops-kit-plan-refu.
+trap "$KIT_TRAP_RM" EXIT
 rm -f "$NEW"
 sqlite3 "$NEW" < "$(dirname "$0")/schema.sql" ||
   { kit_warn "could not create the index schema; ${DB#$ROOT/} was left unchanged."; build_failed; }

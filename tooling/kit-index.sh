@@ -496,49 +496,32 @@ if [ "$HAVE_TASKS" = 1 ]; then
       }
       return best
     }
-    function emit(   id, ti, st, bb, parts, nd, j, fl) {
+    function emit(   id, ti, st, bb, parts, nd, j, fl, pdecl) {
       id = v["id"]
       if (id == "") { printf "kit: no id in frontmatter, skipped: %s\n", rel > "/dev/stderr"; return }
       ti = (v["title"] != "" ? v["title"] : id)
       st = (v["state"] != "" ? v["state"] : "created")
       printf "INSERT OR REPLACE INTO node VALUES(\047%s\047,\047task\047,\047%s\047,\047%s\047);\n", q(id), q(rel), q(ti)
-      fl = floorof(v["paths"])
-      # DECLARED PATHS LEAVE AWK AS DATA, NOT AS SQL. One printf of two fields to a side file,
-      # and nothing more: no split, no second array, no extra locals.
+      # THE PATHS VALUE IS COPIED INTO A SCALAR BEFORE ANYTHING READS IT, and every previous
+      # attempt failed because it did not do this. `v["paths"]` on a task file with no `paths:`
+      # key is an UNTYPED array element, and two different awks fall over on it in two different
+      # ways: gawk 5.4.1 aborts with `fatal: internal error: fixtype: expected Node_val: got
+      # Node_var`, and mawk SEGFAULTS. One cause, two symptoms -- which is a better explanation
+      # than the three separate construct bugs I diagnosed and fixed in turn, none of which were
+      # it. The file redirect, the ENVIRON subscript and the splitting were all removed on those
+      # theories and the segfault survived all three.
       #
-      # THIS SHAPE IS NOT A STYLE CHOICE. The first version did the splitting and the SQL
-      # generation here, and mawk -- which is /usr/bin/awk on ubuntu-latest -- ABORTED with
-      # `malloc_consolidate(): invalid chunk size`, core dumped, on the real 220-file backlog.
-      # gawk on the development machine ran the identical program without complaint, and the
-      # conformance suite passed on the same runner because its fixtures are small. Only the
-      # repo-wide structure job saw it. The construct that corrupts mawk was never identified,
-      # because guessing at it from a crash is how the last two root causes here were got wrong;
-      # the answer was to stop asking awk to do the work at all.
-      #
-      # The splitting happens in shell after this program exits, and the GLOB MATCHING still
-      # happens in SQLite -- shell splits a delimiter list, it never matches a path.
-      # `(v["paths"] "")` forces a STRING, and the concatenation is load-bearing. When a task file
-      # carries no `paths:` key, `v["paths"]` is an UNTYPED array element, and gawk 5.4.1 aborts on
-      # it with `fatal: internal error: fixtype: expected Node_val: got Node_var` -- not on the
-      # first task file but on the SECOND, so the symptom reads "ingest read 1 of 220" rather than
-      # a parse error. `floorof(v["paths"])` above survives only because passing it as a function
-      # argument types it on the way in.
-      # REDIRECT TO A PLAIN VARIABLE, AND PARENTHESISE THE printf. Both matter, and the reason is
-      # measured rather than stylistic: mawk -- `/usr/bin/awk` on ubuntu-latest -- SEGFAULTED on
-      # `printf ... > ENVIRON["KIT_DECL_OUT"]`, core dumped, against the real backlog of this repository.
-      #
-      # This is the SECOND mawk crash from the same few lines. The first was
-      # `malloc_consolidate(): invalid chunk size` from doing the splitting here; moving that work
-      # into shell changed the signature to a segfault and did not remove it, because the redirect
-      # was never the part that moved. gawk on the development machine runs both forms without
-      # complaint, and the conformance suite passed on the same Ubuntu runner both times -- only
-      # the job that indexes the real 220-file backlog ever saw it.
-      #
-      # A MARKED LINE ON STDOUT, and no file handling at all. See the note at the awk invocation
-      # for why: three mawk segfaults came out of the two lines that used to redirect here. The
-      # marker is stripped in shell; a line that is not marked is SQL and passes straight through.
-      if ((v["paths"] "") != "")
-        printf("--KITDECL\t%s\t%s\n", id, (v["paths"] ""))
+      # `("paths" in v)` tests without creating or evaluating the element; the copy that follows
+      # is an ordinary scalar assignment. Nothing downstream touches the array element again,
+      # including floorof, which was reading it directly.
+      pdecl = ""
+      if ("paths" in v) pdecl = v["paths"] ""
+      fl = floorof(pdecl)
+      # A MARKED LINE ON STDOUT. The marker is stripped in shell; an unmarked line is SQL and
+      # passes straight through. See the scalar copy above for why this is not a redirect, and
+      # the note at the awk invocation for what the shell does with it.
+      if (pdecl != "")
+        printf("--KITDECL\t%s\t%s\n", id, pdecl)
       # `via` from frontmatter, and anything outside the vocabulary becomes `unknown` rather
       # than being stored. Unknown is the honest default: on a brownfield back-fill nobody
       # remembers how each item was done, and a wrong label is worse than an absent one

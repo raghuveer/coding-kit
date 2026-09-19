@@ -216,7 +216,7 @@ if [ "${1:-}" = "--if-stale" ] && [ -f "$DB" ] && [ ! -e "$FAILED_MARK" ]; then
 fi
 SQL=$(mktemp); KIT_REFUSED=$(mktemp); export KIT_REFUSED
 KIT_PLAN_REFUSED=$(mktemp); export KIT_PLAN_REFUSED
-KIT_TRAP_RM='rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT" "$NEW"'
+KIT_TRAP_RM='rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT" "$RAW" "$NEW"'
 trap "$KIT_TRAP_RM" EXIT
 mkdir -p "$ROOT/$STATE_DIR"
 ADAPTER_FAILED=0
@@ -227,7 +227,7 @@ ADAPTER_FAILED=0
 # definition -- leaked EVERY temp file, not just this one. Reproduced on a fresh kit-init repo:
 # `DECL_OUT: unbound variable`, three mktemp files left behind on every invocation. Found by a
 # blind reviewer; the analogy to KIT_SEEN one token away was there to copy and was not copied.
-INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""; DECL_OUT=""
+INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""; DECL_OUT=""; RAW=""
 
 # The whole build is assembled before the existing index is touched. An ingest source can
 # now fail -- an adapter for a remote backend fails whenever the network does -- and
@@ -429,13 +429,12 @@ if [ "$HAVE_TASKS" = 1 ]; then
   # shell stage after it. A side file rather than the SQL stream, because what awk emits here is
   # DATA to be split, not a statement to be executed.
   DECL_OUT=$(mktemp); : > "$DECL_OUT"
+  RAW=$(mktemp); : > "$RAW"
   # `if`, not `&&`: with every task file empty there is nothing to hand awk, and awk with no
   # file operands reads stdin and hangs -- a worse failure than the empty backlog it would be
   # reporting. Nor is that an ingest failure; expected and read are both zero, consistently.
   if [ "$#" -gt 0 ]; then
-  KIT_PREFIX="$ROOT/" KIT_RULES="$TIER_RULES" KIT_SEEN="$KIT_SEEN" KIT_VIA="$(kit_via_vocab)" KIT_DECL_OUT="$DECL_OUT" awk '
-    # Assigned ONCE, not re-evaluated per write. See the note at the declout printf below.
-    BEGIN { declout = ENVIRON["KIT_DECL_OUT"] }
+  KIT_PREFIX="$ROOT/" KIT_RULES="$TIER_RULES" KIT_SEEN="$KIT_SEEN" KIT_VIA="$(kit_via_vocab)" awk '
     function q(s){ gsub(/\047/,"\047\047",s); return s }
     # glob -> regex. * and ** both cross directory separators, which matches SQLite GLOB, so
     # the two floor sources agree with each other. That over-matches `a/*.ts` against
@@ -535,10 +534,11 @@ if [ "$HAVE_TASKS" = 1 ]; then
       # complaint, and the conformance suite passed on the same Ubuntu runner both times -- only
       # the job that indexes the real 220-file backlog ever saw it.
       #
-      # `declout` is assigned once in BEGIN below. A redirect target that is an array-subscript
-      # expression is re-evaluated per write, which is what mawk cannot survive here.
-      if (declout != "" && (v["paths"] "") != "")
-        printf("%s\t%s\n", id, (v["paths"] "")) > declout
+      # A MARKED LINE ON STDOUT, and no file handling at all. See the note at the awk invocation
+      # for why: three mawk segfaults came out of the two lines that used to redirect here. The
+      # marker is stripped in shell; a line that is not marked is SQL and passes straight through.
+      if ((v["paths"] "") != "")
+        printf("--KITDECL\t%s\t%s\n", id, (v["paths"] ""))
       # `via` from frontmatter, and anything outside the vocabulary becomes `unknown` rather
       # than being stored. Unknown is the honest default: on a brownfield back-fill nobody
       # remembers how each item was done, and a wrong label is worse than an absent one
@@ -596,7 +596,23 @@ if [ "$HAVE_TASKS" = 1 ]; then
       }
     }
     END { if (pending) emit() }
-  ' "$@" || INGEST_FAILED=1
+  ' "$@" > "$RAW" || INGEST_FAILED=1
+
+  # THE AWK WRITES NO FILES. It printed the declared-path lines to a file named by an ENVIRON
+  # subscript, and mawk -- /usr/bin/awk on ubuntu-latest -- SEGFAULTED on this program three
+  # times: once while it also did the splitting, once after the splitting moved to shell, and
+  # once more after the redirect target was hoisted into a BEGIN variable and the printf was
+  # parenthesised. Each fix was plausible, each was verified under gawk here, and each was
+  # refuted by the only instrument that can see mawk, which is CI.
+  #
+  # So the construct is gone rather than corrected again. The awk now emits an ordinary marked
+  # line on STDOUT, alongside the SQL it already writes, and the separation happens in shell.
+  # Nothing about awk file handling is left to be portable about.
+  #
+  # `|| :` on both greps because grep exits 1 when it matches nothing -- a backlog where no task
+  # declares a path is legitimate -- and this script runs under `set -o pipefail`.
+  grep '^--KITDECL	' "$RAW" | sed 's/^--KITDECL	//' > "$DECL_OUT" || :
+  grep -v '^--KITDECL	' "$RAW" || :
 
   # DECLARED PATHS -> `declares` EDGES, split here in shell and matched in SQLite.
   #

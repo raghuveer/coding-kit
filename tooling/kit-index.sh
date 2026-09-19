@@ -216,7 +216,8 @@ if [ "${1:-}" = "--if-stale" ] && [ -f "$DB" ] && [ ! -e "$FAILED_MARK" ]; then
 fi
 SQL=$(mktemp); KIT_REFUSED=$(mktemp); export KIT_REFUSED
 KIT_PLAN_REFUSED=$(mktemp); export KIT_PLAN_REFUSED
-trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT"' EXIT
+KIT_TRAP_RM='rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT" "$NEW"'
+trap "$KIT_TRAP_RM" EXIT
 mkdir -p "$ROOT/$STATE_DIR"
 ADAPTER_FAILED=0
 # DECL_OUT IS INITIALISED HERE FOR THE SAME REASON KIT_SEEN IS, and omitting it cost more than
@@ -1727,7 +1728,14 @@ fi
 # previous index exactly as it was, with its previous mtime -- which is what makes the next
 # run notice the sources are newer and try again, loudly, instead of trusting a corpse.
 NEW="$DB.new"
-trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_SEEN" "$NEW" "$DECL_OUT"' EXIT
+# ONE LIST, NAMED ONCE. A second `trap ... EXIT` REPLACES the first rather than adding to it,
+# and the replacement here used to retype the names and drop `$KIT_PLAN_REFUSED` -- so every
+# successful index left one mktemp file behind, on main as well, for as long as both traps
+# have existed. Two hand-kept lists of the same thing drift; this one drifted by omission and
+# nothing noticed until a conformance step counted the files. `$NEW` is added to the shared
+# list rather than kept separate, because it is empty until it is assigned and `rm -f ""` is
+# a no-op. See T-20260919-the-second-exit-trap-drops-kit-plan-refu.
+trap "$KIT_TRAP_RM" EXIT
 rm -f "$NEW"
 sqlite3 "$NEW" < "$(dirname "$0")/schema.sql" ||
   { kit_warn "could not create the index schema; ${DB#$ROOT/} was left unchanged."; build_failed; }

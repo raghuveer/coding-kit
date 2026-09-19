@@ -5873,6 +5873,55 @@ check $? "declared paths reach the pack, marked apart from committed ones, unmat
 rm -rf "$dc"
 fi
 
+if step "the indexer cleans up after itself on a repository with no task files"; then
+# THE EXIT TRAP NAMES EVERY TEMP FILE, AND UNDER set -u ONE UNSET NAME BREAKS THE WHOLE TRAP.
+# That is not a hypothetical: `DECL_OUT` was added to the trap and assigned only inside the
+# `HAVE_TASKS = 1` branch, so on a repository with no task files -- which this script's own
+# comment calls a legitimate state by definition, and which every adopting repository is on day
+# one -- the trap died on the unbound name and left EVERY mktemp file behind, not just that one.
+#
+# A blind reviewer found it by running the scenario. Nothing in this suite ran it, so nothing
+# would have found it again. This step is that scenario, kept.
+#
+# TMPDIR is redirected into the fixture so the count is exact: mktemp honours it, and counting a
+# shared system temp directory would be a measurement other processes can move.
+tc="$WORK.tmpclean"; rm -rf "$tc"; mkdir -p "$tc/repo" "$tc/tmp"
+( cd "$tc/repo" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  git add -A && git commit -q --no-verify -m "chore: adopt, no tasks yet"
+
+  # ARM 1 -- no task files at all. The leaking case.
+  before=$(ls -1 "$tc/tmp" 2>/dev/null | wc -l | tr -d ' ')
+  err=$(TMPDIR="$tc/tmp" bash "$KIT/tooling/kit-index.sh" 2>&1 >/dev/null)
+  after=$(ls -1 "$tc/tmp" 2>/dev/null | wc -l | tr -d ' ')
+  [ "$before" = "$after" ] ||
+    { echo "  1: a repository with no task files leaked $((after - before)) temp file(s)"; exit 1; }
+
+  # ARM 2 -- SEPARATE ASSERTION, because a leak and an unbound name are different failures and a
+  # future change could produce either alone. An unset variable under set -u is also the one
+  # symptom that reaches a user directly.
+  case "$err" in
+    *"unbound variable"*) echo "  2: the indexer reported an unbound variable: $err"; exit 1 ;;
+  esac
+
+  # ARM 3 -- the same repository once it HAS a task file, so arm 1 is not passing because the
+  # script did nothing at all on an empty repo.
+  printf -- '---\nid: T-t\ntitle: t\ntier: T2\npaths: README.md\n---\nb\n' > .project/tasks/T-t.md
+  printf 'r\n' > README.md
+  git add -A && git commit -q --no-verify -m "chore: one task"
+  before=$(ls -1 "$tc/tmp" 2>/dev/null | wc -l | tr -d ' ')
+  TMPDIR="$tc/tmp" bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  after=$(ls -1 "$tc/tmp" 2>/dev/null | wc -l | tr -d ' ')
+  [ "$before" = "$after" ] ||
+    { echo "  3: a repository WITH task files leaked $((after - before)) temp file(s)"; exit 1; }
+  [ -f .project/index.db ] || { echo "  3: no index was built, so arm 1 proved nothing"; exit 1; }
+  exit 0 )
+check $? "no temp file survives an indexer run, with task files or without"
+rm -rf "$tc"
+fi
+
 
 if step "a finding joins the reviewer run that produced it, or is reported as unjoinable"; then
 # THE FLAG EXISTED AND THE COLUMN DID NOT. kit-finding.sh has accepted --agent-id since it was

@@ -96,7 +96,20 @@ CREATE TABLE task (
 CREATE TABLE edge (
   src TEXT NOT NULL,
   dst TEXT NOT NULL,
-  rel TEXT NOT NULL,                -- touches|depends_on|constrained_by|covers|blocks|regressed
+  rel TEXT NOT NULL,                -- touches|declares|depends_on|constrained_by|covers|blocks|regressed
+  -- `declares` is EVIDENCE OF A CLAIM, not of a change: the task's frontmatter `paths:` said it
+  -- expects to touch the file. `touches` says a commit carrying its Task-Id actually did. Every
+  -- reader must filter `rel` -- none reads this table bare, checked across tooling/ -- and any
+  -- reader that treats the two alike turns a declaration into evidence.
+  --
+  -- WHERE THE WRITTEN RELATIONS ARE WRITTEN, since this comment is a list and lists drift:
+  --     grep -n "INTO edge" tooling/kit-index.sh
+  --
+  -- That grep finds FOUR of the seven names above, and the gap is not drift. `constrained_by`
+  -- and `covers` are queried by task-context and written by nothing (docs/DESIGN-NOTES.md),
+  -- and `blocks` is realised as the `task.blocked_by` column rather than as an edge row. Said
+  -- here because the first version of this comment offered the grep as the authoritative list
+  -- and a reviewer checked it, which is what a self-verifying instruction is for.
   PRIMARY KEY (src, dst, rel)
 );
 

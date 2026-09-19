@@ -2,8 +2,8 @@
 id: T-20260919-the-goal-state-comment-says-unwritten-an
 title: The goal.state comment says unwritten and it has been written since 2026-09-14
 epic: reporting
-tier: T2
-paths: tooling/schema.sql
+tier: T3
+paths: tooling/schema.sql, tooling/kit-index.sh
 state: created
 ---
 
@@ -50,6 +50,13 @@ count of 19 against a tree that answers 4.
       guarantee the old comment claimed is shown to exist rather than assumed
 - [x] No behaviour changes: `sqlite3 .project/index.db "SELECT id,state FROM goal;"` returns the
       same row before and after
+- [x] The fourth instance of the same defect, folded in on the operator's instruction 2026-09-19:
+      `kit-index.sh` carried *"115 of 130 say `open` today"* in the comment above the state
+      normalisation, against a tree that answers **97 of 215**. Replaced with the command that
+      answers it rather than with a fresher number, following the precedent
+      `T-20260808-trial-the-kit-on-one-unfamiliar-brownfie` set in its own note: *"The number is
+      deliberately not written here -- run it."* A corrected count resets the clock; a command
+      cannot go stale
 
 ### Evidence, 2026-09-19
 
@@ -60,6 +67,14 @@ matrix runs in CI.
 
 `SELECT id,state FROM goal;` returned `default|in-progress` before the edit and after a rebuild
 following it.
+
+**The task is T3, not the T2 it was filed as, and the reason is mechanical.** Folding in the
+`kit-index.sh` comment brought the change under `tier.rule: tooling/kit-index.sh T3`, so the floor
+is T3 whatever the change contains. It contains comments only and `bash -n` parses; the full task
+state distribution and the goal row are byte-identical across a rebuild before and after. The
+floor is path-based by design and has no notion of change kind, so a comment-only edit to that
+file pays a T3 review. That is the rule working as written rather than a misfile, and it is
+recorded here so the cost is visible rather than quietly avoided by splitting the commit.
 
 ## Notes
 

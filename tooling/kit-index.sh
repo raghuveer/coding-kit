@@ -1378,9 +1378,16 @@ UPDATE task SET tier = COALESCE((
    ORDER BY e.seq DESC LIMIT 1), tier);
 
 
--- NORMALISE THE AUTHORED VALUE FIRST. A task file may carry a legacy spelling forever -- 115 of
--- 130 say `open` today -- so the written value is resolved through state_alias before anything
--- reads it. A value in NO alias row is left exactly as written rather than guessed at: an
+-- NORMALISE THE AUTHORED VALUE FIRST. A task file may carry a legacy spelling forever, and most
+-- of this backlog does, so the written value is resolved through state_alias before anything
+-- reads it. The count is deliberately not written here -- it was, and it went stale, which is the
+-- defect this comment would otherwise demonstrate. Run it:
+--
+--     grep -h '^state:' .project/tasks/*.md | sort | uniq -c | sort -rn
+--
+-- and `kit-status.sh` reports the same split under Closed, resolved rather than raw.
+--
+-- A value in NO alias row is left exactly as written rather than guessed at: an
 -- unrecognised state is a typo to report, and quietly rewriting it to something plausible is how
 -- a typo becomes permanent.
 UPDATE task SET state = (SELECT a.canonical FROM state_alias a WHERE a.written = task.state)

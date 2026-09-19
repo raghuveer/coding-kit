@@ -665,22 +665,35 @@ npacks=$(sq -separator $'\t' "$DB" "
   -- can tell which it is looking at.
   --
   -- Before this, the section joined touches alone, and touches only exists once work has been
-  -- committed -- while the pack is read when work STARTS. On this repository 109 tasks had
-  -- declared paths and no touches edge at all, so the pack told them nothing, and
-  -- skills/task-context step 7 tells the agent not to re-derive the list it was given.
+  -- committed -- while the pack is read when work STARTS, which is when no such commit exists.
+  --
+  -- EACH SOURCE HAS ITS OWN SLOT BUDGET, and that is a correction rather than a refinement. The
+  -- first version ordered by touch count and then took the top 40 of the combined list, so any
+  -- file with one touch outranked every declared-only file and a cluster with 40 or more touched
+  -- files showed none of them. A blind reviewer reproduced it on this repository: cluster 2 had
+  -- five declared-only files and the pack named none. That is the acceptance criterion of the
+  -- task this query belongs to, failing in the busy-cluster case the feature exists for -- and
+  -- the conformance fixture could not see it, because its fixture has no touched files at all.
+  --
+  -- 30 and 10 rather than 40 and 40: the pack is a context budget before it is a report, and the
+  -- total it costs a session must not grow because a second source arrived.
   SELECT cluster, 'F', line FROM (
-    SELECT p.cluster AS cluster,
-           n.path||'  ('||COUNT(DISTINCT CASE WHEN e.rel='touches'  THEN e.src END)||' touched, '
-                        ||COUNT(DISTINCT CASE WHEN e.rel='declares' THEN e.src END)||' declared)' AS line,
-           ROW_NUMBER() OVER (PARTITION BY p.cluster
-                              ORDER BY COUNT(DISTINCT CASE WHEN e.rel='touches' THEN e.src END) DESC,
-                                       COUNT(DISTINCT e.src) DESC, n.path) AS rn
-      FROM plan_item p
-      JOIN edge e ON e.src=p.task_id AND e.rel IN ('touches','declares')
-      JOIN node n ON n.id=e.dst
-     WHERE p.goal_id='$GOAL_SQL'
-     GROUP BY p.cluster, n.path)
-   WHERE rn <= 40 ORDER BY cluster, rn;
+    SELECT cluster, line, rn, declared_only FROM (
+      SELECT p.cluster AS cluster,
+             n.path||'  ('||COUNT(DISTINCT CASE WHEN e.rel='touches'  THEN e.src END)||' touched, '
+                          ||COUNT(DISTINCT CASE WHEN e.rel='declares' THEN e.src END)||' declared)' AS line,
+             CASE WHEN COUNT(DISTINCT CASE WHEN e.rel='touches' THEN e.src END) > 0 THEN 0 ELSE 1 END AS declared_only,
+             ROW_NUMBER() OVER (
+               PARTITION BY p.cluster,
+                            CASE WHEN COUNT(DISTINCT CASE WHEN e.rel='touches' THEN e.src END) > 0 THEN 0 ELSE 1 END
+               ORDER BY COUNT(DISTINCT e.src) DESC, n.path) AS rn
+        FROM plan_item p
+        JOIN edge e ON e.src=p.task_id AND e.rel IN ('touches','declares')
+        JOIN node n ON n.id=e.dst
+       WHERE p.goal_id='$GOAL_SQL'
+       GROUP BY p.cluster, n.path)
+     WHERE (declared_only = 0 AND rn <= 30) OR (declared_only = 1 AND rn <= 10))
+   ORDER BY cluster, declared_only, rn;
 
   -- Confirmed defects anywhere in this cluster's files, including from tasks outside the
   -- cluster. Prior evidence about the code, not about the batch.

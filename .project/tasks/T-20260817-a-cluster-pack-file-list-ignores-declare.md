@@ -66,7 +66,7 @@ an agent told not to re-derive an empty list has been told to work blind.
 ### Evidence, 2026-09-19
 
 **Measured against one index, before and after: clusters carrying a file list go from 9 of 19 to
-17 of 19.** 109 tasks had declared paths and no `touches` edge, so the pack told them nothing.
+17 of 19.** 108 tasks had declared paths and no `touches` edge, so the pack told them nothing.
 
 **AC3 — the premise in the Intent needed correcting before it could be met.** The task says to
 reuse "the floor path" expander. `floorof` does not expand globs to files at all: it matches a
@@ -95,7 +95,7 @@ the fixed code, and it passed. That pass measured nothing. Re-done with
 
 **AC5 — an unmatched glob contributes no edge, so no pack can name a path that does not exist**,
 which is the failure `T-20260817-a-touches-edge-is-never-checked-against-` covers from the other
-direction. The count is recorded in `meta` AND reported by `kit-status.sh` (59 of 494 today),
+direction. The count is recorded in `meta` AND reported by `kit-status.sh` (59 of 496 at the time of writing, and the command is `kit-status.sh`),
 because a count nothing reads is the defect
 `T-20260808-cluster-packs-are-generated-and-read-by-` names one file over. It is a notice, not a
 warning: a glob may legitimately be declared before the file is written.
@@ -106,6 +106,56 @@ is `T-20260808-an-apostrophe-in-a-comment-inside-an-awk`; and an untyped array e
 `split`, which aborts gawk 5.4.1 on the SECOND task file after the first has emitted. The ingest
 guard refused to rebuild every time -- without it the third would have left a half-built index
 reported as a whole one.
+
+### Rung 5, 2026-09-19 — two blind readers, BOTH REJECT
+
+Not REVISE. Fourteen findings between them, four majors that neither shared, and a process failure
+of mine that both detected independently.
+
+**I edited the working tree while both were reading it.** One found `kit-index.sh` changing under
+them mid-review; the other watched `index.db` revert repeatedly, restored it from a backup, and
+moved the rest of its work into isolated worktrees. One explicitly discounted a timing measurement
+as contaminated. That is *never let a run finish against a tree you are editing*, broken while
+running the control that exists to catch me.
+
+**What only reader A found:** the pack ordered touched-first and capped the combined list at 40, so
+a cluster with 40+ touched files showed **no** declared-only files. Reproduced on this repository's
+cluster 2 — five declared-only files, none named. **That is AC1 failing in the busy-cluster case
+the feature exists for**, and the conformance fixture could not see it because the fixture has no
+touched files at all. Fixed: each source now has its own slot budget, 30 and 10, so the pack's
+context cost does not grow because a second source arrived. Cluster 2 now carries its five.
+
+**What only reader B found:** backticks in the new SQL comment sat inside a double-quoted string,
+so bash executed `touches`, `declares` and `skills/task-context` as commands on every pack build.
+Reproduced, removed. And that `skills/task-context` steps 5-6 still read `touches` alone, keeping
+the blindness for the query that feeds `tier-classify` — filed as
+`T-20260919-blast-radius-for-tier-classify-still-rea` rather than folded in, because changing what
+feeds the tier decision is a behaviour change to the control that governs every other control.
+
+**What both found:** the per-path forking, the stderr-only refusal, and the `tr` handling of
+`git ls-files -z`. All three fixed. The refusal now records to `meta` and `kit-status.sh` reports
+it, mirroring `tier_rules_refused` — the sibling whose recording half had been left behind when its
+refusing half was copied. `read -d ''` replaces `tr`, so a path containing a newline arrives whole.
+
+**The over-match is now stated rather than inherited.** SQLite GLOB's `*` crosses `/`, so
+`src/*.go` matches `src/deep/nested.go`. The tier floor accepts that because a floor only raises;
+a declaration is not conservative in that direction. Accepted deliberately — narrowing it means a
+second matcher — and pinned by a conformance arm so it is known rather than discovered.
+
+**And the arm written to pin it failed the moment it existed, on a defect of mine nobody had
+found.** `for _dg in $_dpaths` is unquoted to word-split, and an unquoted expansion also
+PATHNAME-expands: the shell globbed every declared pattern against the working directory before
+SQLite saw it, and shell `*` does not cross `/`. `src/*.go` arrived as `src/alpha.go`. I had
+written a comment warning that shell globbing would be wrong for exactly this reason, then walked
+into it. `set -f` fixes it. **Every count taken before that arm existed was measured against
+shell-expanded paths.** Re-derived after: 437 edges, 59 of 496 unmatched, 108 declared-untouched
+tasks, 9 of 19 to 17 of 19 clusters — unchanged, because this repository's declared paths are
+almost all literal, so the broken path was never exercised here. Latent, real, and found only by
+the arm.
+
+**Figures corrected:** 494 to 496 (the same commit had widened this task's own `paths:`, so the
+number went stale inside the commit that wrote it), and 109 to 108, which both readers measured
+independently and I had not.
 
 ## Notes
 

@@ -168,6 +168,17 @@ if [ "$_DGU" -gt 0 ]; then
   printf '> a cluster pack, so no pack names a path that does not exist. A glob may be declared\n'
   printf '> before the file is written, so this is a number to read beside the total, not a fault.\n'
 fi
+_DGR=$(q "SELECT value FROM meta WHERE key='declared_globs_refused';"); _DGR=${_DGR:-0}
+case "$_DGR" in ''|*[!0-9]*) _DGR=0 ;; esac
+if [ "$_DGR" -gt 0 ]; then
+  # REFUSED IS NOT UNMATCHED, and the two must not be added together. An unmatched glob is a
+  # legitimate declaration whose file does not exist yet. A refused one was never read at all,
+  # so the task's blast radius is short by however many it named and nothing else says so.
+  printf '\n> **%s declared path glob(s) were REFUSED, not merely unmatched.** Each carries `[`, `]`\n' "$_DGR"
+  printf '> or `?`, which SQLite GLOB and the awk matcher read differently, so it was never\n'
+  printf '> expanded. The tasks that declared them have a blast radius short by that much:\n'
+  printf '> `%s`\n' "$(q "SELECT value FROM meta WHERE key='declared_globs_refused_text';")"
+fi
 printf '\n## Closed\n\n'
 # THREE COUNTS, NOT TWO, AND cancelled IS WHY THE THIRD EXISTS. `abandoned` judges the ATTEMPT --
 # we stopped; `cancelled` judges the WORK -- it should not be done at all. Reporting them as one

@@ -5836,6 +5836,38 @@ dc="$WORK.declpack"; rm -rf "$dc"; mkdir -p "$dc"
   fi
   u=$(sqlite3 .project/index.db "SELECT value FROM meta WHERE key='declared_globs_unmatched';" | tr -d '\015')
   [ "${u:-0}" -ge 1 ] || { echo "  4: an unmatched declared glob was not counted (meta says [${u:-unset}])"; exit 1; }
+  # ARM 5 -- `*` CROSSES `/`, PINNED SO IT IS KNOWN RATHER THAN DISCOVERED. `src/*.go` matching a
+  # nested file is SQLite GLOB semantics, accepted deliberately because narrowing it would mean a
+  # second matcher. If this arm ever goes red, the matcher changed and every declared blast radius
+  # changed with it.
+  mkdir -p src/deep
+  printf 'c\n' > src/deep/gamma.go
+  git add -A && git commit -q --no-verify -m "chore: nested"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  bash "$KIT/tooling/kit-plan.sh" >/dev/null 2>&1
+  pack=$(ls .project/packs/default/*.md 2>/dev/null | head -1)
+  grep -q 'src/deep/gamma.go' "$pack" ||
+    { echo "  5: a nested file no longer matches a shallow declared glob; the matcher changed"; exit 1; }
+
+  # ARM 6 -- THE STATUS NOTICE IS A CONSUMER AND CONSUMERS GET CHECKED. AC5 says the unmatched
+  # count is REPORTED, not merely recorded; asserting the meta row alone would leave the half a
+  # reader actually sees untested, which is the shape of defect this project files against
+  # generated-and-read-by-nothing.
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'declared path glob(s) match no tracked file' STATUS.generated.md ||
+    { echo "  6: kit-status does not report the unmatched declared globs it recorded"; exit 1; }
+
+  # ARM 7 -- A REFUSED GLOB IS COUNTED AND REPORTED, not only warned about on a terminal. The
+  # sibling tier.rule refusal records to meta for exactly this reason, and this one did not until
+  # a blind reviewer said so.
+  printf -- '---\nid: T-refuse\ntitle: r\ntier: T2\npaths: src/[ab].go\n---\nb\n' > .project/tasks/T-refuse.md
+  git add -A && git commit -q --no-verify -m "chore: refused glob"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  r=$(sqlite3 .project/index.db "SELECT value FROM meta WHERE key='declared_globs_refused';" | tr -d '\015')
+  [ "${r:-0}" -ge 1 ] || { echo "  7: a refused declared glob was not counted (meta says [${r:-unset}])"; exit 1; }
+  bash "$KIT/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'were REFUSED, not merely unmatched' STATUS.generated.md ||
+    { echo "  7: kit-status does not report a refused declared glob"; exit 1; }
   exit 0 )
 check $? "declared paths reach the pack, marked apart from committed ones, unmatched globs counted"
 rm -rf "$dc"

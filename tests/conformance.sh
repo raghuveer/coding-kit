@@ -5789,6 +5789,58 @@ check $? "controlled, mutation-proved by an eighth closed state, and its empty-v
 rm -rf "$cs" "$csk"
 fi
 
+if step "a pack names files a task has only DECLARED, and says which is which"; then
+# THE PACK IS READ WHEN WORK STARTS, and a `touches` edge exists only once work has been committed
+# under a Task-Id. So the section `skills/task-context` step 7 tells an agent not to re-derive was
+# empty for most of a real backlog, and an agent told not to re-derive an empty list has been told
+# to work blind. Measured on this repository before the fix: 9 of 19 clusters carried any file.
+#
+# ARM 2 IS THE ONE THAT GOES RED ON THE PRE-FIX CODE. Arm 1 is the control that makes arm 2 mean
+# something: it proves the fixture's task has NO touches edge, so the files in arm 2 cannot have
+# arrived through the old source.
+dc="$WORK.declpack"; rm -rf "$dc"; mkdir -p "$dc"
+( cd "$dc" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  mkdir -p src
+  printf 'a\n' > src/alpha.go
+  printf 'b\n' > src/beta.go
+  # Declares two real files and one glob that matches nothing. No commit will carry this id.
+  printf -- '---\nid: T-decl\ntitle: d\ntier: T2\npaths: src/*.go, docs/nothing-here/*.md\n---\nb\n' > .project/tasks/T-decl.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+  bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+
+  # ARM 1 -- the control.
+  t=$(sqlite3 .project/index.db "SELECT COUNT(*) FROM edge WHERE src='T-decl' AND rel='touches';" | tr -d '\015')
+  [ "$t" = "0" ] ||
+    { echo "  1: T-decl carries $t touches edge(s), so arm 2 could pass through the old source"; exit 1; }
+
+  bash "$KIT/tooling/kit-plan.sh" >/dev/null 2>&1
+  pack=$(ls .project/packs/default/*.md 2>/dev/null | head -1)
+  [ -n "$pack" ] || { echo "  2: no pack was written"; exit 1; }
+
+  # ARM 2 -- the declared files are named. On the pre-fix code this section is the empty notice.
+  grep -q 'src/alpha.go' "$pack" || { echo "  2: the pack names no declared file"; exit 1; }
+  grep -q 'src/beta.go'  "$pack" || { echo "  2: the pack names one declared file but not the other"; exit 1; }
+
+  # ARM 3 -- EVIDENCE AND CLAIM STAY APART. A file nothing has committed must not read as touched.
+  grep -q 'src/alpha.go  (0 touched, 1 declared)' "$pack" ||
+    { echo "  3: a declared-only file is not marked as such"; exit 1; }
+
+  # ARM 4 -- A GLOB MATCHING NOTHING NAMES NOTHING. A pack carrying a path that does not exist is
+  # the failure T-20260817-a-touches-edge-is-never-checked-against- is about, and this change
+  # could introduce it from the opposite direction. It must be counted rather than guessed at.
+  if grep -q 'nothing-here' "$pack"; then
+    echo "  4: the pack names a path from a glob that matched no file"; exit 1
+  fi
+  u=$(sqlite3 .project/index.db "SELECT value FROM meta WHERE key='declared_globs_unmatched';" | tr -d '\015')
+  [ "${u:-0}" -ge 1 ] || { echo "  4: an unmatched declared glob was not counted (meta says [${u:-unset}])"; exit 1; }
+  exit 0 )
+check $? "declared paths reach the pack, marked apart from committed ones, unmatched globs counted"
+rm -rf "$dc"
+fi
+
 
 if step "a finding joins the reviewer run that produced it, or is reported as unjoinable"; then
 # THE FLAG EXISTED AND THE COLUMN DID NOT. kit-finding.sh has accepted --agent-id since it was

@@ -1154,7 +1154,7 @@ while IFS= read -r _g; do
   printf '\n> **The plan for `%s` is covered by `.gitignore`.** It will not survive a clone, a\n' "$_g"
   printf '> new machine, or a deleted index — which is the machine-local state ADR 0004 exists to\n'
   printf '> abolish, arriving through configuration rather than code. Everything looks correct\n'
-  printf '> here and is absent for everyone else. Un-ignore `.project/plans/`.\n'
+  printf '> here and is absent for everyone else. Un-ignore `%s/plans/`.\n' "$STATE_DIR"
 done
 
 PLANREF=$(q "SELECT value FROM meta WHERE key='plan_refused';")

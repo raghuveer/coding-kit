@@ -5,7 +5,7 @@ epic: adoption
 tier: T3
 lang: bash
 paths: tooling/kit-init.sh, tooling/kit-index.sh, tooling/kit-status.sh, tooling/kit-plan.sh, tooling/kit-lib.sh, tooling/kit-entry.sh, tooling/kit-task.sh, tooling/kit-trailers.sh, tooling/kit-charter.sh, tooling/kit-criteria.sh, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -62,23 +62,23 @@ that clash, and it is exactly the move that breaks here.
 
 ## Acceptance criteria
 
-- [ ] `kit-init.sh` derives every rule and directory it writes from `paths.state` / `paths.tasks`,
+- [x] `kit-init.sh` derives every rule and directory it writes from `paths.state` / `paths.tasks`,
       and adds exact-line rules for the current location. It never deletes an adopter's lines —
       consistent with its append-only writer (`kit-init.sh:109-112`) and with
       `T-20260812-kit-init-leaves-a-footprint-in-an-adopte`'s rule that pre-existing
       `.gitignore` / `.gitattributes` lines are not removed. Lines it wrote for an old location are
       reported by their exact text. kit-init records no previous location, so it finds those lines
       by matching its own rule shapes under a different prefix.
-- [ ] Presence checks match exact lines, not substrings (`kit-init.sh:122`), and each confirmation
+- [x] Presence checks match exact lines, not substrings (`kit-init.sh:122`), and each confirmation
       is printed only when it is true (`:124`).
 - [x] `paths.tasks` has one default, `$STATE_DIR/tasks` — today's `kit-charter` and `kit-criteria`
       default — defined once in `kit-lib.sh`. `kit-index.sh` warns when task files exist under the
       other location instead of silently indexing zero, and a conformance check covers that
       warning.
-- [ ] Every message, check and generated header that names a state path computes it from the key:
+- [x] Every message, check and generated header that names a state path computes it from the key:
       `kit-index.sh:1494-1497`, `kit-status.sh:893`, `kit-plan.sh:423`, `kit-init.sh:169` and
       `:188`.
-- [ ] Conformance adopts at the default layout, switches `paths.state` / `paths.tasks` to a
+- [x] Conformance adopts at the default layout, switches `paths.state` / `paths.tasks` to a
       non-default value, and re-runs `kit-init.sh` — the order in which old kit-written lines
       exist — then files a task, indexes, plans and runs status. It asserts, through
       `git check-ignore` and `git check-attr` rather than string matching, that `index.db` and the
@@ -141,6 +141,54 @@ touch the `kit-init.sh` lines that `T-20260911-kit-init-prints-the-claude-remedy
 `T-20260908-kit-init-pins-less-for-an-adopter-than-t` and
 `T-20260812-kit-init-leaves-a-footprint-in-an-adopte` contend over, which the Notes below warn to
 land together.
+
+### Evidence, 2026-09-18 — criteria 1, 2, 4 and 5; the task is complete at 5 of 5
+
+**Built fixture-first.** The conformance step was written before any source change and **failed
+against the then-current code** with `.kit/index.db is NOT ignored -- the next git add commits it`.
+That is the 2026-09-11 reproduction, now in the suite.
+
+**Everything kit-init writes follows the key.** `_ST` and `_TD` are derived once, immediately after
+the profile is settled, because the profile may not have existed a moment earlier — this script
+creates it. The `mkdir` moved down with them: it ran against a hardcoded `.project/tasks` on every
+invocation, **re-creating that directory even for a project that had moved**, leaving an empty one
+beside the real backlog.
+
+**Two presence checks now ask git rather than read text, and the second attempt is the lesson.**
+An exact-line `grep -qxF` was the first fix for the substring bug — and it was **wrong in the other
+direction**. This repository already carries `.project/events.ndjson merge=union text eol=lf`: the
+same rule with a second attribute, which an exact match does not recognise, so kit-init **appended
+a duplicate**. Caught by running it here before committing, not by a test.
+
+`git check-attr` asks the question actually being asked — *is this path already union-merged?* — and
+is immune to spacing, ordering, extra attributes and which file the rule came from. It is also what
+the conformance step asserts with, so the check and its test agree by construction.
+
+**Stale rules are REPORTED, never removed.** kit-init records no previous location, so lines written
+for an earlier layout are found by their **shape** — the suffixes this script itself writes — under
+a prefix that is not the current `paths.state`. Stated as the heuristic it is: it can only match the
+kit's own rule shapes, which is why an adopter's unrelated `plans/*.pdf binary` cannot be caught by
+it. Nothing is deleted: this writer only appends, an adopter's own lines share both files, and the
+exact text is printed so the line can be found and judged.
+
+**The three mutations criterion 5 names, each run alone:**
+
+| mutation | result |
+|---|---|
+| baseline | PASS |
+| restore the literal `.project/index.db*` | **FAIL** — *"`.kit/index.db` is NOT ignored"* |
+| restore the substring match on `events.ndjson` | **FAIL** — *"merge is unspecified, wanted union"* |
+| restore the literal at kit-index's LF-pin check | **FAIL** — *"a LF-pin warning fired while the pin was present"* |
+
+**The third one did not fail at first, and that is worth recording.** The first adoption writes
+`.project/plans/*.tsv text eol=lf`; leave it in place and a kit-index still checking the literal
+finds it, stays quiet, and the assertion passes **for entirely the wrong reason**. The arm now
+removes the stale pin first and asserts the current one is present, so a literal check has nothing
+to find and must warn. Found by running the mutation the criterion demanded rather than by reading
+the fixture.
+
+**Verified a no-op on this repository:** `.gitignore` and `.gitattributes` both byte-identical after
+`kit-init.sh` runs here.
 
 ## Notes
 

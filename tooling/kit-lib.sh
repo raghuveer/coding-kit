@@ -197,7 +197,21 @@ kit_via_vocab() { printf 'kit agent manual unknown'; }
 # with nineteen copies is a rule that will disagree with itself; the finding vocabulary already
 # did exactly that across four locations here. See docs/adr/0008.
 #
-#   grep -rc "'done','abandoned'" tooling/     # 19, in kit-status(7) kit-index(6) kit-plan(5) kit-lib(1)
+# THE MIGRATION IS DONE; THIS IS NO LONGER A STANDING INSTRUCTION. The nineteen above is a dated
+# measurement of 2026-08-22 and is kept as history, exactly as the commit counts elsewhere are.
+# What used to sit here was a live count presented as current -- `19, in kit-status(7)
+# kit-index(6) kit-plan(5) kit-lib(1)` -- and it rotted: the survivors are comments and DEFAULT
+# clauses, not partitions, and the last three genuine literals left kit-status.sh with
+# `T-20260919-three-closed-state-counts-are-hardcoded-`. A number frozen in a comment is the
+# defect this file is about, so re-derive it instead of reading one here:
+#
+#   grep -rn "state='completed'\|state='cancelled'\|state='abandoned'" tooling/
+#
+# EXPECTED RESULT: exactly ONE hit, and it is this comment, which contains the pattern it asks you
+# to search for. Any OTHER hit is a partition written as a literal and belongs in a `state_class`
+# join. That is stated because the first version of this note claimed the command "returns
+# nothing", and the check behind that claim had filtered this file out of its own output -- a
+# verification rigged, unintentionally, to agree with the sentence it was verifying.
 #
 # SQL CONSUMERS DO NOT READ THESE FUNCTIONS DIRECTLY. kit-index.sh derives a `state_class` table
 # from them and the queries join against it, because the derivation SQL lives in a QUOTED heredoc

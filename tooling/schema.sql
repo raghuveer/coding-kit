@@ -36,8 +36,13 @@ CREATE TABLE state_class (
 -- identity row for every canonical value so a lookup always resolves.
 --
 -- Nothing is rewritten and nothing has to be migrated: 127 commits already carry
--- `Task-Status: started|progress|done` and are immutable, and 130 task files carry `open` or
--- `done`. Those stay valid input; this table is how they are read. Normalising here -- once,
+-- `Task-Status: started|progress|done` and are IMMUTABLE -- that figure is git history and
+-- cannot drift, which is why it is written out. The task-file count is not immutable and is
+-- therefore NOT written here; it said 130 and the tree had moved. Run it:
+--
+--     grep -lE '^state: (open|done)$' <tasks dir>/*.md | wc -l
+--
+-- Those stay valid input; this table is how they are read. Normalising here -- once,
 -- where the index is built -- is what lets every partition above stay a plain lookup.
 CREATE TABLE state_alias (
   written   TEXT PRIMARY KEY,
@@ -372,19 +377,23 @@ CREATE INDEX idx_finding_pattern ON finding(pattern, class);
 CREATE TABLE goal (
   id         TEXT PRIMARY KEY,
   title      TEXT,
-  -- RESERVED AND CURRENTLY UNWRITTEN. Nothing sets it and nothing reads it, and section 3c's
-  -- `INSERT OR REPLACE` omits it, so every rebuild resets it to 'open'. That is stated here
-  -- rather than left to be discovered, because the trap is silent: the first writer to set a
-  -- goal 'closed' would find it silently 'open' again after the next index, with no symptom.
+  -- WRITTEN AND DERIVED, since 2026-09-14. Its text source is the `#goal_state` header in
+  -- `.project/plans/<goal>.tsv`: `kit-plan.sh` takes `--goal-state`, validates it against
+  -- `kit_state_written`, preserves it across replans exactly as `#created` is preserved, and
+  -- section 3c parses it, validates it again as an accepted task state, and carries it into
+  -- this column. A rebuild no longer resets it.
   --
-  -- It is kept rather than dropped because a milestone genuinely needs a state and
-  -- `T-20260819-goals-are-the-milestone-mechanism-and-on` is the task that would use it. The
-  -- condition for using it is a TEXT SOURCE first -- a header in the plan file, derived like
-  -- every other column -- for the reason ADR 0004 records: a table nothing can rebuild from
-  -- text is the second source of truth this design exists to avoid.
+  -- THE CONDITION THIS COLUMN CARRIED IS MET, AND IS RECORDED RATHER THAN DELETED, because it
+  -- is still the reason the design is safe. It read: a TEXT SOURCE first, for the reason
+  -- ADR 0004 records -- a table nothing can rebuild from text is the second source of truth
+  -- this design exists to avoid. The header is that source. Anything that later writes this
+  -- column from somewhere other than the plan text reopens the defect the condition prevented,
+  -- and that defect is SILENT: a writer who set a goal 'closed' would find it 'open' again
+  -- after the next index, with no symptom and nothing in any report saying so.
   --
-  -- The round-trip conformance step selects `state`, so the day a writer appears without a
-  -- text source, that step goes red rather than the reset staying invisible.
+  -- The round-trip conformance step selects `state`, so a writer that appears WITHOUT a text
+  -- source still turns that step red rather than staying invisible. That guarantee is the same
+  -- one the column always claimed; what changed is that a text source now exists.
   state      TEXT NOT NULL DEFAULT 'open',
   created_at TEXT
 );

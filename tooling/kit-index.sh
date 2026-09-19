@@ -1378,9 +1378,24 @@ UPDATE task SET tier = COALESCE((
    ORDER BY e.seq DESC LIMIT 1), tier);
 
 
--- NORMALISE THE AUTHORED VALUE FIRST. A task file may carry a legacy spelling forever -- 115 of
--- 130 say `open` today -- so the written value is resolved through state_alias before anything
--- reads it. A value in NO alias row is left exactly as written rather than guessed at: an
+-- NORMALISE THE AUTHORED VALUE FIRST. A task file may carry a legacy spelling forever, and most
+-- of this backlog does, so the written value is resolved through state_alias before anything
+-- reads it. The count is deliberately not written here -- it was, and it went stale, which is the
+-- defect this comment would otherwise demonstrate. Run it:
+--
+--     grep -h '^state:' "$TASKS_DIR"/*.md | sort | uniq -c | sort -rn
+--
+-- `$TASKS_DIR` is what `kit_tasks_dir` resolved at line 15, NOT a literal `.project/tasks`.
+-- Writing the literal here would reintroduce the exact defect `kit_tasks_dir` exists to prevent:
+-- seven scripts hardcoded that path, and with `paths.state` moved and `paths.tasks` absent they
+-- looked in the old place and this script indexed ZERO TASKS while reporting a healthy backlog.
+-- See kit-lib.sh and T-20260912-paths-state-moves-the-state-directory-bu. A worked example in a
+-- comment is copied and run like any other command, so it obeys the same rule as the code.
+--
+-- `kit-status.sh` reports the legacy spellings under Closed -- that subset, resolved rather than
+-- raw, not the full distribution the grep above prints.
+--
+-- A value in NO alias row is left exactly as written rather than guessed at: an
 -- unrecognised state is a typo to report, and quietly rewriting it to something plausible is how
 -- a typo becomes permanent.
 UPDATE task SET state = (SELECT a.canonical FROM state_alias a WHERE a.written = task.state)

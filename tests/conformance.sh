@@ -5710,6 +5710,67 @@ check $? "set, preserved across a replan, normalised from a legacy spelling, ref
 rm -rf "$gs"
 fi
 
+if step "the closed-state line names every closed state the vocabulary declares"; then
+# A LIST THAT CANNOT GO RED IS THE POINT OF THIS STEP. Until 2026-09-19 the Closed line named its
+# three states as SQL literals, so it reported what someone had hardcoded rather than what
+# `kit_state_vocab` declares -- and with the vocabulary frozen at seven, no assertion over the
+# CURRENT states could tell the two implementations apart. Both print the same line. So this step
+# MUTATES THE VOCABULARY ITSELF, in a copy of the kit, and asks whether the report follows.
+#
+# That is the only arm that fails on the pre-fix code, and it is arm 2. Arm 1 alone would be a
+# green that cannot fail -- exactly what LESSONS.md section 1 refuses -- so it is kept only as the
+# control that proves the fixture is sane before the mutation is applied.
+#
+# Only tooling/ is copied: kit-init.sh reads ../templates, so the fixture is INITIALISED from the
+# real kit and only kit-index.sh and kit-status.sh -- the two that source kit-lib.sh's vocabulary
+# -- are run from the mutated copy.
+cs="$WORK.closedstates"; rm -rf "$cs"; mkdir -p "$cs"
+# The copy lives OUTSIDE the fixture repository on purpose: inside it, `git add -A` commits the
+# whole kit into the subject's own history, which is both wasteful and a second thing the indexer
+# then walks. A trial has the same rule about not writing into the subject.
+csk="$WORK.closedstateskit"; rm -rf "$csk"; mkdir -p "$csk" && cp -R "$KIT/tooling" "$csk/tooling"
+( cd "$cs" || exit 1
+  git init -q -b main 2>/dev/null
+  git config user.email a@b.c; git config user.name T
+  bash "$KIT/tooling/kit-init.sh" >/dev/null 2>&1
+  printf -- '---\nid: T-done\ntitle: d\ntier: T2\nstate: completed\n---\nb\n'  > .project/tasks/T-done.md
+  printf -- '---\nid: T-canc\ntitle: c\ntier: T2\nstate: cancelled\n---\nb\n'  > .project/tasks/T-canc.md
+  printf -- '---\nid: T-open\ntitle: o\ntier: T2\nstate: created\n---\nb\n'    > .project/tasks/T-open.md
+  git add -A && git commit -q --no-verify -m "chore: seed"
+
+  LINE() { grep -m1 -- '^- .*completed' STATUS.generated.md | tr -d '\015'; }
+
+  # ARM 1 -- the control. Three declared closed states, and `abandoned` has NO rows, so a zero
+  # must print rather than the state disappearing. Absent and zero are different statements.
+  bash "$csk/tooling/kit-index.sh"  >/dev/null 2>&1
+  bash "$csk/tooling/kit-status.sh" >/dev/null 2>&1
+  [ "$(LINE)" = "- 1 completed, 1 cancelled, 0 abandoned" ] ||
+    { echo "  1: control line is [$(LINE)], wanted '- 1 completed, 1 cancelled, 0 abandoned'"; exit 1; }
+
+  # ARM 2 -- THE MUTATION. Declare an eighth state, closed, with no rows. A derived line reports
+  # it as zero; a hardcoded one omits it silently and this arm goes red, which is the whole
+  # assertion. `superseded` is used because it is a real word in this project's finding
+  # vocabulary and could plausibly be proposed for tasks one day.
+  sed -i.bak "s/printf 'created planned in-progress on-hold completed cancelled abandoned'/printf 'created planned in-progress on-hold completed cancelled abandoned superseded'/" "$csk/tooling/kit-lib.sh"
+  sed -i.bak "s/printf 'completed cancelled abandoned'/printf 'completed cancelled abandoned superseded'/"                                         "$csk/tooling/kit-lib.sh"
+  grep -q 'abandoned superseded' "$csk/tooling/kit-lib.sh" ||
+    { echo "  2: the mutation did not apply -- kit_state_vocab or kit_state_closed was reworded"; exit 1; }
+
+  bash "$csk/tooling/kit-index.sh"  >/dev/null 2>&1
+  bash "$csk/tooling/kit-status.sh" >/dev/null 2>&1
+  [ "$(LINE)" = "- 1 completed, 1 cancelled, 0 abandoned, 0 superseded" ] ||
+    { echo "  2: after adding a closed state the line is [$(LINE)]; a hardcoded list cannot see it"; exit 1; }
+
+  # ARM 3 -- order is the vocabulary's, not the alphabet's. Sorting by name would put abandoned
+  # first and silently reorder a published report, so the rowid ordering is asserted rather than
+  # left to chance.
+  printf '%s' "$(LINE)" | grep -q '^- 1 completed, 1 cancelled, 0 abandoned' ||
+    { echo "  3: the states are not in vocabulary declaration order: [$(LINE)]"; exit 1; }
+  exit 0 )
+check $? "controlled, mutation-proved by an eighth closed state, and ordered by the vocabulary"
+rm -rf "$cs" "$csk"
+fi
+
 
 if step "a finding joins the reviewer run that produced it, or is reported as unjoinable"; then
 # THE FLAG EXISTED AND THE COLUMN DID NOT. kit-finding.sh has accepted --agent-id since it was

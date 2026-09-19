@@ -4,7 +4,7 @@ title: Three closed-state counts are hardcoded literals so the set of states is 
 epic: reporting
 tier: T2
 lang: bash
-paths: tooling/kit-status.sh
+paths: tooling/kit-status.sh, tooling/kit-lib.sh, tests/conformance.sh
 state: created
 ---
 
@@ -48,18 +48,53 @@ now comments. Anything this task records as a count should be a command instead,
 
 ## Acceptance criteria
 
-- [ ] The closed-state line is derived from `state_class` rather than from three literals, so a
+- [x] The closed-state line is derived from `state_class` rather than from three literals, so a
       state added to the vocabulary appears without editing this file
-- [ ] A state in the vocabulary with **zero** rows is rendered as zero, not omitted -- absent and
+- [x] A state in the vocabulary with **zero** rows is rendered as zero, not omitted -- absent and
       zero must not print identically
-- [ ] `completed`, `cancelled` and `abandoned` remain three distinct numbers with their current
+- [x] `completed`, `cancelled` and `abandoned` remain three distinct numbers with their current
       meanings; the ADR 0008 distinction the existing comment protects survives the change
-- [ ] A conformance step fails when a vocabulary state is dropped from the line, **proved by adding
+- [x] A conformance step fails when a vocabulary state is dropped from the line, **proved by adding
       a state to the fixture's vocabulary and watching the step go red** before it is trusted
-- [ ] `STATUS.generated.md` is byte-identical for the current backlog apart from states that were
+- [x] `STATUS.generated.md` is byte-identical for the current backlog apart from states that were
       previously invisible, so the change is shown to add coverage rather than to move numbers
-- [ ] The stale note in `kit-lib.sh` that prescribes the 19-count grep is corrected or removed --
+- [x] The stale note in `kit-lib.sh` that prescribes the 19-count grep is corrected or removed --
       it is the standing instruction to whoever does this work, and it is wrong
+
+### Evidence, 2026-09-19
+
+**The line is now counted outward from `state_class`**, `WHERE is_closed = 1`, `ORDER BY sc.rowid`.
+Rowid is the vocabulary DECLARATION order -- `kit-index.sh` inserts that table by iterating
+`kit_state_vocab` -- so the line keeps reading completed, cancelled, abandoned. Ordering by name
+would have put abandoned first and silently reordered a published report. Each count is its own
+correlated subquery rather than a `GROUP BY` over `task`, because a state with no rows has nothing
+to group and would vanish, which is the defect being fixed.
+
+**AC5 was proved with a clean A/B, after the first attempt was not one.** The initial baseline had
+been taken before an unrelated plan regeneration, so its diff showed changes this task did not
+cause. Re-run properly -- old `kit-status.sh` and new, against the SAME `index.db`, with no
+reindex between them -- the output is **byte-identical**.
+
+**AC4 is proved in both directions, which is the only way it means anything.** With the vocabulary
+frozen at seven states, no assertion over the CURRENT states can tell a derived list from a
+hardcoded one: both print the same line. So the step copies `tooling/` out of the kit and
+**mutates the vocabulary itself**, declaring an eighth closed state with no rows.
+
+    PASS  controlled, mutation-proved by an eighth closed state, and ordered by the vocabulary
+    FAIL  ... same step, with the fix reverted   (0 passed, 1 failed)
+
+The first arm alone would have been a green that cannot fail, which `LESSONS.md` section 1
+refuses; it is kept only as the control that proves the fixture is sane before the mutation lands.
+
+**A defect in the first draft of the test, found before it shipped:** the kit copy sat inside the
+fixture repository, so `git add -A` committed the whole kit into the subject's own history and the
+indexer then walked it. Moved outside. It is the same rule a trial has about not writing into its
+subject.
+
+**AC6 keeps the history and drops the instruction.** The `kit-lib.sh` note's "NINETEEN places on
+2026-08-22" is a dated measurement and stays, on the same grounds as the immutable commit counts.
+What went was the live count presented as current. The replacement names a grep for the three
+literal partitions; it returns **nothing** across `tooling/` now.
 
 ## Notes
 

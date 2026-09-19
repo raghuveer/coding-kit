@@ -157,10 +157,33 @@ printf '\n## Closed\n\n'
 # we stopped; `cancelled` judges the WORK -- it should not be done at all. Reporting them as one
 # number is the misread docs/adr/0008 was written to remove: a backlog whose irrelevant items were
 # filed as abandoned reads as a project that abandons a great deal.
-printf -- '- %s completed, %s cancelled, %s abandoned\n' \
-  "$(q "SELECT COUNT(*) FROM task WHERE state='completed';")" \
-  "$(q "SELECT COUNT(*) FROM task WHERE state='cancelled';")" \
-  "$(q "SELECT COUNT(*) FROM task WHERE state='abandoned';")"
+#
+# DERIVED FROM state_class, NOT ENUMERATED HERE. This line used to name its three states as SQL
+# literals, so it reported the states someone had thought to hardcode rather than the states the
+# vocabulary declares. Twelve other partitions in this file already joined `state_class`; these
+# three were missed when the consumers were migrated. The failure a hardcoded list produces is the
+# silent one: an eighth state added to `kit_state_vocab` would be absent from this line with
+# nothing saying so, and ABSENT would read exactly like ZERO -- the same ambiguity the
+# empty-review rule and the `via:kit` denominator rule exist to prevent elsewhere.
+#
+# ORDER BY rowid is the VOCABULARY DECLARATION ORDER, not an alphabetical accident: kit-index.sh
+# inserts state_class by iterating `kit_state_vocab`, so rowid preserves the order that function
+# declares and this line keeps reading completed, cancelled, abandoned. Ordering by name instead
+# would put abandoned first and silently reorder a published report.
+#
+# Each count is its own correlated subquery rather than a GROUP BY over `task`, because a state
+# with NO rows has nothing to group and would vanish -- which is the defect being fixed. Counting
+# outward from state_class is what makes zero print as zero.
+_CLOSED=$(q "SELECT (SELECT COUNT(*) FROM task t WHERE t.state = sc.state) || ' ' || sc.state
+               FROM state_class sc WHERE sc.is_closed = 1 ORDER BY sc.rowid;" | tr -d '\015')
+if [ -n "$_CLOSED" ]; then
+  printf -- '- %s\n' "$(printf '%s\n' "$_CLOSED" | awk 'NF { if (n++) printf ", "; printf "%s", $0 } END { print "" }')"
+else
+  # An empty state_class is not a backlog with no closed states: kit-index.sh refuses to build at
+  # all when that table comes out empty. Reaching here means the index was produced some other
+  # way, so say so rather than printing a clean-looking line with no numbers in it.
+  printf -- '- _no closed-state vocabulary in the index; it was not built by `kit-index.sh`_\n'
+fi
 # The dilution used to be stated here, in prose, because the escape-rate table had no `measured`
 # column to carry it. It now does, and the row names the excluded count in the place a reader is
 # actually comparing numbers. Two statements of one fact drift apart -- this one had already gone

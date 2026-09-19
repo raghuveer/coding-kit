@@ -659,13 +659,24 @@ npacks=$(sq -separator $'\t' "$DB" "
     FROM plan_item p JOIN task t ON t.id=p.task_id LEFT JOIN node n ON n.id=p.task_id
    WHERE p.goal_id='$GOAL_SQL' ORDER BY p.cluster, p.layer, p.rank;
 
+  -- TWO SOURCES, KEPT APART. `touches` is evidence -- a commit carrying this Task-Id changed the
+  -- file. `declares` is a claim -- the task frontmatter says it expects to. Merging them into one
+  -- count would turn a declaration into evidence, so each file carries both numbers and a reader
+  -- can tell which it is looking at.
+  --
+  -- Before this, the section joined `touches` alone, and `touches` only exists once work has been
+  -- committed -- while the pack is read when work STARTS. On this repository 109 tasks had
+  -- declared paths and no touches edge at all, so the pack told them nothing, and
+  -- `skills/task-context` step 7 tells the agent not to re-derive the list it was given.
   SELECT cluster, 'F', line FROM (
     SELECT p.cluster AS cluster,
-           n.path||'  ('||COUNT(DISTINCT e.src)||' tasks)' AS line,
+           n.path||'  ('||COUNT(DISTINCT CASE WHEN e.rel='touches'  THEN e.src END)||' touched, '
+                        ||COUNT(DISTINCT CASE WHEN e.rel='declares' THEN e.src END)||' declared)' AS line,
            ROW_NUMBER() OVER (PARTITION BY p.cluster
-                              ORDER BY COUNT(DISTINCT e.src) DESC, n.path) AS rn
+                              ORDER BY COUNT(DISTINCT CASE WHEN e.rel='touches' THEN e.src END) DESC,
+                                       COUNT(DISTINCT e.src) DESC, n.path) AS rn
       FROM plan_item p
-      JOIN edge e ON e.src=p.task_id AND e.rel='touches'
+      JOIN edge e ON e.src=p.task_id AND e.rel IN ('touches','declares')
       JOIN node n ON n.id=e.dst
      WHERE p.goal_id='$GOAL_SQL'
      GROUP BY p.cluster, n.path)
@@ -697,7 +708,7 @@ npacks=$(sq -separator $'\t' "$DB" "
       printf "# Cluster %s\n\n## Tasks in this cluster\n\n", c > f
       printf "%s", (c in tasks ? tasks[c] : "_none_\n") > f
       printf "\n## Files this cluster touches\n\n" > f
-      printf "%s", (c in files ? files[c] : "_none recorded yet — no commits touch these tasks_\n") > f
+      printf "%s", (c in files ? files[c] : "_none — no task in this cluster has touched or declared a file_\n") > f
       printf "\n## Confirmed defect classes in these files\n\n" > f
       printf "%s", (c in prior ? prior[c] : "_none_\n") > f
       close(f)

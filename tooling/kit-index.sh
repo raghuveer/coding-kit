@@ -226,6 +226,33 @@ INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""
 # destroying the index first would turn a transient outage into an empty backlog.
 { echo "BEGIN;"
 
+# ---- the tracked-file list, for declared paths -------------------------------
+# A DECLARED PATH CANNOT BE RESOLVED AGAINST THE COMMIT HISTORY, which is the whole point of
+# declaring it. File nodes come from commit diffs carrying a Task-Id (section 2 below), so on
+# this repository 161 of 379 tracked files had a node and a task that has not been worked on
+# yet matches none of them. Expanding a declared glob against `node` would therefore return
+# nothing for exactly the tasks `T-20260817-a-cluster-pack-file-list-ignores-declare` is about.
+#
+# So the working tree's tracked files are loaded here, and the matching happens in SQL.
+#
+# SQLITE GLOB IS THE ONE MATCHER, and that is a correctness requirement rather than a
+# convenience. `globre()` in the awk below exists to MIRROR SQLite GLOB -- its own comment
+# records it as differentially fuzzed against it at 401,265 glob/subject pairs -- and the tier
+# floor over touched files already matches with `dst GLOB 'f:<glob>'` at the bottom of this
+# file. A third matcher, in shell or in awk, is the two-expanders-disagree defect that section
+# was written about. Shell globbing in particular would be wrong twice over: its `*` does not
+# cross `/` and SQLite's does.
+#
+# -z because a path with a space, a quote or a non-ASCII byte must arrive intact; `git ls-files`
+# without it C-quotes such names, and a path recorded under a quoted name matches no glob at
+# all, which is the failure recorded further down this file for `"src/i\j.go"`.
+echo "CREATE TEMP TABLE kit_tracked(path TEXT PRIMARY KEY);"
+echo "CREATE TEMP TABLE kit_declared(task TEXT, glob TEXT);"
+git -C "$ROOT" ls-files -z 2>/dev/null | tr '\0' '\n' | while IFS= read -r _tf; do
+  [ -n "$_tf" ] || continue
+  printf "INSERT OR IGNORE INTO kit_tracked VALUES('%s');\n" "$(printf '%s' "$_tf" | sed "s/'/''/g")"
+done
+
 # ---- tier floors -------------------------------------------------------------
 # tier.rule is `<path-glob> <tier>`, repeatable. A floor RAISES a tier and never lowers it,
 # so a task recorded above its floor is correct and is not flagged.
@@ -446,6 +473,40 @@ if [ "$HAVE_TASKS" = 1 ]; then
       st = (v["state"] != "" ? v["state"] : "created")
       printf "INSERT OR REPLACE INTO node VALUES(\047%s\047,\047task\047,\047%s\047,\047%s\047);\n", q(id), q(rel), q(ti)
       fl = floorof(v["paths"])
+      # DECLARED PATHS BECOME `declares` EDGES, resolved against the tracked-file list rather
+      # than the commit history. This is the second source the pack file list needs: a task with
+      # no commits has no `touches` edge, and its declared paths are the only thing that can say
+      # which files it is about.
+      #
+      # A SEPARATE rel, never merged into `touches`: a file a task HAS changed and a file it SAYS
+      # it will change are different claims, and a pack that cannot tell them apart turns a
+      # declaration into evidence.
+      #
+      # `[`, `]` and `?` are refused here for the same measured reason the tier.rule reader
+      # refuses them above -- SQLite GLOB reads `[ab]` as a character class and `?` as one
+      # character while the awk side matches a byte, so a glob carrying them cannot mean the
+      # same thing on both sides. Refused loudly, never silently reinterpreted.
+      # `dcls = v["paths"] ""` forces a STRING before split() sees it, and the concatenation is
+      # not decoration. A frontmatter key that is absent leaves `v["paths"]` an UNTYPED array
+      # element, and gawk 5.4.1 aborts with `fatal: internal error: fixtype: expected Node_val:
+      # got Node_var` when such an element reaches the FIRST ARGUMENT of split. It aborts on the
+      # SECOND task file, after the first has already emitted -- so the symptom is "read 1 of
+      # 220", not a parse error. The ingest guard caught it and refused to rebuild; without that
+      # guard this would have been a half-built index reported as a whole one.
+      dcls = v["paths"] ""
+      if (dcls != "") {
+        dcln = split(dcls, dcla, /[ ,\t\r]+/)
+        for (dcli = 1; dcli <= dcln; dcli++) {
+          if (dcla[dcli] == "") continue
+          if (index(dcla[dcli], "[") || index(dcla[dcli], "]") || index(dcla[dcli], "?")) {
+            printf "kit: %s declares a path carrying [ ] or ?, which cannot mean one thing to SQLite GLOB and to the awk matcher; skipped: %s\n", id, dcla[dcli] > "/dev/stderr"
+            continue
+          }
+          printf "INSERT INTO kit_declared VALUES(\047%s\047,\047%s\047);\n", q(id), q(dcla[dcli])
+          printf "INSERT OR IGNORE INTO node SELECT \047f:\047||path,\047file\047,path,NULL FROM kit_tracked WHERE path GLOB \047%s\047;\n", q(dcla[dcli])
+          printf "INSERT OR IGNORE INTO edge SELECT \047%s\047,\047f:\047||path,\047declares\047 FROM kit_tracked WHERE path GLOB \047%s\047;\n", q(id), q(dcla[dcli])
+        }
+      }
       # `via` from frontmatter, and anything outside the vocabulary becomes `unknown` rather
       # than being stored. Unknown is the honest default: on a brownfield back-fill nobody
       # remembers how each item was done, and a wrong label is worse than an absent one
@@ -1522,6 +1583,14 @@ printf '%s' "$TIER_RULES" | tr '\036' '\n' | while IFS="$(printf '\t')" read -r 
   _t=$(printf '%s' "$_t" | sed "s/'/''/g")
   printf "UPDATE task SET tier_floor = MAX(COALESCE(tier_floor,''),'%s') WHERE id IN (SELECT src FROM edge WHERE rel='touches' AND dst GLOB 'f:%s');\n" "$_t" "$_g"
 done
+
+# A DECLARED GLOB THAT MATCHES NOTHING IS COUNTED, NOT GUESSED AT. It contributes no `declares`
+# edge, so no pack can name a path that does not exist -- which is the failure
+# `T-20260817-a-touches-edge-is-never-checked-against-` covers, and this change could otherwise
+# have introduced it from the opposite direction. The count is reported rather than warned about:
+# a glob may legitimately match nothing on a task whose files are not written yet.
+echo "INSERT OR REPLACE INTO meta VALUES('declared_globs_unmatched',(SELECT COUNT(*) FROM kit_declared d WHERE NOT EXISTS(SELECT 1 FROM kit_tracked k WHERE k.path GLOB d.glob)));"
+echo "INSERT OR REPLACE INTO meta VALUES('declared_globs_total',(SELECT COUNT(*) FROM kit_declared));"
 
 echo "COMMIT;"
 } > "$SQL"

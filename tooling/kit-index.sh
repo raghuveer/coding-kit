@@ -216,7 +216,7 @@ if [ "${1:-}" = "--if-stale" ] && [ -f "$DB" ] && [ ! -e "$FAILED_MARK" ]; then
 fi
 SQL=$(mktemp); KIT_REFUSED=$(mktemp); export KIT_REFUSED
 KIT_PLAN_REFUSED=$(mktemp); export KIT_PLAN_REFUSED
-trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN"' EXIT
+trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT"' EXIT
 mkdir -p "$ROOT/$STATE_DIR"
 ADAPTER_FAILED=0
 INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""
@@ -248,9 +248,14 @@ INGEST_FAILED=0; TASKS_EXPECTED=0; TASKS_EMPTY=""; KIT_SEEN=""; NEW=""
 # all, which is the failure recorded further down this file for `"src/i\j.go"`.
 echo "CREATE TEMP TABLE kit_tracked(path TEXT PRIMARY KEY);"
 echo "CREATE TEMP TABLE kit_declared(task TEXT, glob TEXT);"
+# NO SUBPROCESS PER PATH. `${_tf//\'/\'\'}` is bash parameter expansion; the obvious
+# `$(printf ... | sed ...)` spawns two processes per tracked file, and process creation costs
+# about a second on the development machine -- `T-20260822-process-creation-costs-one-second-on-the`
+# measured it. At 379 tracked files that is the difference between a rebuild and a coffee break,
+# and the first draft of this loop hit exactly that.
 git -C "$ROOT" ls-files -z 2>/dev/null | tr '\0' '\n' | while IFS= read -r _tf; do
   [ -n "$_tf" ] || continue
-  printf "INSERT OR IGNORE INTO kit_tracked VALUES('%s');\n" "$(printf '%s' "$_tf" | sed "s/'/''/g")"
+  printf "INSERT OR IGNORE INTO kit_tracked VALUES('%s');\n" "${_tf//\'/\'\'}"
 done
 
 # ---- tier floors -------------------------------------------------------------
@@ -400,11 +405,15 @@ if [ "$HAVE_TASKS" = 1 ]; then
     fi
   done
   KIT_SEEN=$(mktemp); : > "$KIT_SEEN"
+  # One line per task with a declared `paths:`, written by the awk below and consumed by the
+  # shell stage after it. A side file rather than the SQL stream, because what awk emits here is
+  # DATA to be split, not a statement to be executed.
+  DECL_OUT=$(mktemp); : > "$DECL_OUT"
   # `if`, not `&&`: with every task file empty there is nothing to hand awk, and awk with no
   # file operands reads stdin and hangs -- a worse failure than the empty backlog it would be
   # reporting. Nor is that an ingest failure; expected and read are both zero, consistently.
   if [ "$#" -gt 0 ]; then
-  KIT_PREFIX="$ROOT/" KIT_RULES="$TIER_RULES" KIT_SEEN="$KIT_SEEN" KIT_VIA="$(kit_via_vocab)" awk '
+  KIT_PREFIX="$ROOT/" KIT_RULES="$TIER_RULES" KIT_SEEN="$KIT_SEEN" KIT_VIA="$(kit_via_vocab)" KIT_DECL_OUT="$DECL_OUT" awk '
     function q(s){ gsub(/\047/,"\047\047",s); return s }
     # glob -> regex. * and ** both cross directory separators, which matches SQLite GLOB, so
     # the two floor sources agree with each other. That over-matches `a/*.ts` against
@@ -473,40 +482,28 @@ if [ "$HAVE_TASKS" = 1 ]; then
       st = (v["state"] != "" ? v["state"] : "created")
       printf "INSERT OR REPLACE INTO node VALUES(\047%s\047,\047task\047,\047%s\047,\047%s\047);\n", q(id), q(rel), q(ti)
       fl = floorof(v["paths"])
-      # DECLARED PATHS BECOME `declares` EDGES, resolved against the tracked-file list rather
-      # than the commit history. This is the second source the pack file list needs: a task with
-      # no commits has no `touches` edge, and its declared paths are the only thing that can say
-      # which files it is about.
+      # DECLARED PATHS LEAVE AWK AS DATA, NOT AS SQL. One printf of two fields to a side file,
+      # and nothing more: no split, no second array, no extra locals.
       #
-      # A SEPARATE rel, never merged into `touches`: a file a task HAS changed and a file it SAYS
-      # it will change are different claims, and a pack that cannot tell them apart turns a
-      # declaration into evidence.
+      # THIS SHAPE IS NOT A STYLE CHOICE. The first version did the splitting and the SQL
+      # generation here, and mawk -- which is /usr/bin/awk on ubuntu-latest -- ABORTED with
+      # `malloc_consolidate(): invalid chunk size`, core dumped, on the real 220-file backlog.
+      # gawk on the development machine ran the identical program without complaint, and the
+      # conformance suite passed on the same runner because its fixtures are small. Only the
+      # repo-wide structure job saw it. The construct that corrupts mawk was never identified,
+      # because guessing at it from a crash is how the last two root causes here were got wrong;
+      # the answer was to stop asking awk to do the work at all.
       #
-      # `[`, `]` and `?` are refused here for the same measured reason the tier.rule reader
-      # refuses them above -- SQLite GLOB reads `[ab]` as a character class and `?` as one
-      # character while the awk side matches a byte, so a glob carrying them cannot mean the
-      # same thing on both sides. Refused loudly, never silently reinterpreted.
-      # `dcls = v["paths"] ""` forces a STRING before split() sees it, and the concatenation is
-      # not decoration. A frontmatter key that is absent leaves `v["paths"]` an UNTYPED array
-      # element, and gawk 5.4.1 aborts with `fatal: internal error: fixtype: expected Node_val:
-      # got Node_var` when such an element reaches the FIRST ARGUMENT of split. It aborts on the
-      # SECOND task file, after the first has already emitted -- so the symptom is "read 1 of
-      # 220", not a parse error. The ingest guard caught it and refused to rebuild; without that
-      # guard this would have been a half-built index reported as a whole one.
-      dcls = v["paths"] ""
-      if (dcls != "") {
-        dcln = split(dcls, dcla, /[ ,\t\r]+/)
-        for (dcli = 1; dcli <= dcln; dcli++) {
-          if (dcla[dcli] == "") continue
-          if (index(dcla[dcli], "[") || index(dcla[dcli], "]") || index(dcla[dcli], "?")) {
-            printf "kit: %s declares a path carrying [ ] or ?, which cannot mean one thing to SQLite GLOB and to the awk matcher; skipped: %s\n", id, dcla[dcli] > "/dev/stderr"
-            continue
-          }
-          printf "INSERT INTO kit_declared VALUES(\047%s\047,\047%s\047);\n", q(id), q(dcla[dcli])
-          printf "INSERT OR IGNORE INTO node SELECT \047f:\047||path,\047file\047,path,NULL FROM kit_tracked WHERE path GLOB \047%s\047;\n", q(dcla[dcli])
-          printf "INSERT OR IGNORE INTO edge SELECT \047%s\047,\047f:\047||path,\047declares\047 FROM kit_tracked WHERE path GLOB \047%s\047;\n", q(id), q(dcla[dcli])
-        }
-      }
+      # The splitting happens in shell after this program exits, and the GLOB MATCHING still
+      # happens in SQLite -- shell splits a delimiter list, it never matches a path.
+      # `(v["paths"] "")` forces a STRING, and the concatenation is load-bearing. When a task file
+      # carries no `paths:` key, `v["paths"]` is an UNTYPED array element, and gawk 5.4.1 aborts on
+      # it with `fatal: internal error: fixtype: expected Node_val: got Node_var` -- not on the
+      # first task file but on the SECOND, so the symptom reads "ingest read 1 of 220" rather than
+      # a parse error. `floorof(v["paths"])` above survives only because passing it as a function
+      # argument types it on the way in.
+      if (ENVIRON["KIT_DECL_OUT"] != "" && (v["paths"] "") != "")
+        printf "%s\t%s\n", id, (v["paths"] "") > ENVIRON["KIT_DECL_OUT"]
       # `via` from frontmatter, and anything outside the vocabulary becomes `unknown` rather
       # than being stored. Unknown is the honest default: on a brownfield back-fill nobody
       # remembers how each item was done, and a wrong label is worse than an absent one
@@ -565,6 +562,38 @@ if [ "$HAVE_TASKS" = 1 ]; then
     }
     END { if (pending) emit() }
   ' "$@" || INGEST_FAILED=1
+
+  # DECLARED PATHS -> `declares` EDGES, split here in shell and matched in SQLite.
+  #
+  # The awk above wrote `<task-id><TAB><paths as authored>` per task and did nothing else with
+  # it; see the note there for why the work is not done in awk. Shell splits a delimiter list.
+  # It never matches a path -- `path GLOB` below is the only matcher, which is the same one the
+  # tier floor over touched files already uses at the bottom of this file, and the one `globre`
+  # in the awk exists to mirror.
+  #
+  # `[`, `]` and `?` are refused for the measured reason the tier.rule reader refuses them:
+  # SQLite GLOB reads `[ab]` as a character class and `?` as one character while the awk side
+  # matches a byte, so a glob carrying them cannot mean one thing on both sides.
+  if [ -s "$DECL_OUT" ]; then
+    while IFS="$(printf '\t')" read -r _dtask _dpaths; do
+      [ -n "$_dtask" ] && [ -n "$_dpaths" ] || continue
+      # Same rule as the tracked loop: split with parameter expansion, not with a pipeline.
+      _dpaths=${_dpaths//,/ }
+      for _dg in $_dpaths; do
+        [ -n "$_dg" ] || continue
+        case "$_dg" in
+          *'['*|*']'*|*'?'*)
+            kit_warn "$_dtask declares a path carrying [ ] or ?, which cannot mean one thing to SQLite GLOB and to the awk matcher; skipped: $_dg"
+            continue ;;
+        esac
+        _dge=${_dg//\'/\'\'}
+        _dte=${_dtask//\'/\'\'}
+        printf "INSERT INTO kit_declared VALUES('%s','%s');\n" "$_dte" "$_dge"
+        printf "INSERT OR IGNORE INTO node SELECT 'f:'||path,'file',path,NULL FROM kit_tracked WHERE path GLOB '%s';\n" "$_dge"
+        printf "INSERT OR IGNORE INTO edge SELECT '%s','f:'||path,'declares' FROM kit_tracked WHERE path GLOB '%s';\n" "$_dte" "$_dge"
+      done
+    done < "$DECL_OUT"
+  fi
   fi
   TASKS_EXPECTED=$#
 fi
@@ -1643,7 +1672,7 @@ fi
 # previous index exactly as it was, with its previous mtime -- which is what makes the next
 # run notice the sources are newer and try again, loudly, instead of trusting a corpse.
 NEW="$DB.new"
-trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_SEEN" "$NEW"' EXIT
+trap 'rm -f "$SQL" "$KIT_REFUSED" "$KIT_SEEN" "$NEW" "$DECL_OUT"' EXIT
 rm -f "$NEW"
 sqlite3 "$NEW" < "$(dirname "$0")/schema.sql" ||
   { kit_warn "could not create the index schema; ${DB#$ROOT/} was left unchanged."; build_failed; }

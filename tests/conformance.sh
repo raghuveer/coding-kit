@@ -5753,21 +5753,39 @@ csk="$WORK.closedstateskit"; rm -rf "$csk"; mkdir -p "$csk" && cp -R "$KIT/tooli
   # vocabulary and could plausibly be proposed for tasks one day.
   sed -i.bak "s/printf 'created planned in-progress on-hold completed cancelled abandoned'/printf 'created planned in-progress on-hold completed cancelled abandoned superseded'/" "$csk/tooling/kit-lib.sh"
   sed -i.bak "s/printf 'completed cancelled abandoned'/printf 'completed cancelled abandoned superseded'/"                                         "$csk/tooling/kit-lib.sh"
-  grep -q 'abandoned superseded' "$csk/tooling/kit-lib.sh" ||
-    { echo "  2: the mutation did not apply -- kit_state_vocab or kit_state_closed was reworded"; exit 1; }
+  # BOTH substitutions are asserted SEPARATELY. One shared `grep 'abandoned superseded'` passes on
+  # a HALF-applied mutation -- if only kit_state_closed is rewritten, the substring is present and
+  # the check is satisfied while the vocabulary never gained the state. Arm 2 would then still go
+  # red, but for the wrong reason, and a fixture that had merely drifted would be read as a
+  # regression in the fix.
+  grep -q "^kit_state_vocab().*abandoned superseded"  "$csk/tooling/kit-lib.sh" ||
+    { echo "  2: the mutation did not reach kit_state_vocab -- it was reworded"; exit 1; }
+  grep -q "^kit_state_closed().*abandoned superseded" "$csk/tooling/kit-lib.sh" ||
+    { echo "  2: the mutation did not reach kit_state_closed -- it was reworded"; exit 1; }
 
   bash "$csk/tooling/kit-index.sh"  >/dev/null 2>&1
   bash "$csk/tooling/kit-status.sh" >/dev/null 2>&1
   [ "$(LINE)" = "- 1 completed, 1 cancelled, 0 abandoned, 0 superseded" ] ||
     { echo "  2: after adding a closed state the line is [$(LINE)]; a hardcoded list cannot see it"; exit 1; }
 
-  # ARM 3 -- order is the vocabulary's, not the alphabet's. Sorting by name would put abandoned
-  # first and silently reorder a published report, so the rowid ordering is asserted rather than
-  # left to chance.
-  printf '%s' "$(LINE)" | grep -q '^- 1 completed, 1 cancelled, 0 abandoned' ||
-    { echo "  3: the states are not in vocabulary declaration order: [$(LINE)]"; exit 1; }
+  # ORDER NEEDS NO ARM OF ITS OWN. The first draft had one, and it could not fail: arm 2 already
+  # pins the whole string by equality, order included, against the same unchanged file. A check
+  # that cannot go red is the shape LESSONS.md section 1 refuses, and a test arm is not exempt
+  # from it merely because it sits inside a test.
+
+  # ARM 3 -- THE DIAGNOSTIC PATH, which nothing exercised when this step was first written. A DB
+  # holding the schema and nothing else is what a hand build leaves behind, and kit-status.sh only
+  # invokes the indexer when the file is ABSENT -- it never re-validates one it did not create.
+  rm -f .project/index.db
+  sqlite3 .project/index.db < "$csk/tooling/schema.sql" >/dev/null 2>&1
+  bash "$csk/tooling/kit-status.sh" >/dev/null 2>&1
+  grep -q 'nothing to count' STATUS.generated.md ||
+    { echo "  3: a schema-only index produced no notice where the Closed line belongs"; exit 1; }
+  # and it must not invent a cause it cannot see
+  grep -q 'not built by' STATUS.generated.md &&
+    { echo "  3: the notice diagnoses a cause q() cannot distinguish"; exit 1; }
   exit 0 )
-check $? "controlled, mutation-proved by an eighth closed state, and ordered by the vocabulary"
+check $? "controlled, mutation-proved by an eighth closed state, and its empty-vocabulary notice exercised"
 rm -rf "$cs" "$csk"
 fi
 

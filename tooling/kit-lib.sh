@@ -207,7 +207,11 @@ kit_via_vocab() { printf 'kit agent manual unknown'; }
 #
 #   grep -rn "state='completed'\|state='cancelled'\|state='abandoned'" tooling/
 #
-# Anything that returns is a partition written as a literal, and belongs in a `state_class` join.
+# EXPECTED RESULT: exactly ONE hit, and it is this comment, which contains the pattern it asks you
+# to search for. Any OTHER hit is a partition written as a literal and belongs in a `state_class`
+# join. That is stated because the first version of this note claimed the command "returns
+# nothing", and the check behind that claim had filtered this file out of its own output -- a
+# verification rigged, unintentionally, to agree with the sentence it was verifying.
 #
 # SQL CONSUMERS DO NOT READ THESE FUNCTIONS DIRECTLY. kit-index.sh derives a `state_class` table
 # from them and the queries join against it, because the derivation SQL lives in a QUOTED heredoc

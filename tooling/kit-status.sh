@@ -160,8 +160,12 @@ printf '\n## Closed\n\n'
 #
 # DERIVED FROM state_class, NOT ENUMERATED HERE. This line used to name its three states as SQL
 # literals, so it reported the states someone had thought to hardcode rather than the states the
-# vocabulary declares. Twelve other partitions in this file already joined `state_class`; these
-# three were missed when the consumers were migrated. The failure a hardcoded list produces is the
+# vocabulary declares. The other partitions in this file were migrated to join `state_class` and
+# these three were missed. The count of them is deliberately NOT written here -- a comment in this
+# file claiming a number is the exact defect this change is about, and the first draft of this one
+# said "twelve", which counted matching LINES and called them partitions. Run it:
+#
+#   grep -n state_class tooling/kit-status.sh The failure a hardcoded list produces is the
 # silent one: an eighth state added to `kit_state_vocab` would be absent from this line with
 # nothing saying so, and ABSENT would read exactly like ZERO -- the same ambiguity the
 # empty-review rule and the `via:kit` denominator rule exist to prevent elsewhere.
@@ -179,10 +183,13 @@ _CLOSED=$(q "SELECT (SELECT COUNT(*) FROM task t WHERE t.state = sc.state) || ' 
 if [ -n "$_CLOSED" ]; then
   printf -- '- %s\n' "$(printf '%s\n' "$_CLOSED" | awk 'NF { if (n++) printf ", "; printf "%s", $0 } END { print "" }')"
 else
-  # An empty state_class is not a backlog with no closed states: kit-index.sh refuses to build at
-  # all when that table comes out empty. Reaching here means the index was produced some other
-  # way, so say so rather than printing a clean-looking line with no numbers in it.
-  printf -- '- _no closed-state vocabulary in the index; it was not built by `kit-index.sh`_\n'
+  # An empty result is not a backlog with no closed states: kit-index.sh refuses to build at all
+  # when state_class comes out empty, and kit-status.sh does not re-validate a DB it did not
+  # create. So this reports WHAT IT OBSERVED and stops. It deliberately does not name a cause --
+  # q() swallows stderr, so a missing table, an unreadable file and a future syntax error all
+  # arrive here identically, and T-20260812-the-empty-spend-notice-asserts-a-cause-i is this
+  # project's standing finding about a notice that diagnoses what it cannot see.
+  printf -- '- _the index declares no closed states, so this line has nothing to count. `state_class` is empty or unreadable._\n'
 fi
 # The dilution used to be stated here, in prose, because the escape-rate table had no `measured`
 # column to carry it. It now does, and the row names the excluded count in the place a reader is

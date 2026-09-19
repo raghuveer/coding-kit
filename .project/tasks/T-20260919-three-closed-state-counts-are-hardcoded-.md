@@ -96,6 +96,37 @@ subject.
 What went was the live count presented as current. The replacement names a grep for the three
 literal partitions; it returns **nothing** across `tooling/` now.
 
+### Review, 2026-09-19 — rung 4, one adversarial reader, REVISE
+
+`skills/verify-ladder` makes rung 4 a **T2** obligation, not a T3 one, so this ran before the task
+could honestly close. Five findings, all reproduced against the tree before being acted on.
+
+| # | severity | finding | disposition |
+|---|---|---|---|
+| 1 | **major** | the grep this task told the next reader to run matches its OWN comment line, so "returns nothing" was false | fixed — the note now states the expected single self-hit and why |
+| 2 | minor | "twelve other partitions join `state_class`" counted matching LINES, not partitions | fixed — the count is gone, replaced by the command |
+| 3 | minor | the fixture mutation self-check could not tell a half-applied mutation from a full one | fixed — each function asserted separately |
+| 4 | minor | arm 3's ordering check could not fail; arm 2 already pinned order by string equality | removed, with the reasoning kept in place of the arm |
+| 5 | minor | the empty-vocabulary branch was untested and named a cause `q()` cannot distinguish | fixed and now exercised |
+
+**Finding 1 is the one to keep.** AC6 existed because the old note froze a live count; the
+replacement asserted the new command "returns nothing across `tooling/`" — and the check behind
+that claim piped its output through `grep -v kit-lib.sh`, filtering out the only hit. **A
+verification rigged, unintentionally, to agree with the sentence it was verifying.** The note now
+states the invariant instead: exactly one hit, and it is the comment itself.
+
+**Finding 5 turned an untested branch into a tested one, and the message with it.** It had asserted
+*"it was not built by `kit-index.sh`"* — a cause `q()` cannot see, because it swallows stderr and a
+missing table, an unreadable file and a syntax error all arrive identically. That is
+`T-20260812-the-empty-spend-notice-asserts-a-cause-i` repeated, in a notice written by the person
+who had read that task. It now reports only what it observed, and arm 3 asserts **both** that the
+notice appears and that it does not diagnose.
+
+**Every arm was proved able to fail, individually.** Arm 2 red with the fix reverted; arm 3's first
+assertion red when the notice is absent, and its second red when a notice is present but diagnoses
+a cause — proved with a deliberately contrived message, because an assertion never shown to fail is
+the decorative thing finding 4 was about.
+
 ## Notes
 
 Filed 2026-09-19. The parent task `T-20260819-vocabularies-live-in-shell-constants-so-` keeps the

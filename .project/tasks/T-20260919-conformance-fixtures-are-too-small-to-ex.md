@@ -58,8 +58,8 @@ containers, varying one thing at a time. The observable is the indexer's own lin
 | mawk 1.3.4, the 2020, 2024 and 2025 builds | pass | — |
 | original-awk 20250116 (BSD) | pass | — |
 | **gawk 5.2.1** | **fail**, `read 0 of 224` | **fail**, `read 0 of 3` |
-| gawk 5.3.2 (this laptop, Git Bash) | pass | — |
-| gawk 5.4.1 | fatal, per `df19be7`; not re-measured here | — |
+| gawk 5.3.2 (this laptop, AND `debian:sid`) | pass | — |
+| **gawk 5.4.1** (the Windows runner) | **pass** — see the correction below | — |
 | mawk on the GitHub `ubuntu-latest` runner | **segfault** | — |
 
 **It fails at three task files.** A three-task fixture catches it, so the suite was never too small
@@ -81,13 +81,30 @@ for it.
 The 6 failures are a constant of the container baseline, identical in three of the four cells, so
 they cancel; the fourth cell is the signal. **No new fixture was needed to produce it.**
 
-**Why `conformance (windows-latest)` went green on the very run where `structure` dumped core:** Git
-Bash ships gawk 5.3.2, which tolerates the construct. gawk 5.2.1 below it and 5.4.1 above it do not.
+**CORRECTED 2026-09-20, SAME DAY, BEFORE THIS WAS RELIED ON.** This section first said that
+`conformance (windows-latest)` went green because Git Bash ships gawk 5.3.2, which tolerates the
+construct. **That is true of this laptop and false of the runner.** The environment banner of the
+failing run — job `conformance (windows-latest)` of run 35461506879 — reports **GNU Awk 5.4.1**. So
+the Windows leg was green while running 5.4.1, and the claim that 5.4.1 does not tolerate the
+construct, which this file took from `df19be7`'s commit message rather than from a measurement, is
+not supported by that observation. `df19be7`'s gawk-5.4.1 fatal is most likely the *globre* octal
+escape of #144, which is a different defect.
 
-**A CONFOUND, STATED RATHER THAN BURIED.** The 5.3.2 pass was measured on Windows and the 5.2.1
-failure on Linux, so version and platform are not yet separated. It does not touch the scale
-conclusion, which rests on N=3 failing and N=224 passing. It does mean a multi-awk step must pin
-what it runs rather than trusting a version ordering.
+**THE CONFOUND IS RESOLVED, AND IT IS THE VERSION.** gawk 5.3.2 was re-run on Linux (`debian:sid`)
+against the same pre-fix tree and **passed**, exactly as it does on Windows. Platform is not the
+variable.
+
+**SO ONE AWK IS VERIFIED TO CATCH THIS, AND IT IS gawk 5.2.1.** That is what `ubuntu-latest` ships,
+which is where this step's coverage actually comes from. macOS runs gawk 5.4.1 beside BSD awk, and
+whether *that* pair catches the defect under this step is **untested** — no container image carries
+5.4.1, so it was not measured rather than assumed either way.
+
+**THE CONFOUND THIS SECTION ORIGINALLY DECLARED IS NOW CLOSED.** It said version and platform were
+not separated because 5.3.2 was measured on Windows and 5.2.1 on Linux. Both have since been run on
+Linux: 5.2.1 fails, 5.3.2 passes. The version is the variable and the platform is not. The
+conclusion it was hedging — that a multi-awk step must pin what it runs rather than trust a version
+ordering — survives and is now better supported, because the ordering turned out to be wrong: it is
+not "older and newer both fail", it is 5.2.1 alone among the gawks tested.
 
 **THE SEGFAULT IS A SECOND, SEPARATE MANIFESTATION AND IT DID NOT REPRODUCE.** Six-plus runs at 224
 tasks across three mawk builds and three locales, all clean. Heap corruption needing both volume and
@@ -96,21 +113,40 @@ this is saying so.
 
 ## Acceptance criteria
 
-- [ ] At least one conformance step runs the indexer under **more than one awk implementation**,
+- [x] At least one conformance step runs the indexer under **more than one awk implementation**,
       pinned by name and version rather than taking whatever `/usr/bin/awk` happens to be
-- [ ] That step is proved able to fail against the worked example, by running it on the pre-fix
+      **MET** — `tests/conformance.sh`, step *"the indexer runs under every awk present, not only
+      the default"*. It discovers by NAME (`awk gawk mawk original-awk nawk`), dedupes on the
+      VERSION BANNER rather than the path, and prints every version it ran. The path dedupe was
+      written first and was wrong: on Git Bash `/usr/bin/awk` and `/usr/bin/gawk` are two files
+      that are both gawk 5.3.2 and neither is a symlink, so the step ran gawk twice and reported
+      PASS — a control that cannot fail, inside the step written to remove one.
+- [x] That step is proved able to fail against the worked example, by running it on the pre-fix
       tree and showing it goes red where the single-awk suite goes green. The measurement above is
       the evidence to reproduce, not to cite
-- [ ] Cost is stated and bounded. A second awk is one more process per step, not two hundred more
+      **MET** — same step, same two awks (gawk 5.2.1, mawk 1.3.4 20250131), three task files:
+      pre-fix `7f0db5b` **FAIL**, post-fix `df19be7` **PASS**. Run in `debian:trixie`.
+- [x] Cost is stated and bounded. A second awk is one more process per step, not two hundred more
       files; if it turns out to cost more than that, say the number
+      **MET, and here is the number: 2,110 ms** for the whole step across THREE implementations
+      (gawk, mawk, original-awk) on a three-task fixture — roughly 700 ms per awk including its
+      index build. Bounded by how many awks are installed, not by backlog size.
 - [ ] The step runs on every platform the matrix covers, and **pins the awk it tests** — otherwise
-      the Windows leg keeps testing gawk 5.3.2 and keeps passing
-- [ ] **The scale question is answered rather than dropped.** The mawk segfault at 224 is a real
+      the Windows leg keeps testing one gawk and keeps passing
+- [x] **The scale question is answered rather than dropped.** The mawk segfault at 224 is a real
       second manifestation that no container reproduced. Either a scale fixture is shown to catch
       it, or this task records that it is only reachable on the runner and files that separately.
       Do not close this criterion by pointing at the awk-coverage step, which does not address it
-- [ ] Whether OTHER steps should also gain a second awk is decided rather than left open: this task
+      **MET BY THE SECOND BRANCH, NOT THE FIRST.** No scale fixture was built, because none was
+      shown to catch it. Filed separately as
+      `T-20260920-the-mawk-segfault-reproduces-only-on-the`, which carries the full negative
+      result and explicitly refuses to let the multi-awk step stand in for it.
+- [x] Whether OTHER steps should also gain a second awk is decided rather than left open: this task
       claims one such step, not a rewrite of every fixture
+      **DECIDED: one step, not a sweep.** The defect class is the indexer's awk program, and one
+      step exercising it under every installed awk covers that class. Running the whole suite once
+      per awk would multiply ~100 steps by the awk count to re-test paths that embed no awk at
+      all. If a second awk-bearing program appears, it gets a step, not a matrix.
 
 ## Notes
 

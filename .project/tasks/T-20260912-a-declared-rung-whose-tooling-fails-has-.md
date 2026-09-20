@@ -269,6 +269,65 @@ repository, and nothing in the repo calls `--commands` in a way this breaks. The
 The mechanism is not.
 
 
+### Rebuilt on identity, 2026-09-20 — third attempt at this control
+
+Both criticals from the second chain are addressed. **This has not been reviewed by a third chain**
+and is not claimed to be correct; what follows is what was changed and what was proved.
+
+**The disposition now carries IDENTITY and CLASSIFICATION, not cardinality.**
+
+    KIT_COMMANDS_RED_DISPOSITIONED="build:101=baseline,test:101=unsatisfiable"
+
+Each red rung is named with the exit code this run observed, in the loop's fixed order, so a stale
+value cannot survive a change in which rung is red, in what it exited with, or in how many there
+are. When it does not match, the stop prints both sides — *"the value supplied names X; this run
+observed Y"* — so the operator sees what moved.
+
+**The two branches are now two outcomes.** `=baseline` proceeds (exit 0). `=unsatisfiable` exits
+**2**, distinct from the cannot-run stop's 1, so a caller can tell a VOID-shaped rung from an
+answerable baseline. An entry carrying neither is refused: naming a rung is not deciding anything.
+
+**The answer is persisted.** One `preflight-commands` event per run records both the observed red
+set and the disposition given, so a later reader can audit what was blessed. Previously the
+variable was compared, discarded, and died with the shell.
+
+**Measured behaviour, re-run after the rebuild:**
+
+| case | expected | got |
+|---|---|---|
+| two red, no disposition | STOP | `exit 1` |
+| identity right, no `=class` | STOP | `exit 1` |
+| `build:101=baseline,test:101=baseline` | pass | `exit 0` |
+| **stale value naming a DIFFERENT red set** | **STOP** | `exit 1`, both sides printed |
+| one entry `=unsatisfiable` | VOID-shaped | `exit 2` |
+
+**THE `sec()` END ANCHOR IS FIXED AND ITS CEILING IS NOW STATED.** It closes on a heading of any
+level and on `---`, not only on `## `. But a grep cannot tell normative prose from a footnote using
+the same words, so the positive assertions are a tripwire rather than a proof. **The weight moved
+to a negative assertion**: the pre-fix rule *"either satisfied or explicitly declared unavailable"*
+must not reappear in `## Completion`. A footer cannot satisfy that, because adding words elsewhere
+does not remove the sentence.
+
+**Three mutation proofs, each isolating one mechanism:**
+
+| mutation | caught by |
+|---|---|
+| `## Completion` reverted to two states **plus the See-also footer** — the exact bypass that defeated the previous fix | the negative assertion: *"has the two-state completion rule back verbatim"* |
+| identity match downgraded to **cardinality only**, leaving arm 3 green | **arm 3d**: *"a stale disposition blessed a DIFFERENT red rung at the same count"* |
+| the red gate disabled entirely | arm 3 |
+
+The second one needed care: a coarser mutation broke arm 3 first, so arm 3d never ran and proved
+nothing about itself. The surgical version leaves arm 3 passing and isolates arm 3d — recorded
+because "the suite went red" is not the same claim as "this assertion can fail".
+
+**What is NOT fixed, and is not claimed to be.** The gate still only moves detection earlier: §3
+carries no unsatisfiable-rung condition and `docs/TRIALS/TEMPLATE.md` still has no disposition row,
+both filed as majors. The stop still prints a pre-formatted value the operator can paste without
+thinking, though it now forces a per-rung choice rather than a single number. And the friction the
+second reviewer measured is unchanged — a subject with red commands still costs a second full
+pre-flight run.
+
+
 ## Notes
 
 **On the tier, stated plainly because it is an argument rather than a floor.** No

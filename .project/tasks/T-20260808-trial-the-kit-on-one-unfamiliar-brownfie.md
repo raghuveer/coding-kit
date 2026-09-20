@@ -326,6 +326,43 @@ the copy, `--commands` will stop and ask for a disposition, and the honest answe
 is `=baseline` — which is a judgement this record now supports rather than a box to tick.
 
 
+### CORRECTION 2026-09-20 — the baseline above used commands the subject does not run
+
+**Both baseline tables above are wrong, and the error is methodological rather than a slip.** They
+were measured with commands this session invented — `cargo check --locked`, `cargo clippy --locked`
+— not with the commands the subject's own CI runs. §0 says record the baseline with causes. It does
+not say *use the subject's declared verification commands*, and that omission produced a rosier
+answer on the first real use.
+
+**Re-measured with `.github/workflows/ci.yml`'s own commands:**
+
+| their CI job | command | our exit | their CI on `master` |
+|---|---|---|---|
+| Check | `cargo check --workspace --all-features` | **101** — *cannot find attribute `async_trait`* | ❌ |
+| Clippy | `cargo clippy --workspace --all-features -- -D warnings` | **101** — same root cause | ❌ |
+| Test | `cargo test --workspace --lib -- --test-threads=4` | **101** — *test failed* | ❌ |
+| Format | `cargo fmt --all -- --check` | **0** | ✅ |
+
+**Four for four against their runner.** The container is faithful; the earlier commands were not.
+
+**What the wrong baseline claimed:** *"THE SUBJECT COMPILES — `cargo check` exits 0 with 92
+warnings."* With `--all-features`, which is what the subject actually gates on, **it does not
+compile.** The one-line lockfile gap, the `Config` initializer and the non-looping loop were
+downstream symptoms visible only because `--all-features` was off. **The root cause is one thing:**
+`cannot find attribute async_trait`, which breaks Check, Clippy and Test alike.
+
+**The subject's CI has been red on `master` since 2026-09-14** — six days, four of seven jobs:
+Check, Clippy, Test and Security Audit. Build Release, Format and Validate Configs pass.
+
+**CONSEQUENCE FOR THE TRIAL'S TASK.** Roadmap item 3.4.A — *"wire 5 SAST tools into CI"* — is not
+the first step and its own status line is stale: clippy, cargo-audit and cargo-deny are already
+wired; only cargo-geiger and Semgrep are missing. **You cannot add SAST to a CI where four jobs
+have been failing for six days.** The blocking work is `async_trait`, a single-cause defect with a
+verifiable outcome, and it unblocks 3.4.A rather than performing it.
+
+**A kit gap filed from this**: `T-20260920-a-baseline-taken-with-invented-commands`.
+
+
 ## Notes
 
 Blocked by three things, and the order matters. Without

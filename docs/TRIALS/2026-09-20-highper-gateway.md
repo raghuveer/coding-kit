@@ -12,7 +12,7 @@
 | Greenfield / brownfield | **brownfield**, history not truncated, all 3 branches present |
 | Rung dispositions | *one line per rung: `satisfied` \| `unavailable` (compensating control, tier raised) \| `unsatisfiable` (what did not run). **Any `unsatisfiable` makes the outcome VOID** — §3, §6* |
 | Outcome | COMPLETE \| ABORTED (*cause*) \| VOID (*condition*) |
-| Baseline before the kit | *one line per check, with its CAUSE — see the Baseline section below. `build pass, tests fail` is not a baseline* |
+| Baseline before the kit | **Red on 3 of 4 rungs, one root cause.** Measured with the SUBJECT'S OWN CI commands — see Baseline below. An earlier measurement using invented commands reported the opposite and is corrected there. |
 | Instruments verified live | spend rows > 0, findings row landed |
 | Copy isolation verified | `kit-preflight.sh --isolated` exit 0 — no remote, no shared object store, no permission rule reaching outside |
 
@@ -36,6 +36,27 @@ before it. The copy is disposable and the subject is untouched by construction, 
 recovered by pressing on.
 
 ## Baseline before the kit
+
+Taken before adoption, in `cck-trial sha256:e5ed7efcc9b5…`, read-only mount, tree clean after.
+**Commands are the subject's own, from `.github/workflows/ci.yml`** — not this session's choice.
+
+| their CI job | command | exit | cause |
+|---|---|---|---|
+| Check | `cargo check --workspace --all-features` | 101 | `cannot find attribute `async_trait`` |
+| Clippy | `cargo clippy --workspace --all-features -- -D warnings` | 101 | same root cause |
+| Test | `cargo test --workspace --lib -- --test-threads=4` | 101 | `test failed` |
+| Format | `cargo fmt --all -- --check` | **0** | clean |
+
+**This reproduces the subject's own CI four for four.** Its `master` has been red since
+2026-09-14: Check, Clippy, Test and Security Audit fail; Build Release, Format and Validate
+Configs pass.
+
+**CORRECTED, and the first version is kept rather than deleted.** The first baseline used
+`cargo check --locked` and recorded *"the subject compiles, exit 0"*. Under the command the subject
+gates on, it does not compile. The cheaper commands also produced three unrelated-looking symptoms
+— a lockfile gap, a `Config` initializer, a non-looping loop — where there is **one** cause.
+Filed as `T-20260920-a-baseline-taken-with-invented-commands-`.
+
 
 Taken **before adoption**, because it cannot be reconstructed afterwards. **One row per check,
 and every failing row carries its cause** — the error codes or advisory ids, and the command that

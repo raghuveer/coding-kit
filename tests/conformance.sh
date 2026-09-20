@@ -1118,8 +1118,15 @@ if step "the indexer runs under every awk present, not only the default"; then
 #   gawk 5.2.1                          FAILS at 3 task files, and at 224
 #   mawk 1.3.4, 2020/2024/2025 builds   passes at 224
 #   original-awk 20250116 (BSD)         passes at 224
-#   gawk 5.3.2 (Git Bash)               passes -- which is why the WINDOWS leg stayed green
-#                                       through the core dumps
+#   gawk 5.3.2 (this laptop AND debian:sid) passes on BOTH platforms, so the variable is the
+#                                       VERSION and not the platform
+#   gawk 5.4.1 (the Windows runner)     PASSED on the pre-fix tree under the old fixtures -- the
+#                                       Windows leg was green while running 5.4.1
+#
+# ONLY gawk 5.2.1 IS VERIFIED TO CATCH THIS, and ubuntu-latest is what ships it, so the ubuntu leg
+# is where this step's coverage actually comes from today. Whether macOS's gawk 5.4.1 catches it
+# under THIS step is UNTESTED -- no container image carries 5.4.1 to check against -- and is
+# recorded as untested rather than assumed either way.
 #
 # Scale was never the variable; WHICH awk runs is. A two-hundred-task fixture would have
 # reproduced the blindness at two hundred times the cost. THREE task files under a second awk
@@ -1136,29 +1143,48 @@ if step "the indexer runs under every awk present, not only the default"; then
 # and the workflow is what needs fixing, not this step. The ubuntu leg installs a second awk for
 # exactly this reason.
 aw="$WORK.awks"; rm -rf "$aw"; mkdir -p "$aw/shims" "$aw/repo/.claude" "$aw/repo/.project/tasks"
-awk_real=""; awk_names=""; awk_n=0; awk_ids=""
+awk_names=""; awk_n=0; awk_ids=""
 # DEDUPE ON THE IMPLEMENTATION, NOT THE PATH. On Git Bash `/usr/bin/awk` and `/usr/bin/gawk` are
 # two separate files that are both gawk 5.3.2, and neither is a symlink, so `readlink -f` reports
 # two distinct paths. The first version of this step deduped that way, counted two awks, ran gawk
 # twice and reported PASS -- a control that cannot fail, written inside the step whose whole
 # purpose is to delete one. The version banner is the identity; the path is not.
-for cand in awk gawk mawk original-awk nawk; do
+#
+# busybox is last and is a SPECIAL CASE: its awk is an applet, invoked as `busybox awk`, so it
+# needs a two-word invocation where every other candidate needs one. The shim is therefore built
+# here during discovery rather than in the run loop, because a list of space-separated paths
+# cannot carry a two-word command.
+for cand in awk gawk mawk original-awk nawk busybox; do
   cp=$(command -v "$cand" 2>/dev/null) || continue
   [ -n "$cp" ] || continue
   cr=$(readlink -f "$cp" 2>/dev/null || printf '%s' "$cp")
-  cv=$( ( "$cr" --version 2>/dev/null || "$cr" -W version 2>&1 ) | head -1 | tr -d '\015' )
+  if [ "$cand" = busybox ]; then
+    "$cr" awk 'BEGIN{exit 0}' >/dev/null 2>&1 || continue
+    cv=$( "$cr" 2>&1 | head -1 | tr -d '\015' )
+    cinv="$cr awk"
+  else
+    cv=$( ( "$cr" --version 2>/dev/null || "$cr" -W version 2>&1 ) | head -1 | tr -d '\015' )
+    cinv="$cr"
+  fi
   cid=$(printf '%s' "$cv" | tr -cd 'A-Za-z0-9.')
   [ -n "$cid" ] || cid="unknown-$cand"
   case "|$awk_ids|" in *"|$cid|"*) continue ;; esac
   awk_ids="$awk_ids|$cid"
   awk_n=$((awk_n+1))
-  awk_real="$awk_real $cr"; awk_names="$awk_names $cand"
-  printf '  awk #%s: %s -> %s -- %s\n' "$awk_n" "$cand" "$cr" "$cv"
+  awk_names="$awk_names $cand"
+  mkdir -p "$aw/shims/$awk_n"
+  # A WRAPPER, NOT A SYMLINK. Git Bash on Windows cannot always create one, and a step that
+  # silently degrades to the default awk is the blindness this exists to remove.
+  printf '#!/bin/sh\nexec %s "$@"\n' "$cinv" > "$aw/shims/$awk_n/awk"
+  chmod +x "$aw/shims/$awk_n/awk"
+  printf '%s\n' "$cv" > "$aw/shims/$awk_n/label"
+  printf '  awk #%s: %s -> %s -- %s\n' "$awk_n" "$cand" "$cinv" "$cv"
 done
 if [ "$awk_n" -lt 2 ]; then
   skip "only one awk IMPLEMENTATION here:$awk_names (paths may differ, versions do not)" \
        "the indexer agrees across every awk present"
 else
+AWK_N="$awk_n"; export AWK_N
 ( cd "$aw/repo" || exit 1
   git init -q -b main 2>/dev/null
   { echo "---"; echo "paths.tasks:  .project/tasks"; echo "paths.state:  .project"
@@ -1168,29 +1194,24 @@ else
   printf -- '---\nid: T-np1\ntitle: no declared paths one\ntier: T2\n---\nbody\n' > .project/tasks/T-np1.md
   printf -- '---\nid: T-np2\ntitle: no declared paths two\ntier: T2\n---\nbody\n' > .project/tasks/T-np2.md
   printf -- '---\nid: T-wp\ntitle: with declared paths\ntier: T2\npaths: src/a.go\n---\nbody\n' > .project/tasks/T-wp.md
-  i=0
-  for cr in $awk_real; do
-    i=$((i+1))
-    mkdir -p "$aw/shims/$i"
-    # A WRAPPER, NOT A SYMLINK. Git Bash on Windows cannot always create one, and a step that
-    # silently degrades to the default awk is the blindness this exists to remove.
-    printf '#!/bin/sh\nexec %s "$@"\n' "$cr" > "$aw/shims/$i/awk"
-    chmod +x "$aw/shims/$i/awk"
+  i=1
+  while [ "$i" -le "$AWK_N" ]; do
+    lbl=$(cat "$aw/shims/$i/label" 2>/dev/null)
     rm -f .project/index.db
     PATH="$aw/shims/$i:$PATH" bash "$KIT/tooling/kit-index.sh" >/dev/null 2>"$aw/e$i" || {
-      printf '    %s: kit-index.sh exited non-zero\n' "$cr"; sed 's/^/      /' "$aw/e$i" | head -3; exit 1; }
+      printf '    %s: kit-index.sh exited non-zero\n' "$lbl"; sed 's/^/      /' "$aw/e$i" | head -3; exit 1; }
     # The observable CI reported was the indexer's own count line, so assert on the same one.
     if grep -q 'task ingest read 0 of' "$aw/e$i"; then
-      printf '    %s: read 0 of 3 task files\n' "$cr"; exit 1
+      printf '    %s: read 0 of 3 task files\n' "$lbl"; exit 1
     fi
     got=$(sqlite3 .project/index.db 'SELECT COUNT(*) FROM task;' 2>/dev/null | tr -d '\015')
-    [ "$got" = 3 ] || { printf '    %s: indexed %s task(s), wanted 3\n' "$cr" "$got"; exit 1; }
+    [ "$got" = 3 ] || { printf '    %s: indexed %s task(s), wanted 3\n' "$lbl" "$got"; exit 1; }
+    i=$((i+1))
   done )
 check $? "the indexer agrees across every awk present:$awk_names"
 fi
 rm -rf "$aw"
 fi
-
 if step "an ingest adapter cannot reach sqlite3's dot-commands"; then
 # Adapter stdout is fed to the sqlite3 CLI through a file redirect, not through a driver, so a
 # line whose FIRST character is `.` was a dot-command rather than SQL. `.shell touch x` ran a

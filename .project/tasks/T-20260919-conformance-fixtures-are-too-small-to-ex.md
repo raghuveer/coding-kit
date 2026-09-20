@@ -58,8 +58,8 @@ containers, varying one thing at a time. The observable is the indexer's own lin
 | mawk 1.3.4, the 2020, 2024 and 2025 builds | pass | — |
 | original-awk 20250116 (BSD) | pass | — |
 | **gawk 5.2.1** | **fail**, `read 0 of 224` | **fail**, `read 0 of 3` |
-| gawk 5.3.2 (this laptop, Git Bash) | pass | — |
-| gawk 5.4.1 | fatal, per `df19be7`; not re-measured here | — |
+| gawk 5.3.2 (this laptop, AND `debian:sid`) | pass | — |
+| **gawk 5.4.1** (the Windows runner) | **pass** — see the correction below | — |
 | mawk on the GitHub `ubuntu-latest` runner | **segfault** | — |
 
 **It fails at three task files.** A three-task fixture catches it, so the suite was never too small
@@ -81,13 +81,30 @@ for it.
 The 6 failures are a constant of the container baseline, identical in three of the four cells, so
 they cancel; the fourth cell is the signal. **No new fixture was needed to produce it.**
 
-**Why `conformance (windows-latest)` went green on the very run where `structure` dumped core:** Git
-Bash ships gawk 5.3.2, which tolerates the construct. gawk 5.2.1 below it and 5.4.1 above it do not.
+**CORRECTED 2026-09-20, SAME DAY, BEFORE THIS WAS RELIED ON.** This section first said that
+`conformance (windows-latest)` went green because Git Bash ships gawk 5.3.2, which tolerates the
+construct. **That is true of this laptop and false of the runner.** The environment banner of the
+failing run — job `conformance (windows-latest)` of run 35461506879 — reports **GNU Awk 5.4.1**. So
+the Windows leg was green while running 5.4.1, and the claim that 5.4.1 does not tolerate the
+construct, which this file took from `df19be7`'s commit message rather than from a measurement, is
+not supported by that observation. `df19be7`'s gawk-5.4.1 fatal is most likely the *globre* octal
+escape of #144, which is a different defect.
 
-**A CONFOUND, STATED RATHER THAN BURIED.** The 5.3.2 pass was measured on Windows and the 5.2.1
-failure on Linux, so version and platform are not yet separated. It does not touch the scale
-conclusion, which rests on N=3 failing and N=224 passing. It does mean a multi-awk step must pin
-what it runs rather than trusting a version ordering.
+**THE CONFOUND IS RESOLVED, AND IT IS THE VERSION.** gawk 5.3.2 was re-run on Linux (`debian:sid`)
+against the same pre-fix tree and **passed**, exactly as it does on Windows. Platform is not the
+variable.
+
+**SO ONE AWK IS VERIFIED TO CATCH THIS, AND IT IS gawk 5.2.1.** That is what `ubuntu-latest` ships,
+which is where this step's coverage actually comes from. macOS runs gawk 5.4.1 beside BSD awk, and
+whether *that* pair catches the defect under this step is **untested** — no container image carries
+5.4.1, so it was not measured rather than assumed either way.
+
+**THE CONFOUND THIS SECTION ORIGINALLY DECLARED IS NOW CLOSED.** It said version and platform were
+not separated because 5.3.2 was measured on Windows and 5.2.1 on Linux. Both have since been run on
+Linux: 5.2.1 fails, 5.3.2 passes. The version is the variable and the platform is not. The
+conclusion it was hedging — that a multi-awk step must pin what it runs rather than trust a version
+ordering — survives and is now better supported, because the ordering turned out to be wrong: it is
+not "older and newer both fail", it is 5.2.1 alone among the gawks tested.
 
 **THE SEGFAULT IS A SECOND, SEPARATE MANIFESTATION AND IT DID NOT REPRODUCE.** Six-plus runs at 224
 tasks across three mawk builds and three locales, all clean. Heap corruption needing both volume and
@@ -115,7 +132,7 @@ this is saying so.
       (gawk, mawk, original-awk) on a three-task fixture — roughly 700 ms per awk including its
       index build. Bounded by how many awks are installed, not by backlog size.
 - [ ] The step runs on every platform the matrix covers, and **pins the awk it tests** — otherwise
-      the Windows leg keeps testing gawk 5.3.2 and keeps passing
+      the Windows leg keeps testing one gawk and keeps passing
 - [x] **The scale question is answered rather than dropped.** The mawk segfault at 224 is a real
       second manifestation that no container reproduced. Either a scale fixture is shown to catch
       it, or this task records that it is only reachable on the runner and files that separately.

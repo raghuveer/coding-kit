@@ -209,8 +209,19 @@ jobs:
       # Fixture size was never the variable; which awk runs is.
       #
       # Without this step the multi-awk conformance step SKIPs, is counted as NOT EXERCISED, and
-      # the blindness comes back quietly. Windows has no second implementation readily available,
-      # so it skips there and the tally says so rather than pretending otherwise.
+      # the blindness comes back quietly.
+      #
+      # WHICH LEG ACTUALLY CARRIES THE COVERAGE, measured rather than assumed: ubuntu-latest ships
+      # gawk 5.2.1, and gawk 5.2.1 is the ONLY awk verified to catch this defect. gawk 5.3.2 passes
+      # it on both Linux and Windows, and the Windows runner was green on the pre-fix tree while
+      # running gawk 5.4.1. So the ubuntu leg is the control here; macOS adds breadth whose effect
+      # on THIS defect is untested, because no container image carries 5.4.1 to check it against.
+      #
+      # WINDOWS IS A PROBE, NOT A PROMISE. Git Bash ships one awk, so the step skipped there. busybox
+      # is tried because its applet is a fourth implementation and the platform that was blind
+      # deserves more than one. It is `|| true` on purpose: this is the first attempt at it, a
+      # chocolatey outage must not redden a required check, and the conformance step reports SKIP
+      # and counts it as NOT EXERCISED when the probe does not produce a second implementation.
       #
       # NO NEW CHECK NAME, DELIBERATELY. This is a step inside the existing `conformance` job, so
       # branch protection's five required contexts are untouched. Adding a matrix leg would have
@@ -223,12 +234,15 @@ jobs:
             sudo apt-get -qq install -y gawk original-awk
           elif [ "$RUNNER_OS" = macOS ]; then
             brew list gawk >/dev/null 2>&1 || brew install gawk
+          elif [ "$RUNNER_OS" = Windows ]; then
+            choco install busybox -y --no-progress || true
+            hash -r 2>/dev/null || true
           fi
-          for c in awk gawk mawk original-awk nawk; do
+          for c in awk gawk mawk original-awk nawk busybox; do
             p=$(command -v "$c" 2>/dev/null) || continue
             echo "  $c -> $p -- $( ( "$p" --version 2>/dev/null || "$p" -W version 2>&1 ) | head -1 )"
           done
-          n=$(for c in awk gawk mawk original-awk nawk; do
+          n=$(for c in awk gawk mawk original-awk nawk busybox; do
                 p=$(command -v "$c" 2>/dev/null) || continue
                 ( "$p" --version 2>/dev/null || "$p" -W version 2>&1 ) | head -1
               done | sort -u | wc -l)

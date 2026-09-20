@@ -93,6 +93,47 @@ whether a failure is pre-existing — and the tool currently makes the wrong ans
 cheaper than the right one.
 
 
+### The tool no longer prints its own bypass, 2026-09-20
+
+**One criterion met, the rest deliberately not.** The stop now prints scaffolding with the
+judgement withheld:
+
+    KIT_COMMANDS_RED_DISPOSITIONED="test:101=?,typecheck:101=?"
+
+**The rung names and exit codes are still printed, on purpose.** Transcribing those is tedious and
+getting one wrong is a typo rather than a judgement — and an operator who cannot produce the string
+at all will skip pre-flight entirely, which is a worse failure than a careless disposition. What is
+withheld is only the part that IS a judgement. `?` is refused by the parser, so an unedited paste
+stops exactly as an absent value does.
+
+**Re-ran the end-to-end replay's careless path:** pasting what the tool prints now gives **rc=1**
+where it gave **rc=0**, and no disposition event is written, so nothing is recorded as blessed that
+was never judged.
+
+**The arm is the reviewer's attack made permanent.** Rather than asserting the output does not
+contain `=baseline` — which a rewording would defeat, the way three prose assertions were already
+defeated — arm 3h **captures whatever the stop prints and feeds it straight back**, requiring
+refusal. That is a property of the output rather than of one placeholder. Mutation-proven:
+restoring the all-`=baseline` default fires *"the value the tool printed is itself a valid
+disposition -- it prints its own bypass"*.
+
+**WHAT THIS DOES NOT DO, and the task stays open for it.** It stops a thoughtless paste. It cannot
+stop a **considered wrong answer**: an operator who types `=baseline` for a rung that genuinely
+could not run still proceeds, and the report's disposition row will agree with them, because it is
+the same person writing both. The judgement remains human. What changed is that the tool no longer
+supplies the wrong one for free.
+
+**Still open, and both are decisions rather than code:**
+
+- whether re-confirming a disposition must re-run every declared command — it still must, and that
+  was measured at 1,464 s on the named subject
+- **whether the classification is checkable at all.** The criterion asks for this to be decided,
+  and the honest answer looks like *no*: "this failure is pre-existing" is a claim about history
+  that no mechanism here can verify. If that is the ruling, it belongs recorded as the boundary of
+  this control — the way the prose check's ceiling now is — rather than chased through a fourth
+  mechanism.
+
+
 ## Notes
 
 Found by both reviewers of the third T3 chain on 2026-09-20, one of whom demonstrated it end to end

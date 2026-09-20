@@ -6319,6 +6319,22 @@ rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
   python3 -c "import json,sys
 [json.loads(l) for l in open('.project/events.ndjson') if l.strip()]" 2>/dev/null ||
     { echo "  arm 3g: the event log is no longer valid JSON"; exit 1; }
+  # THE TOOL MUST NOT PRINT ITS OWN BYPASS. This arm is a reviewer's attack turned into a
+  # regression test: on 2026-09-20 the stop printed a complete, valid, all-`=baseline` value and
+  # a reviewer pasted it verbatim into the 2026-09-09 scenario, which proceeded. The message that
+  # exists to stop you handed over the way past it, pre-formatted.
+  #
+  # Capture whatever the stop prints TODAY and feed it straight back. Whatever that line becomes,
+  # an unedited paste must not be a disposition -- which is a property of the output, not of one
+  # particular placeholder, so rewording the hint cannot quietly reintroduce the hole.
+  set_cmd lint "sh -c 'exit 101'"
+  paste=$(bash "$P" --commands 2>&1 | grep -o 'KIT_COMMANDS_RED_DISPOSITIONED=.*' | head -1)
+  [ -n "$paste" ] ||
+    { echo "  arm 3h: the stop printed no example value to test"; exit 1; }
+  eval "$paste bash \"\$P\" --commands" >/dev/null 2>&1; rc=$?
+  [ $rc -ne 0 ] ||
+    { echo "  arm 3h: the value the tool printed is itself a valid disposition -- it prints its own bypass"; exit 1; }
+  set_cmd lint "true"
   set_cmd lint "true"
   # COULD NOT RUN IS a stop, and 127 is the shell saying so. This is the state the box exists
   # for: the tooling is absent, and mid-trial there is no non-voiding remedy.

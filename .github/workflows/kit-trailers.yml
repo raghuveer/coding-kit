@@ -238,14 +238,30 @@ jobs:
             choco install busybox -y --no-progress || true
             hash -r 2>/dev/null || true
           fi
+          # busybox needs its own branch: its awk is an APPLET, so `busybox -W version` prints
+          # "-W: applet not found" and exits 127. Under `set -eu` that killed this step outright,
+          # and had it survived, that string is unique and would have counted as a distinct
+          # implementation -- inflating the total with an awk that was never run.
+          bf=$(mktemp); : > "$bf"
           for c in awk gawk mawk original-awk nawk busybox; do
             p=$(command -v "$c" 2>/dev/null) || continue
-            echo "  $c -> $p -- $( ( "$p" --version 2>/dev/null || "$p" -W version 2>&1 ) | head -1 )"
+            if [ "$c" = busybox ]; then
+              if "$p" awk 'BEGIN{exit 0}' >/dev/null 2>&1; then
+                b=$("$p" 2>&1 | head -1)
+              else
+                echo "  $c -> $p -- present but no awk applet, not counted"
+                continue
+              fi
+            else
+              b=$( { "$p" --version 2>/dev/null || "$p" -W version 2>&1 || true; } | head -1 )
+            fi
+            [ -n "$b" ] || b="unknown-$c"
+            echo "  $c -> $p -- $b"
+            echo "$b" >> "$bf"
           done
-          n=$(for c in awk gawk mawk original-awk nawk busybox; do
-                p=$(command -v "$c" 2>/dev/null) || continue
-                ( "$p" --version 2>/dev/null || "$p" -W version 2>&1 ) | head -1
-              done | sort -u | wc -l)
+          n=$(sort -u "$bf" | grep -c . || true)
+          [ -n "$n" ] || n=0
+          rm -f "$bf"
           echo "distinct awk implementations on PATH: $n"
           # The gate, and it is the whole point. On the two platforms where a second
           # implementation is expected, absence is a broken install rather than a platform fact.

@@ -4,7 +4,7 @@ title: The trial report template has no rung-disposition row so COMPLETE can be 
 epic: validation
 tier: T2
 paths: docs/TRIALS/TEMPLATE.md, docs/TRIAL-PROTOCOL.md
-state: created
+state: completed
 ---
 
 ## Intent

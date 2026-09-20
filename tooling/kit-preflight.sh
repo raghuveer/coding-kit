@@ -502,9 +502,20 @@ case "${1:-}" in
         kit_warn "  measured on the 2026-09-09 trial, whose three failures all exited 101."
         kit_warn "  So it does not guess. Disposition each one, by name, before the clock starts:"
         kit_warn ""
-        kit_warn "    KIT_COMMANDS_RED_DISPOSITIONED=\"$(printf '%s' "$_want" | sed 's/\([^,]*\)/\1=baseline/g')\""
+        # THE SCAFFOLDING IS PRINTED; THE ANSWER IS NOT. An earlier version printed this line
+        # with every rung already set to `=baseline` -- a complete, valid, paste-ready value that
+        # classified every failure as answerable. A reviewer pasted it verbatim into the
+        # 2026-09-09 scenario on 2026-09-20 and the trial proceeded: the tool handed over its own
+        # bypass, pre-formatted, in the message that exists to stop you.
+        #
+        # The rung names and their exit codes are still printed, because they are tedious to
+        # transcribe and getting them wrong is not a judgement, it is a typo -- and an operator
+        # who cannot produce the string at all will skip the pre-flight instead, which is worse.
+        # What is NOT printed is the part that IS a judgement. `?` is refused by the parser
+        # below, so an unedited paste stops exactly as an absent value does.
+        kit_warn "    KIT_COMMANDS_RED_DISPOSITIONED=\"$(printf '%s' "$_want" | sed 's/\([^,]*\)/\1=?/g')\""
         kit_warn ""
-        kit_warn "  Replace each =baseline with =unsatisfiable where the tooling could NOT run."
+        kit_warn "  Replace each ? -- there is no default, and an unedited paste is refused."
         kit_warn "  =baseline      a known-red subject. Record the counts in the trial record's"
         kit_warn "                 baseline box; section 0 blesses this only if you knew first."
         kit_warn "  =unsatisfiable the rung cannot run. Fix it HERE -- editing commands.* after"

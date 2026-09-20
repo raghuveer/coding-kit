@@ -6216,12 +6216,17 @@ grep -q "unsatisfiable" "$WORK.ladder-completion" ||
 # `--fixed` would say it was addressed when nothing about the grep changed, and `--false` would
 # say it was never true when it was. That is `--superseded`, exactly.
 #
-# AND IT CANNOT BE RECORDED HERE, WHICH IS ITS OWN DEFECT. `kit-resolve.sh --superseded` refuses
-# unless the finding's own file carries a line matching `^[[:space:]>*_]*Superseded-by:`. Every
-# line of a shell script is a comment, `#` is not in that character class, and the regex is
-# anchored -- so no form of this marker can be written in this file. Measured: 364 open findings
-# are anchored to files that are not markdown, and the verb is unreachable for all of them.
-# Filed as `T-20260920-the-supersession-marker-cannot-be-writte`.
+# > **Superseded-by: 52c83b2**
+#
+# THE MARKER ABOVE IS THE WITHDRAWAL, recorded where the next reader of this assertion meets it,
+# which is what `kit-resolve.sh --superseded` requires before it will retire the finding.
+#
+# It could not be written until 2026-09-20. The guard's leading character class admitted markdown
+# decoration and not `#`, and every line of a shell script is a comment, so the verb was
+# unreachable for the 364 open findings anchored to files that are not markdown -- it read as a
+# strict gate and was an absolute one. Widened in `tooling/kit-resolve.sh`, tracked by
+# `T-20260920-the-supersession-marker-cannot-be-writte`. The equality rule on the cited artefact
+# is untouched.
 #
 # A TRIPWIRE FOR THE LITERAL REVERT, AND NOTHING MORE. This comment used to claim this was "the
 # one a footer cannot satisfy". A reviewer refuted that on 2026-09-20: the string below is keyed
@@ -6431,6 +6436,52 @@ vd="$WORK.voiddet"; rm -rf "$vd"; mkdir -p "$vd"
   [ "$(det)" = 0 ] || { echo "    an absent log did not return zero"; exit 1; } )
 check $? "section 3's detection separates a dispositioned baseline from an unsatisfiable rung"
 rm -rf "$vd"
+fi
+
+if step "a withdrawal can be marked in the subject, whatever language the subject is written in"; then
+# THE VERB WAS UNREACHABLE FOR TWO THIRDS OF THE FINDINGS AND NOTHING SAID SO.
+#
+# `kit-resolve.sh --superseded` refuses unless the finding's own file carries a line matching a
+# leading-decoration class then the key. That class admitted `>`, `*`, `_` and whitespace --
+# markdown -- and not `#`. Every line of a shell script, a python module or a workflow is a
+# comment, so in any subject that is not markdown the marker could not be written at all, and the
+# refusal printed a blockquote form that would be rejected in the very file it was refusing.
+# Measured 2026-09-20: 364 open findings anchored to a non-markdown file, none of them
+# superseded-able. The guard read as strict and was absolute.
+#
+# The same defect had already been recorded one step out -- the FIRST version accepted only
+# whitespace and `>`, and so refused the exact text of its own error message. This is that lesson
+# arriving a second time from a different direction, which is why the step below asserts the
+# PROPERTY (a marker is writable in the subject's own language) rather than one character class.
+sup="$WORK.supmark"; rm -rf "$sup"; mkdir -p "$sup"
+( cd "$sup" || exit 1
+  # One file per comment convention this repository's findings actually anchor to, plus the
+  # markdown form that already worked, plus two prose mentions that must NOT count as markers.
+  printf '%s\n' '# > **Superseded-by: ADR-0001**' > a.sh
+  printf '%s\n' '# Superseded-by: ADR-0001'       > b.py
+  printf '%s\n' '// Superseded-by: ADR-0001'      > c.go
+  printf '%s\n' '-- Superseded-by: ADR-0001'      > d.sql
+  printf '%s\n' '> **Superseded-by: ADR-0001**'   > e.md
+  printf '%s\n' 'The rule is Superseded-by: something'   > f.txt
+  printf '%s\n' '  see the Superseded-by: convention'    > g.txt
+  for f in a.sh b.py c.go d.sql e.md; do
+    grep -aqiE '^[[:space:]>*_#/;-]*Superseded-by:' "$f" ||
+      { echo "    $f: a marker in this language is not recognised"; exit 1; }
+  done
+  for f in f.txt g.txt; do
+    grep -aqiE '^[[:space:]>*_#/;-]*Superseded-by:' "$f" &&
+      { echo "    $f: prose MENTIONING the key was accepted as a marker"; exit 1; }
+  done
+  exit 0 )
+check $? "a Superseded-by marker is writable as a comment, and prose mentioning it is not one"
+
+# AND THE REFUSAL MUST NAME A FORM THAT WORKS IN THE FILE IT IS REFUSING. Printing a blockquote
+# for a shell script is the original defect restated as advice, and it is what kept operators
+# from believing the withdrawal was recordable at all.
+grep -q '\*\.md|\*\.markdown)' "$KIT/tooling/kit-resolve.sh" ||
+  { echo "  the refusal does not choose a marker form per file type"; false; }
+check $? "the refusal suggests a marker the subject's own language can carry"
+rm -rf "$sup"
 fi
 
 if step "a zero escape count says which zero it is"; then

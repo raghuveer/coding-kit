@@ -82,6 +82,87 @@ blindly would report the rung satisfiable while nothing is declared — the same
 ladder gap is about, one layer down in the control meant to catch it. The arm separates them and
 the mutation that collapses them is the one that takes conformance red.
 
+### The T3 chain finally ran, 2026-09-20 — and the verdict is REVISE, twice
+
+**Correction to the section above: PR #117 is MERGED** (`5304db9`, merged `aed2bf6`), not "open and
+UNREVIEWED". That line has been stale since 2026-09-14. All seven criteria were re-verified present
+on `main` before this review, so the work landed. **What had never run was the review the tier
+declares** — and this is the one task where skipping it is the defect it exists to name.
+
+Two reviewers, launched in parallel so neither could see the other's findings, which is what
+`skills/tier-classify/SKILL.md:30` requires of T3.
+
+| run | findings | critical | major | turns | weighted ITE |
+|---|---|---|---|---|---|
+| A | 11 | 2 | 5 | 48 | 649,361 |
+| B | 8 | 1 | 4 | 55 | 784,855 |
+| **chain** | **19** | **3** | **9** | — | **1,434,216** (75,485 per finding) |
+
+**BOTH VERDICTS ARE `revise`. THIS TASK MUST NOT BE CLOSED.**
+
+#### The critical both found independently, blind to each other
+
+**`kit-preflight.sh --commands` does not fire on the trial it was built from.** It calls a rung
+`unsatisfiable` only on shell exit **126 or 127**; every other non-zero prints *"ran, exit N — a
+baseline fact, not a stop"* and the arm exits 0. The 2026-09-09 trial's own notes record the
+actual exits: **101** for the jemalloc host probe, **101** for io-uring, **101** for the 1,464-second
+container probe on missing `protoc`. All three land in the pass branch.
+
+**Verified by this session at the source**, not taken on report: `tooling/kit-preflight.sh:447-453`
+for the case statement, `docs/TRIALS/2026-09-09-highper-gateway-plugin-mode/trial-notes.md:25,30,76`
+for the exit codes. §0 line 217 still promises the opposite — *"a command that is declared and does
+not run is **unsatisfiable**, and that is a stop."*
+
+Reviewer B traced the cause: follow-up commit `4d0785f`, *"a command that ran and failed is a
+baseline fact, not a stop"*, turned three outcomes into four. The distinction it drew is correct —
+ran-and-failed is genuinely not cannot-run — but the signal chosen to carry it does not.
+
+#### The second critical: the conformance step cannot fail on the defect it names
+
+The step's first `check` is four **file-wide** greps against `SKILL.md`. Two of them —
+`unsatisfiable` and `blocks a completion claim` — are satisfied by the `## Satisfaction` section
+alone. **Both reviewers independently restored `## Completion` to its pre-change two-state text —
+the exact regression this task exists to prevent — and the step stayed green, 2 passed 0 failed.**
+Verified here: the strings sit at `## Satisfaction` lines 15 and 20, and nothing anchors any
+assertion to `## Completion`.
+
+#### What only the SECOND reviewer found, which is the argument for T3
+
+- **§6:591 says *"A trial with any unsatisfiable rung is VOID, never COMPLETE — see §3"*, and §3
+  contains the word `unsatisfiable` zero times.** Verified. The eighth condition that was added
+  detects the *remedy* (a mid-trial profile change) rather than the *fault*. The cross-reference
+  points at nothing.
+- **`docs/TRIALS/TEMPLATE.md` has an `Outcome` row and no disposition row at all** — zero mentions.
+  The template says "Do not restructure it. Delete nothing", so a report following the mandated
+  shape reaches COMPLETE without passing a single rung disposition. That is the 2026-09-09 headline
+  failure, still reachable. Mutation-proven: deleting §6's rule entirely keeps the step green.
+- **The two documents contradict each other on the founding case.** `SKILL.md:62` calls a target
+  that does not compile before you touched it `unsatisfiable`, which blocks completion.
+  §0's baseline box and `kit-preflight.sh:452` call the same thing a blessed known-red baseline.
+  That is rung 2 of the incident.
+
+**So the second reviewer was not redundant, measured rather than asserted.** It converged on the
+critical independently — which is the strongest evidence either finding is real — and contributed
+three majors the first did not reach, all structural rather than local. `docs/MEASUREMENTS.md`
+asks *"Is T3's second reviewer redundant?"* and answers no; this is a fresh data point for it, and
+the first where both runs are joinable to their own cost.
+
+#### What holds
+
+The `unavailable` clause for a rung with nothing declared is byte-for-byte unchanged and still
+correct; trial 1's rung-3 path was right and still is. The `## Completion` sentence blocking
+COMPLETE is real prose that does hold on paper. **It is the only thing holding** — every mechanical
+support around it either does not fire, does not contain the rule, or is not enforced.
+
+#### One limit on this chain, stated rather than left to be assumed
+
+Both reviewers ran as `general-purpose` agents. **The kit's own named reviewer agents were not
+used, because they are plugin agents and were not loaded in this session** — adoption installs no
+agent anywhere, which is already on trial 3's agenda. So this chain exercised the ladder and the
+protocol; it did not exercise the kit's reviewer routing, and the tier should not be read as fully
+exercised in that second sense.
+
+
 ## Notes
 
 **On the tier, stated plainly because it is an argument rather than a floor.** No

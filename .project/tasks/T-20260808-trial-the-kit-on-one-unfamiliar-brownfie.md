@@ -239,6 +239,51 @@ subject that is genuinely broken in named ways, which is what a brownfield trial
 first time, and PR #27 declared the system build dependencies. Both are recorded in the subject's
 history; neither touches its Rust sources except #28's one-line test fix.
 
+### Pre-flight baseline for trial 3, 2026-09-20 — taken before the clock, recorded with causes
+
+**Copy.** `git clone -c core.autocrlf=false -c core.eol=lf --no-hardlinks`, all 3 branches
+materialised BEFORE the remote was removed, no remote, clean tree.
+
+    subject   e588b533edb6ccf7a5b63c3f34bf7c9859ca4744
+    copy      0399d5c6fbb05c9a3c0eb0c59037614665e60339   = subject + one pre-flight commit
+    runtime   cck-trial  sha256:372fc7a9d8648f21110bc50efd1def80661f2e513ede3328369a95a7722b9d29
+
+**The pre-flight commit removes `.claude/settings.local.json`**, which `--isolated` STOPs on: it
+pre-approves `Bash(git *)`, `Bash(cargo *)` and `Bash(nerdctl:*)` unscoped plus seven rules naming
+a second checkout outside the copy. **The copy is therefore NOT byte-identical to the subject**,
+and that is stated here rather than left to be discovered by diffing.
+
+**BASELINE — one row per rung, with the command and the cause.** Read-only mount,
+`CARGO_TARGET_DIR=/tmp/target`, as `docs/trial-runtime/Dockerfile` prescribes.
+
+| rung | command | exit | cause |
+|---|---|---|---|
+| 1 compiles | `cargo check --locked` | **101** | committed `Cargo.lock` lacks one entry — `"async-graphql-value"` at line 2685 — so cargo must rewrite it, and the read-only mount forbids that |
+| 2 tests | `cargo test --locked --no-run` | **101** | same single cause |
+| 3 lint | `cargo clippy --locked` | **1** | *"'cargo-clippy' is not installed for the toolchain 1.98.1"* — `rust:1-bookworm` ships no clippy component |
+| 4 format | `cargo fmt --check` | **1** | *"'cargo-fmt' is not installed"* — same |
+
+**THE SUBJECT COMPILES.** With a writable copy of the tree, `cargo check` exits **0** with 92
+warnings. Rungs 1 and 2 are not blocked by the subject's code; they are blocked by a one-line
+lockfile gap meeting a read-only mount.
+
+**That exact line is a repeat.** `T-20260914-the-copy-procedure-loses-branches-trusts` gap 3
+recorded *"`cargo build` on a writable mount rewrote `Cargo.lock` — one line,
+`async-graphql-value`"* on 2026-09-14. Same dependency, six days later, still committed short.
+It is a SUBJECT finding and routes to its owner under §7.
+
+**FOUR RUNGS, FOUR UNSATISFIABLE — and the gate would have caught every one.** This is the
+2026-09-09 shape reproduced before the clock rather than after it: declared tooling that does not
+run. Under the vocabulary landed today each is `unsatisfiable`, `--commands` stops, and §3's new
+condition voids a trial that proceeds anyway.
+
+**TWO WRONG DIAGNOSES ON THE WAY HERE, both caught by measuring.** First *"the lockfile is stale,
+missing `ahash`"* — refuted by `grep -c` showing `ahash` present. Then *"CRLF is why `--locked`
+refuses"* — refuted by re-cloning with LF and getting the identical refusal. The CRLF finding is
+real and separate, below. **Neither survived contact with a command**, which is the only reason
+they are not in this table.
+
+
 ## Notes
 
 Blocked by three things, and the order matters. Without

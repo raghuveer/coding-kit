@@ -9,6 +9,12 @@ state: created
 
 ## Intent
 
+**AMENDED 2026-09-20 — THE ORIGINAL DIAGNOSIS IN THIS TASK IS REFUTED BY MEASUREMENT.** The gap is
+real and the suite is blind, but **fixture SIZE is not the variable**; which `awk` runs is. The
+title and id are left unchanged on purpose: the id is referenced by two dependency-map edges and by
+the findings recorded against it, and renaming to fix a wording error would orphan them. Read the
+title as the question that was asked, and section *"What was actually measured"* as the answer.
+
 **The suite stayed green through four consecutive core dumps of the thing it exists to check.**
 
 On 2026-09-19, `tooling/kit-index.sh` crashed under mawk — `/usr/bin/awk` on `ubuntu-latest` — on
@@ -41,19 +47,70 @@ backlog as a side effect of checking prose references. It found this by accident
 failure as an unrelated step, and it cannot run on macOS or Windows. A property worth checking
 deserves a step that says what it checks.
 
+## What was actually measured, 2026-09-20
+
+Against the exact pre-fix tree `7f0db5b` — the commit that produced the fourth segfault — in
+containers, varying one thing at a time. The observable is the indexer's own line,
+`kit: task ingest read 0 of N task file(s)`, which is what CI reported.
+
+| awk | 224 tasks | 3 tasks |
+|---|---|---|
+| mawk 1.3.4, the 2020, 2024 and 2025 builds | pass | — |
+| original-awk 20250116 (BSD) | pass | — |
+| **gawk 5.2.1** | **fail**, `read 0 of 224` | **fail**, `read 0 of 3` |
+| gawk 5.3.2 (this laptop, Git Bash) | pass | — |
+| gawk 5.4.1 | fatal, per `df19be7`; not re-measured here | — |
+| mawk on the GitHub `ubuntu-latest` runner | **segfault** | — |
+
+**It fails at three task files.** A three-task fixture catches it, so the suite was never too small
+to see it.
+
+**It passes at 224 under mawk and BSD awk.** So the two-hundred-task fixture this task originally
+asked for would NOT have caught the worked example this task names, on three of the four
+runner/awk combinations in use. That is the green-that-cannot-fail shape, rebuilt inside the fix
+for it.
+
+**The control that does work is proved able to fail, with the fixtures that already exist.** Running
+`tests/conformance.sh` on the pre-fix tree:
+
+| tree | under mawk | under gawk 5.2.1 |
+|---|---|---|
+| post-fix `df19be7` | 112 passed, 6 failed | 112 passed, 6 failed |
+| pre-fix `7f0db5b` | 112 passed, 6 failed — **defect invisible** | **rc=1, no summary reached**, `no such table: plan_item` |
+
+The 6 failures are a constant of the container baseline, identical in three of the four cells, so
+they cancel; the fourth cell is the signal. **No new fixture was needed to produce it.**
+
+**Why `conformance (windows-latest)` went green on the very run where `structure` dumped core:** Git
+Bash ships gawk 5.3.2, which tolerates the construct. gawk 5.2.1 below it and 5.4.1 above it do not.
+
+**A CONFOUND, STATED RATHER THAN BURIED.** The 5.3.2 pass was measured on Windows and the 5.2.1
+failure on Linux, so version and platform are not yet separated. It does not touch the scale
+conclusion, which rests on N=3 failing and N=224 passing. It does mean a multi-awk step must pin
+what it runs rather than trusting a version ordering.
+
+**THE SEGFAULT IS A SECOND, SEPARATE MANIFESTATION AND IT DID NOT REPRODUCE.** Six-plus runs at 224
+tasks across three mawk builds and three locales, all clean. Heap corruption needing both volume and
+that runner's allocator. The original AC2 said to say so rather than declare a step effective, and
+this is saying so.
+
 ## Acceptance criteria
 
-- [ ] At least one conformance step builds a fixture at a scale comparable to a real backlog —
-      the order of two hundred task files, generated rather than committed — and indexes it
-- [ ] That step is proved able to fail, against a defect that a small fixture does not catch.
-      The mawk crash is the worked example and the commits are on record; if it cannot be
-      reproduced from a fixture, say so rather than declaring the step effective
-- [ ] Generation cost is stated and bounded, so the suite does not become something people skip.
-      `T-20260822-process-creation-costs-one-second-on-the` measured what per-item work costs here
-- [ ] The step runs on every platform the matrix covers, since the crash it models was
-      platform-specific and invisible on two of the three
-- [ ] Whether OTHER steps should also scale up is decided rather than left open: this task claims
-      one scale step, not a rewrite of every fixture
+- [ ] At least one conformance step runs the indexer under **more than one awk implementation**,
+      pinned by name and version rather than taking whatever `/usr/bin/awk` happens to be
+- [ ] That step is proved able to fail against the worked example, by running it on the pre-fix
+      tree and showing it goes red where the single-awk suite goes green. The measurement above is
+      the evidence to reproduce, not to cite
+- [ ] Cost is stated and bounded. A second awk is one more process per step, not two hundred more
+      files; if it turns out to cost more than that, say the number
+- [ ] The step runs on every platform the matrix covers, and **pins the awk it tests** — otherwise
+      the Windows leg keeps testing gawk 5.3.2 and keeps passing
+- [ ] **The scale question is answered rather than dropped.** The mawk segfault at 224 is a real
+      second manifestation that no container reproduced. Either a scale fixture is shown to catch
+      it, or this task records that it is only reachable on the runner and files that separately.
+      Do not close this criterion by pointing at the awk-coverage step, which does not address it
+- [ ] Whether OTHER steps should also gain a second awk is decided rather than left open: this task
+      claims one such step, not a rewrite of every fixture
 
 ## Notes
 
@@ -61,3 +118,10 @@ Filed 2026-09-19 from `T-20260817-a-cluster-pack-file-list-ignores-declare`, who
 the evidence. Three wrong diagnoses were shipped before the real cause was found, each verified
 clean under the development machine's gawk, each refuted only by a twenty-minute CI cycle. A local
 check at real scale would have answered in one run what four CI cycles answered in an hour.
+
+**AMENDED 2026-09-20.** The closing sentence above — *"a local check at real scale would have
+answered in one run what four CI cycles answered in an hour"* — is half right and half wrong, and
+the wrong half is the reason this task had to be amended. A local check WOULD have answered it in
+one run. Scale is not what would have made it answer; a second awk is. The sentence is left standing
+because it is the diagnosis that was believed at filing time, and overwriting it would hide the
+error this task now records.

@@ -3,11 +3,22 @@
 
 # What governs "what next" after the state-and-context document runs out
 
-**Status: PROPOSED. Not governing until the operator accepts it.** ADR 0012 makes a named
+**Status: ACCEPTED by the operator on 2026-09-20. Governing.** It supersedes section 6 of
+`2026-09-14-state-and-context.md` as the ordering document ADR 0012 requires, and it governs until
+it runs out, at which point clause 5 applies to it in turn.
+
+**Section 4's deferral stands, ruled on rather than assumed.** The alternative was put to the
+operator in the terms section 5 sets out -- that graduation work leads and trials follow as
+evidence -- and was declined. Trials lead. The two graduation blockers stay unordered pending the
+scope ruling section 4 says they need, and this document does not pretend that ruling has happened.
+
+ADR 0012 makes a named
 ordering document the thing that decides sequencing, and its clause 5 says that when the current
 one runs out the answer is a successor or an amendment -- not a quiet fall-through to
 `kit-plan.sh`. Section 6 of `2026-09-14-state-and-context.md` has run out. This is the successor
-it asks for, offered to be argued with rather than obeyed.
+it asks for. It was offered to be argued with rather than obeyed, and it was argued with before it
+was accepted -- section 4's deferral was the contested clause. Acceptance does not close that door:
+section 6 below keeps departure available, argued in the commit that departs.
 
 ## 1. Section 6 is finished, item by item
 

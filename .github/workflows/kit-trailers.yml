@@ -201,6 +201,46 @@ jobs:
           $sw.Stop()
           "{0:N0} ms per spawn  (dev machine 1,015 ms | healthy 10-30 ms)" -f ($sw.Elapsed.TotalMilliseconds/50)
 
+      # THE SECOND AWK IS THE CONTROL, NOT A CONVENIENCE. `conformance (ubuntu-latest)` stayed
+      # green through four core dumps of kit-index.sh on this same runner, in this same workflow,
+      # because the suite ran under exactly ONE awk -- whatever `/usr/bin/awk` happens to be --
+      # and mawk tolerates the construct that crashed it. Measured 2026-09-20 against the pre-fix
+      # tree: the defect FAILS under gawk at THREE task files and PASSES under mawk at 224.
+      # Fixture size was never the variable; which awk runs is.
+      #
+      # Without this step the multi-awk conformance step SKIPs, is counted as NOT EXERCISED, and
+      # the blindness comes back quietly. Windows has no second implementation readily available,
+      # so it skips there and the tally says so rather than pretending otherwise.
+      #
+      # NO NEW CHECK NAME, DELIBERATELY. This is a step inside the existing `conformance` job, so
+      # branch protection's five required contexts are untouched. Adding a matrix leg would have
+      # created a sixth name that protection does not require, and renaming any existing one
+      # locks `main` until the protection rule is edited by hand.
+      - name: Install a second awk implementation
+        run: |
+          set -eu
+          if command -v apt-get >/dev/null; then
+            sudo apt-get -qq install -y gawk original-awk
+          elif [ "$RUNNER_OS" = macOS ]; then
+            brew list gawk >/dev/null 2>&1 || brew install gawk
+          fi
+          for c in awk gawk mawk original-awk nawk; do
+            p=$(command -v "$c" 2>/dev/null) || continue
+            echo "  $c -> $p -- $( ( "$p" --version 2>/dev/null || "$p" -W version 2>&1 ) | head -1 )"
+          done
+          n=$(for c in awk gawk mawk original-awk nawk; do
+                p=$(command -v "$c" 2>/dev/null) || continue
+                ( "$p" --version 2>/dev/null || "$p" -W version 2>&1 ) | head -1
+              done | sort -u | wc -l)
+          echo "distinct awk implementations on PATH: $n"
+          # The gate, and it is the whole point. On the two platforms where a second
+          # implementation is expected, absence is a broken install rather than a platform fact.
+          # A decorative install step is exactly how sqlite3 once went missing with the job green.
+          if [ "$RUNNER_OS" != Windows ] && [ "$n" -lt 2 ]; then
+            echo "FATAL: expected a second awk implementation on $RUNNER_OS, found $n"
+            exit 1
+          fi
+
       - name: Conformance
         run: |
           set -eu

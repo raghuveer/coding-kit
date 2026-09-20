@@ -1108,6 +1108,89 @@ check $? "bad rule refused and recorded, lost file fails closed, empty file does
 rm -rf "$gx"
 fi
 
+if step "the indexer runs under every awk present, not only the default"; then
+# THE SUITE WAS BLIND FOR A REASON THAT WAS NOT FIXTURE SIZE. On 2026-09-19 kit-index.sh crashed
+# under mawk on ubuntu-latest four times -- twice `malloc_consolidate`, twice a segfault -- while
+# `conformance (ubuntu-latest)` passed on the SAME runner in the SAME workflow every time. The
+# task filed for it assumed the fixtures were too small. Measured on 2026-09-20 against the
+# pre-fix tree `7f0db5b`, that assumption was wrong:
+#
+#   gawk 5.2.1                          FAILS at 3 task files, and at 224
+#   mawk 1.3.4, 2020/2024/2025 builds   passes at 224
+#   original-awk 20250116 (BSD)         passes at 224
+#   gawk 5.3.2 (Git Bash)               passes -- which is why the WINDOWS leg stayed green
+#                                       through the core dumps
+#
+# Scale was never the variable; WHICH awk runs is. A two-hundred-task fixture would have
+# reproduced the blindness at two hundred times the cost. THREE task files under a second awk
+# reproduce the defect, which is why this step builds three and not two hundred.
+#
+# THE FIXTURE MUST OMIT `paths:`. The cause is an untyped array element -- reading v["paths"] on
+# a task file that carries no `paths:` key -- so two of the three tasks below deliberately have
+# none. A fixture where every task declares paths cannot fail here however many tasks it has,
+# and scaling such a fixture up only buys a slower green.
+#
+# A SKIP IS THE HONEST RESULT ON A ONE-AWK MACHINE and is counted and named rather than passed,
+# per this suite's own rule that a control which could not run is not a control that passed.
+# BUT: if this reports SKIP on every leg of the matrix then the control is not running anywhere,
+# and the workflow is what needs fixing, not this step. The ubuntu leg installs a second awk for
+# exactly this reason.
+aw="$WORK.awks"; rm -rf "$aw"; mkdir -p "$aw/shims" "$aw/repo/.claude" "$aw/repo/.project/tasks"
+awk_real=""; awk_names=""; awk_n=0; awk_ids=""
+# DEDUPE ON THE IMPLEMENTATION, NOT THE PATH. On Git Bash `/usr/bin/awk` and `/usr/bin/gawk` are
+# two separate files that are both gawk 5.3.2, and neither is a symlink, so `readlink -f` reports
+# two distinct paths. The first version of this step deduped that way, counted two awks, ran gawk
+# twice and reported PASS -- a control that cannot fail, written inside the step whose whole
+# purpose is to delete one. The version banner is the identity; the path is not.
+for cand in awk gawk mawk original-awk nawk; do
+  cp=$(command -v "$cand" 2>/dev/null) || continue
+  [ -n "$cp" ] || continue
+  cr=$(readlink -f "$cp" 2>/dev/null || printf '%s' "$cp")
+  cv=$( ( "$cr" --version 2>/dev/null || "$cr" -W version 2>&1 ) | head -1 | tr -d '\015' )
+  cid=$(printf '%s' "$cv" | tr -cd 'A-Za-z0-9.')
+  [ -n "$cid" ] || cid="unknown-$cand"
+  case "|$awk_ids|" in *"|$cid|"*) continue ;; esac
+  awk_ids="$awk_ids|$cid"
+  awk_n=$((awk_n+1))
+  awk_real="$awk_real $cr"; awk_names="$awk_names $cand"
+  printf '  awk #%s: %s -> %s -- %s\n' "$awk_n" "$cand" "$cr" "$cv"
+done
+if [ "$awk_n" -lt 2 ]; then
+  skip "only one awk IMPLEMENTATION here:$awk_names (paths may differ, versions do not)" \
+       "the indexer agrees across every awk present"
+else
+( cd "$aw/repo" || exit 1
+  git init -q -b main 2>/dev/null
+  { echo "---"; echo "paths.tasks:  .project/tasks"; echo "paths.state:  .project"
+    echo "tier.default: T1"; echo "---"; } > .claude/project-profile.md
+  # T-np1 and T-np2 carry NO `paths:` key -- that absence is the defect class. T-wp does, so a
+  # regression that breaks the declared-paths route is not mistaken for this one.
+  printf -- '---\nid: T-np1\ntitle: no declared paths one\ntier: T2\n---\nbody\n' > .project/tasks/T-np1.md
+  printf -- '---\nid: T-np2\ntitle: no declared paths two\ntier: T2\n---\nbody\n' > .project/tasks/T-np2.md
+  printf -- '---\nid: T-wp\ntitle: with declared paths\ntier: T2\npaths: src/a.go\n---\nbody\n' > .project/tasks/T-wp.md
+  i=0
+  for cr in $awk_real; do
+    i=$((i+1))
+    mkdir -p "$aw/shims/$i"
+    # A WRAPPER, NOT A SYMLINK. Git Bash on Windows cannot always create one, and a step that
+    # silently degrades to the default awk is the blindness this exists to remove.
+    printf '#!/bin/sh\nexec %s "$@"\n' "$cr" > "$aw/shims/$i/awk"
+    chmod +x "$aw/shims/$i/awk"
+    rm -f .project/index.db
+    PATH="$aw/shims/$i:$PATH" bash "$KIT/tooling/kit-index.sh" >/dev/null 2>"$aw/e$i" || {
+      printf '    %s: kit-index.sh exited non-zero\n' "$cr"; sed 's/^/      /' "$aw/e$i" | head -3; exit 1; }
+    # The observable CI reported was the indexer's own count line, so assert on the same one.
+    if grep -q 'task ingest read 0 of' "$aw/e$i"; then
+      printf '    %s: read 0 of 3 task files\n' "$cr"; exit 1
+    fi
+    got=$(sqlite3 .project/index.db 'SELECT COUNT(*) FROM task;' 2>/dev/null | tr -d '\015')
+    [ "$got" = 3 ] || { printf '    %s: indexed %s task(s), wanted 3\n' "$cr" "$got"; exit 1; }
+  done )
+check $? "the indexer agrees across every awk present:$awk_names"
+fi
+rm -rf "$aw"
+fi
+
 if step "an ingest adapter cannot reach sqlite3's dot-commands"; then
 # Adapter stdout is fed to the sqlite3 CLI through a file redirect, not through a driver, so a
 # line whose FIRST character is `.` was a dot-command rather than SQL. `.shell touch x` ran a

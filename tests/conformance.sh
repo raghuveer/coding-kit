@@ -6210,6 +6210,19 @@ grep -qi "blocks a completion claim\|blocks completion\|never COMPLETE" "$WORK.l
   { echo "  ## Completion does not say an unsatisfiable rung blocks -- the two-state enumeration is back"; bad=1; }
 grep -q "unsatisfiable" "$WORK.ladder-completion" ||
   { echo "  ## Completion does not mention unsatisfiable at all"; bad=1; }
+# THE CLAIM THIS COMMENT USED TO MAKE WAS WITHDRAWN on 2026-09-20, in 52c83b2. It said this
+# assertion was "the one a footer cannot satisfy"; a reviewer defeated it by deleting one word.
+# The finding that caused the withdrawal is REAL -- being real is why the claim died -- so
+# `--fixed` would say it was addressed when nothing about the grep changed, and `--false` would
+# say it was never true when it was. That is `--superseded`, exactly.
+#
+# AND IT CANNOT BE RECORDED HERE, WHICH IS ITS OWN DEFECT. `kit-resolve.sh --superseded` refuses
+# unless the finding's own file carries a line matching `^[[:space:]>*_]*Superseded-by:`. Every
+# line of a shell script is a comment, `#` is not in that character class, and the regex is
+# anchored -- so no form of this marker can be written in this file. Measured: 364 open findings
+# are anchored to files that are not markdown, and the verb is unreachable for all of them.
+# Filed as `T-20260920-the-supersession-marker-cannot-be-writte`.
+#
 # A TRIPWIRE FOR THE LITERAL REVERT, AND NOTHING MORE. This comment used to claim this was "the
 # one a footer cannot satisfy". A reviewer refuted that on 2026-09-20: the string below is keyed
 # to the PRE-FIX wording, and the fix itself deleted it -- today's sentence reads "is satisfied,

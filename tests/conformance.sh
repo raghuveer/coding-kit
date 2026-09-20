@@ -6163,14 +6163,33 @@ if step "a declared rung that does not run is named, and blocks a completion cla
 #      conflation the ladder gap is about, one layer down.
 L="$KIT/skills/verify-ladder/SKILL.md"; T="$KIT/docs/TRIAL-PROTOCOL.md"
 bad=0
-grep -q "unsatisfiable" "$L" || { echo "  the ladder does not name the third disposition"; bad=1; }
-grep -qi "blocks a completion claim\|blocks completion" "$L" ||
-  { echo "  the ladder does not say the third disposition blocks completion"; bad=1; }
+# SECTION-ANCHORED, NOT FILE-WIDE. The first version of these greps searched the WHOLE of
+# SKILL.md, and both ladder strings live in `## Satisfaction`. So `## Completion` -- the section
+# whose two-state enumeration IS the defect this task exists to remove -- could be reverted to
+# its pre-fix text with this step still green. Two reviewers found that independently on
+# 2026-09-20, each by restoring the old text and watching the suite pass. An assertion that
+# cannot fail on the defect it names is the thing this whole task is about, rebuilt inside the
+# check written to prove the fix.
+#
+# `sec` extracts one `## ` section by name, so a match must occur INSIDE it. Anchoring costs
+# one awk per assertion and buys the only property that matters here.
+sec() { awk -v h="## $2" '$0==h{f=1;next} /^## /{f=0} f' "$1"; }
+printf '%s' "$(sec "$L" Completion)" > "$WORK.ladder-completion"
+printf '%s' "$(sec "$L" Satisfaction)" > "$WORK.ladder-satisfaction"
+[ -s "$WORK.ladder-completion" ] ||
+  { echo "  SKILL.md has no ## Completion section to anchor to"; bad=1; }
+grep -q "unsatisfiable" "$WORK.ladder-satisfaction" ||
+  { echo "  ## Satisfaction does not name the third disposition"; bad=1; }
+grep -qi "blocks a completion claim\|blocks completion\|never COMPLETE" "$WORK.ladder-completion" ||
+  { echo "  ## Completion does not say an unsatisfiable rung blocks -- the two-state enumeration is back"; bad=1; }
+grep -q "unsatisfiable" "$WORK.ladder-completion" ||
+  { echo "  ## Completion does not mention unsatisfiable at all"; bad=1; }
 grep -q "profile changed mid-trial" "$T" ||
   { echo "  section 3 does not carry the profile-change condition"; bad=1; }
 grep -q "preflight.sh --commands" "$T" ||
   { echo "  pre-flight does not call --commands before the clock starts"; bad=1; }
-check $bad "the ladder names it, and the protocol gates and voids on it"
+rm -f "$WORK.ladder-completion" "$WORK.ladder-satisfaction"
+check $bad "the ladder names it in BOTH sections, and the protocol gates and voids on it"
 
 rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
 ( cd "$rd" || exit 1
@@ -6195,19 +6214,47 @@ rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
   printf '%s' "$out" | grep -q "commands.build      NOTHING DECLARED" ||
     { echo "  arm 2: a comment ran as a command instead of reading as undeclared"; exit 1; }
 
-  # RAN AND FAILED IS NOT A STOP. This is the arm the first version got wrong: it classified on
-  # exit code alone, so `cargo check` exiting 101 with 91 real type errors was reported as
-  # "DECLARED AND DOES NOT RUN" -- a statement about something that did not happen. Section 0's
-  # own baseline box blesses this case in as many words: "a subject whose tests already fail is
-  # a valid trial subject, but only if you knew that first". Measured against the trial-2 copy,
-  # where the old arm would have refused the trial over errors already in its own baseline.
+  # RAN AND FAILED IS NOT "COULD NOT RUN" -- AND IT IS ALSO NOT A SILENT PASS. Both halves are
+  # load-bearing and the arm got each one wrong in turn.
+  #
+  # The first version classified on exit code alone, so `cargo check` exiting 101 over 91 real
+  # type errors was reported as "DECLARED AND DOES NOT RUN" -- a statement about something that
+  # did not happen, and it contradicted section 0's baseline box: "a subject whose tests already
+  # fail is a valid trial subject, but only if you knew that first". That was corrected.
+  #
+  # The correction then went too far the other way, and the T3 chain caught it on 2026-09-20 --
+  # two reviewers, independently. A red command printed a line and the arm exited 0. The
+  # 2026-09-09 trial's three failures ALL exited 101 (jemalloc autoconf, io-uring, and the
+  # 1,464 s container probe on a missing protoc), so the gate did not fire on the very trial it
+  # was built from. Missing tooling and a real compile error both exit 101; no exit-code rule
+  # separates them. So the arm stops and makes a human answer, which is the only honest move
+  # available to it.
   set_cmd typecheck "sh -c 'exit 101'"
   out=$(bash "$P" --commands 2>&1); rc=$?
-  [ $rc -eq 0 ] ||
-    { echo "  arm 3: a command that RAN and reported failures was treated as a stop (rc=$rc)"; exit 1; }
+  [ $rc -eq 1 ] ||
+    { echo "  arm 3: a ran-and-failed command passed without a disposition (rc=$rc)"; exit 1; }
   printf '%s' "$out" | grep -q "ran, exit 101 -- a baseline fact" ||
     { echo "  arm 3: a ran-and-failed command was not named as a baseline fact"; exit 1; }
+  printf '%s' "$out" | grep -q "RAN AND REPORTED FAILURES" ||
+    { echo "  arm 3: the stop did not say what needs dispositioning"; exit 1; }
 
+  # THE BLESSED BASELINE MUST STAY LEGAL. Section 0 permits a known-red subject; what it does
+  # not permit is nobody having looked. Dispositioning is what "you knew that first" means.
+  out=$(KIT_COMMANDS_RED_DISPOSITIONED=1 bash "$P" --commands 2>&1); rc=$?
+  [ $rc -eq 0 ] ||
+    { echo "  arm 3b: a dispositioned known-red baseline was refused (rc=$rc)"; exit 1; }
+
+  # AND THE DISPOSITION MUST NOT BE SET-AND-FORGET. It carries the COUNT, so a variable left
+  # over from an earlier run -- or exported once and never revisited -- stops matching the
+  # moment another command goes red. A flag that survives a change in what it blesses is a
+  # rubber stamp, which is the shape of defect this whole task exists to name.
+  set_cmd test "sh -c 'exit 101'"
+  out=$(KIT_COMMANDS_RED_DISPOSITIONED=1 bash "$P" --commands 2>&1); rc=$?
+  [ $rc -eq 1 ] ||
+    { echo "  arm 3c: a stale disposition count blessed a newly red command (rc=$rc)"; exit 1; }
+  out=$(KIT_COMMANDS_RED_DISPOSITIONED=2 bash "$P" --commands 2>&1); rc=$?
+  [ $rc -eq 0 ] || { echo "  arm 3c: the matching count did not pass (rc=$rc)"; exit 1; }
+  set_cmd test "true"
   # COULD NOT RUN IS a stop, and 127 is the shell saying so. This is the state the box exists
   # for: the tooling is absent, and mid-trial there is no non-voiding remedy.
   # BOTH STATES AT ONCE, because the interesting question is whether a stop HIDES the rest. The

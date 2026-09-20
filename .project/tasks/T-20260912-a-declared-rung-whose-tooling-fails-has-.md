@@ -163,6 +163,58 @@ protocol; it did not exercise the kit's reviewer routing, and the tier should no
 exercised in that second sense.
 
 
+### The two criticals are fixed, 2026-09-20. Nine majors remain open.
+
+**Critical 2 — the conformance assertion could not fail on the defect it names.** The four greps
+were file-wide over `SKILL.md`, and both ladder strings live in `## Satisfaction`, so `## Completion`
+could be reverted to its two-state text with the step still green. The assertions are now
+**section-anchored**: a small `awk` extracts one `## ` section by name and the match must occur
+inside it. `## Completion` must mention `unsatisfiable` AND say it blocks.
+
+**Mutation-proven.** Restoring `## Completion` to its pre-fix text — the exact mutation both
+reviewers used — now takes the step RED, naming which section lost the rule.
+
+**Critical 1 — the gate did not fire on its founding case.** Fixed, and NOT the way it first looks.
+
+The obvious repair, treating exit 101 as "cannot run", was rejected because it is a regression:
+commit `4d0785f` correctly established that `cargo check` exiting 101 over 91 real type errors
+**ran**, and §0's baseline box blesses exactly that subject. A gate that stops there stops on the
+case the protocol permits.
+
+**The real defect is that an exit code cannot carry the distinction.** A missing `protoc` exits 101.
+Ninety-one type errors exit 101. Every exit-code rule trades one false reading for the other. So
+the arm no longer decides: **a red command STOPS and requires a recorded disposition, carrying the
+count, before the clock starts.** The blessed baseline stays legal — the operator blesses it
+explicitly, which is what §0's "only if you knew that first" already demands, instead of this
+script guessing on their behalf.
+
+**Proved in four directions, not one:**
+
+| case | expected | got |
+|---|---|---|
+| two commands exiting 101, no disposition | STOP | `exit 1`, both named |
+| same, `KIT_COMMANDS_RED_DISPOSITIONED=2` | pass | `exit 0` |
+| same, stale count `=1` | STOP | `exit 1` — the flag cannot be set-and-forgotten |
+| all commands green, no variable | pass | `exit 0` — no new friction where nothing is red |
+
+**And the gate itself has a check that can fail.** Mutating `if [ "$_red" -gt 0 ] && …` to
+`if false` takes arm 3 red with *"a ran-and-failed command passed without a disposition (rc=0)"*.
+Run against a full clone, because a partial file copy fails `kit_active` at arm 1 and never
+reaches arm 3 — a first attempt at this proof failed for that reason and is recorded so the next
+reader does not repeat it.
+
+**STILL OPEN: the nine majors from the T3 chain**, recorded as findings against this task. The two
+most consequential, both from the second reviewer:
+
+- **§6:591 cites §3 for a VOID condition §3 does not contain** — verified, zero occurrences of
+  `unsatisfiable` in §3. The eighth condition that was added detects the remedy, not the fault.
+- **`docs/TRIALS/TEMPLATE.md` has an `Outcome` row and no disposition row**, while instructing
+  "Delete nothing". A report in the mandated shape still reaches COMPLETE without passing a rung
+  disposition — the 2026-09-09 headline failure, still reachable.
+
+Neither critical fix touches either. **This task does not close on this change.**
+
+
 ## Notes
 
 **On the tier, stated plainly because it is an argument rather than a floor.** No

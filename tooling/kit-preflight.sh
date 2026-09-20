@@ -463,6 +463,40 @@ case "${1:-}" in
       kit_warn "  this has to be answered now rather than discovered later."
       exit 1
     fi
+    # AN EXIT CODE CANNOT TELL THE TWO APART, SO THIS ARM MUST NOT DECIDE SILENTLY.
+    #
+    # Found by the T3 chain on 2026-09-20, by two reviewers independently, and it is the defect
+    # this whole box was built to prevent -- reproduced inside the box. `_bad` fires only on
+    # shell exit 126 or 127. The 2026-09-09 trial's three failures exited **101**: jemalloc's
+    # autoconf, io-uring, and the 1,464-second container probe on a missing `protoc`. All three
+    # land in `_red` and this arm used to print a summary line and `exit 0`. The gate did not
+    # fire on its own founding case.
+    #
+    # The obvious repair is wrong and was rejected. Treating 101 as "cannot run" is what commit
+    # 4d0785f correctly undid: `cargo check` exiting 101 over 91 real type errors DID run, and
+    # section 0's baseline box blesses exactly that subject -- "a subject whose tests already
+    # fail is a valid trial subject, but only if you knew that first". A gate that stops there
+    # stops on the case the protocol permits.
+    #
+    # Missing `protoc` exits 101. Ninety-one type errors exit 101. **No exit-code rule separates
+    # them**, so every exit-code fix trades one false reading for the other. What this arm can
+    # do honestly is refuse to answer a question it cannot answer: a red command now STOPS and
+    # demands a recorded disposition per command before the clock starts. The blessed baseline
+    # stays legal -- the operator blesses it explicitly, which is the "you knew that first" the
+    # box already requires, rather than it passing silently on this script's guess.
+    if [ "$_red" -gt 0 ] && [ "${KIT_COMMANDS_RED_DISPOSITIONED:-}" != "$_red" ]; then
+      kit_warn "STOP -- $_red declared command(s) RAN AND REPORTED FAILURES"
+      kit_warn "  This script cannot tell a known-red baseline from tooling that could not"
+      kit_warn "  run: a missing build dependency and a real compile error both exit 101 --"
+      kit_warn "  measured on the 2026-09-09 trial, whose three failures all exited 101."
+      kit_warn "  So it does not guess. Disposition each one now, before the clock starts:"
+      kit_warn "    - a KNOWN-RED BASELINE -> record the counts in the trial record's baseline"
+      kit_warn "      box, then re-run with KIT_COMMANDS_RED_DISPOSITIONED=$_red"
+      kit_warn "    - TOOLING THAT COULD NOT RUN -> the rung is unsatisfiable. Fix it HERE;"
+      kit_warn "      editing commands.* after the clock starts voids the trial (section 2)."
+      kit_warn "  The variable records that a human answered, not that the answer was yes."
+      exit 1
+    fi
     printf 'kit: %s pass, %s ran and reported failures, %s with nothing declared\n' \
       "$_ran" "$_red" "$_none"
     exit 0 ;;

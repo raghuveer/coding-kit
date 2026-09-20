@@ -5,7 +5,7 @@ epic: feedback-loop
 tier: T2
 lang: bash
 paths: tooling/kit-finding.sh, skills/verify-ladder/SKILL.md, tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -113,6 +113,31 @@ had reached the orchestrator at all. Spend is automatic and always carries the i
 recorded by whoever reads the reply and has to carry the id across by hand. That asymmetry is the
 mechanical reason 55 of 55 subagent spend rows carry ids while 582 of 643 findings do not, and no
 amount of documenting the flag changes it.
+
+
+### CLOSED 2026-09-20 by the operator.
+
+Closed on evidence that is now a real run rather than a fixture: six findings joined to the spend
+row of the reviewer that produced them, against 0 joinable out of 637 that morning. The three
+criteria were recorded `met` on 2026-09-14 and the join still returned nothing, so the close waited
+on the demonstration rather than on the criteria.
+
+**What the close does NOT claim.** 582 of 643 findings still carry no agent id and 55 carry an id
+in the wrong space. Those are dispositioned, not fixed: the 582 predate the flag being documented,
+and the 55 are legacy under `T-20260914-finding-run-ids-and-spend-run-ids-are-tw`. **The join works;
+the backlog of rows that cannot use it is permanent.** Any future ratio computed over all findings
+must say so, or it will read as a 1% success rate for a mechanism that works.
+
+**Two defects this task's own closing exercise produced, both filed rather than folded in:**
+
+- `T-20260920-joining-finding-to-spend-on-agent-id-wit` — the unguarded join matches empty on empty
+  and returned 2.2MB of cross product that looked like a result. Written by the session minutes
+  after it read AC2, which is the argument for the guard being structural rather than remembered.
+- The asymmetry that causes the whole defect class: **spend is written by a hook at the agent's
+  Stop, before its reply reaches anyone; a finding is written by whoever reads that reply and must
+  carry the id across by hand.** One side cannot forget the id and the other cannot be made to
+  remember it by documentation. Recorded here because it is the reason this task kept looking
+  solved and kept returning zero.
 
 
 ## Notes

@@ -1160,10 +1160,10 @@ for cand in awk gawk mawk original-awk nawk busybox; do
   cr=$(readlink -f "$cp" 2>/dev/null || printf '%s' "$cp")
   if [ "$cand" = busybox ]; then
     "$cr" awk 'BEGIN{exit 0}' >/dev/null 2>&1 || continue
-    cv=$( "$cr" 2>&1 | head -1 | tr -d '\015' )
+    cvraw=$( "$cr" 2>&1 || true ); cv=$(printf %s "$cvraw" | sed -n 1p | tr -d '\015' )
     cinv="$cr awk"
   else
-    cv=$( ( "$cr" --version 2>/dev/null || "$cr" -W version 2>&1 ) | head -1 | tr -d '\015' )
+    cvraw=$( { "$cr" --version 2>/dev/null || "$cr" -W version 2>&1 || true; } ); cv=$(printf %s "$cvraw" | sed -n 1p | tr -d '\015' )
     cinv="$cr"
   fi
   cid=$(printf '%s' "$cv" | tr -cd 'A-Za-z0-9.')

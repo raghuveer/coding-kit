@@ -247,13 +247,13 @@ jobs:
             p=$(command -v "$c" 2>/dev/null) || continue
             if [ "$c" = busybox ]; then
               if "$p" awk 'BEGIN{exit 0}' >/dev/null 2>&1; then
-                b=$("$p" 2>&1 | head -1)
+                raw=$("$p" 2>&1 || true); b=$(printf %s "$raw" | sed -n 1p)
               else
                 echo "  $c -> $p -- present but no awk applet, not counted"
                 continue
               fi
             else
-              b=$( { "$p" --version 2>/dev/null || "$p" -W version 2>&1 || true; } | head -1 )
+              raw=$( { "$p" --version 2>/dev/null || "$p" -W version 2>&1 || true; } ); b=$(printf %s "$raw" | sed -n 1p)
             fi
             [ -n "$b" ] || b="unknown-$c"
             echo "  $c -> $p -- $b"

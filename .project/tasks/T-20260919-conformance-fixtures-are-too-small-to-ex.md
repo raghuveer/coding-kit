@@ -4,7 +4,7 @@ title: Conformance fixtures are too small to exercise the indexer at real scale
 epic: validation
 tier: T2
 paths: tests/conformance.sh
-state: created
+state: completed
 ---
 
 ## Intent
@@ -180,6 +180,39 @@ an implementation that never ran; and the original scale premise would have buil
 fixture that could not catch its own worked example. All three were caught by running the thing
 against a case that should fail. None was caught by reading it. A fourth of the same kind is the
 most likely defect remaining here.
+
+
+### CLOSED 2026-09-20 by the operator. Six criteria met, six findings open.
+
+**Both halves of that sentence are true and neither cancels the other.** The criteria ask that the
+control exist, be proved able to fail, state its cost, run on every platform, answer the scale
+question and decide its own scope. All six are met with the evidence beside each. **That is not the
+same claim as "this step has no known defects", and it is closed on the first claim only.**
+
+**What is open against code now on `main`, recorded here so closing does not bury it:**
+
+| severity | finding |
+|---|---|
+| **major** | a SKIP here fails no leg, so only the workflow's separately-written awk discovery keeps the control running at all |
+| minor | the `task ingest read 0 of` grep is unreachable — `kit-index.sh` exits 1 whenever it prints that line |
+| minor | `cid` falls back to `unknown-$cand`, so one versionless awk under two names counts as two |
+| minor | only `COUNT(*)=3` is compared across awks, so "the indexer agrees" is wider than the assertion |
+| minor | the same `unknown-$c` fallback can satisfy the workflow's `n -lt 2` gate |
+| nit | the shim writes `exec $cinv "$@"` unquoted, so an awk path with a space gives a spurious FAIL |
+
+They were found by a reviewer run as an Agent-tool subagent and are the first findings in this
+repository joinable to the spend row of the run that produced them — recorded under
+`T-20260911-a-finding-recorded-by-hand-carries-no-ag`. **The major one is a real gap**: it says this
+control can stop running silently, which is the same class the task exists to remove, one layer up
+from where the task was looking.
+
+**FIVE GREEN-THAT-CANNOT-FAIL DEFECTS WERE FOUND INSIDE THIS WORK**, in a task whose entire purpose
+was removing one. The original scale premise, the path-based awk dedupe, the busybox banner, the
+unreachable ingest grep, and a SIGPIPE that turned a multi-line banner into a red Windows leg and
+would have turned it into a silent miscount in the suite. Three were caught by the session, one by
+the reviewer, one by CI. **Every one surfaced by running the thing against a case that should fail.
+None by reading it.** That is the finding this task leaves behind, and it is worth more than the
+step.
 
 
 ## Notes

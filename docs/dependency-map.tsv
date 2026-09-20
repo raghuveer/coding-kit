@@ -260,3 +260,5 @@ T-20260920-the-mawk-segfault-reproduces-only-on-the	T-20260919-conformance-fixtu
 T-20260919-conformance-fixtures-are-too-small-to-ex	T-20260920-the-mawk-segfault-reproduces-only-on-the	split-from
 T-20260920-joining-finding-to-spend-on-agent-id-wit	T-20260911-a-finding-recorded-by-hand-carries-no-ag	split-from
 T-20260920-joining-finding-to-spend-on-agent-id-wit	T-20260914-finding-run-ids-and-spend-run-ids-are-tw	related
+T-20260911-a-finding-recorded-by-hand-carries-no-ag	T-20260920-joining-finding-to-spend-on-agent-id-wit	split-from
+T-20260919-conformance-fixtures-are-too-small-to-ex	T-20260911-a-finding-recorded-by-hand-carries-no-ag	related

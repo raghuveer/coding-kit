@@ -3,8 +3,8 @@ id: T-20260912-reduce-peak-context-per-session-and-meas
 title: Reduce peak context per session and measure it against escape rate
 epic: measurement
 tier: T2
-blocked_by: T-20260821-the-kit-does-not-measure-its-own-develop
-state: created
+blocked_by: T-20260821-the-kit-does-not-measure-its-own-develop, T-20260920-resident-overhead-has-no-reading-so-a-co
+state: on-hold
 ---
 
 ## Intent
@@ -143,6 +143,17 @@ can attribute and an escape-rate column of `0` to `0`, which is the outcome all 
 were written to prevent.
 
 ## Notes
+
+**ON HOLD FROM 2026-09-20, behind `T-20260920-resident-overhead-has-no-reading-so-a-co`.** The
+operator ruled option 2 of the three this task's own note listed: file the resident-overhead
+reading as its own task, and let this one wait for an instrument that can attribute a reduction.
+
+It is `on-hold` with a named blocker rather than left `created`, because an open task waiting for
+an unstated reason is the ambiguity the governing ordering document warns about in its section 3.
+Nothing here is withdrawn: AC1 stands and is met, and AC2 to AC4 stay unticked and unamended. The
+refutation of AC4 recorded above is the reason for the hold, not a claim that the criterion was
+satisfied.
+
 
 Deliberately blocked. Per-agent spend works only in plugin mode and the kit registers no
 hooks for its own development, so a compression programme run now would be optimising against a

@@ -37,16 +37,16 @@ rather than patched when the mechanical defects around it were fixed.
 
 ## Acceptance criteria
 
-- [ ] The correct action is at least as cheap as the careless one. Whatever shape that takes, it is
+- [x] The correct action is at least as cheap as the careless one. Whatever shape that takes, it is
       argued against the measured cost above rather than asserted
-- [ ] The stop does not hand over a value that classifies every rung as proceedable. If a template
+- [x] The stop does not hand over a value that classifies every rung as proceedable. If a template
       is printed at all, an unedited paste must not be a valid disposition
-- [ ] Re-running to confirm a disposition does not require re-running every declared command, or
+- [x] Re-running to confirm a disposition does not require re-running every declared command, or
       the reason it must is stated with its cost
-- [ ] Whether the classification is checkable at all is **decided**. It may not be — a human
+- [x] Whether the classification is checkable at all is **decided**. It may not be — a human
       asserting "this failure is pre-existing" is not mechanically verifiable — and if so, that is
       recorded as the boundary of what this control can do, the way the prose check's ceiling was
-- [ ] A check that can fail, whatever is built
+- [x] A check that can fail, whatever is built
 
 ### END-TO-END REPLAY, 2026-09-20 — this task is now the ONLY thing between the founding scenario and COMPLETE
 
@@ -133,6 +133,48 @@ supplies the wrong one for free.
   this control — the way the prose check's ceiling now is — rather than chased through a fourth
   mechanism.
 
+
+### The friction criterion, ruled 2026-09-20 — and the cost was overstated, by me
+
+**Ruled: confirming a disposition MUST re-run every declared command.** A disposition is a
+statement about what *this* run observed. Accepting a cached red set would bless an observation
+taken at some other time, which is precisely the staleness that got the count-based version
+rejected. There is no way to know the set is unchanged without looking.
+
+**But the cost is not what was reported, including by me, repeatedly.** The reviewer wrote that the
+gate *"mandates a second full run"*, and I restated that as a doubling of every trial in four
+separate messages. Measured 2026-09-20:
+
+| case | invocations |
+|---|---|
+| red set **known** — set the variable, then run | **1** |
+| red set **unknown or changed** | 2 |
+
+A matching disposition supplied up front exits 0 on the first run. **So the charge is one extra
+sweep per (subject, red-set) — not per trial, not per invocation — and it disappears once a subject
+is familiar.**
+
+**And the extra sweep is the subject's cost, not the kit's.** The arm itself runs in ~2.3 s on the
+fixture. The 1,464 s figure is one rung of the real evaluation subject compiling a dependency tree
+in a container — a cost the trial was going to pay at rung 1 regardless. **The gate moves it
+earlier, to where a remedy is still legal**, because §2 makes the same edit mid-trial void the
+trial. That is the whole argument for pre-flight, and the friction objection was measuring the
+subject's build and attributing it to the gate.
+
+**What this does NOT overturn.** The reviewer's underlying point stands: a design that makes the
+careless action cheap and the careful one expensive gets defeated by its operator. That is why the
+printed default was removed. The correction is only to the magnitude, and it matters because a
+doubling would be an argument against the gate while one extra sweep on first acquaintance is not.
+
+### All criteria are now met. The close is the operator's.
+
+Recorded rather than closed, per ADR 0010. **What a reader should stay sceptical of:** none of this
+makes a *considered* wrong answer detectable. An operator who types `=baseline` for a rung that
+could not run still proceeds, and the report's disposition row will agree with them because the
+same person writes both. The classification was ruled unverifiable earlier today with its own
+measurement; **attribution is the compensating control and it does not work yet** —
+`T-20260920-a-disposition-that-cannot-be-verified-mu` is filed, and until it lands the event
+carries no actor.
 
 ## Notes
 

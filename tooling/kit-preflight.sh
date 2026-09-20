@@ -488,6 +488,29 @@ case "${1:-}" in
     #                    rather than answerable, and this exits 2 rather than 0 or 1 so a caller
     #                    can tell the two stops apart.
     #
+    # WHETHER CONFIRMING A DISPOSITION MUST RE-RUN EVERY COMMAND: RULED YES, WITH THE COST.
+    #
+    # `T-20260920-the-disposition-gate-asks-for-a-transcri` asks for this to be answered rather
+    # than left implicit, because a reviewer measured the friction and argued it is what pushes an
+    # operator to bypass the gate. It must re-run, and the reason is the same one that made the
+    # disposition an identity rather than a count: **a disposition is a statement about what THIS
+    # run observed.** Accepting a cached red set would bless an observation taken at some other
+    # time, which is exactly the staleness that got the count-based version rejected on
+    # 2026-09-20. There is no way to know the set is unchanged without looking.
+    #
+    # BUT THE COST IS NOT WHAT IT WAS REPORTED TO BE, AND THE DIFFERENCE MATTERS. The reviewer
+    # wrote that the gate "mandates a second full run", and this comment previously repeated it.
+    # Measured: a KNOWN red set is dispositioned in ONE invocation -- set the variable before
+    # running and a matching set exits 0 immediately. The second run is needed only when the red
+    # set is UNKNOWN or has CHANGED. So the charge is one extra sweep per (subject, red-set), not
+    # per trial and not per invocation, and it falls away entirely once a subject is familiar.
+    #
+    # AND THE EXTRA SWEEP IS THE SUBJECT'S COST, NOT THE KIT'S. On the trial fixture the whole arm
+    # runs in ~2.3 s. On the real evaluation subject one rung alone was measured at 1,464 s in
+    # container -- that is `cargo check` compiling a dependency tree, and it is what the trial was
+    # going to pay at rung 1 regardless. The gate moves that cost EARLIER, to where a remedy is
+    # still legal; §2 makes the same edit mid-trial void the trial.
+    #
     # THE ANSWER IS PERSISTED, because a disposition that lives only in an environment variable
     # dies with the shell and no later reader can audit it. One event row per run.
     if [ "$_red" -gt 0 ]; then

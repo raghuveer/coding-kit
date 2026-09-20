@@ -4,7 +4,7 @@ title: Section 6 cites section 3 for an unsatisfiable-rung VOID condition sectio
 epic: validation
 tier: T2
 paths: docs/TRIAL-PROTOCOL.md
-state: created
+state: completed
 ---
 
 ## Intent

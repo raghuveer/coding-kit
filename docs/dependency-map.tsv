@@ -255,3 +255,4 @@ T-20260919-the-second-exit-trap-drops-kit-plan-refu	T-20260817-a-cluster-pack-fi
 T-20260919-conformance-fixtures-are-too-small-to-ex	T-20260817-a-cluster-pack-file-list-ignores-declare	split-from
 T-20260919-conformance-fixtures-are-too-small-to-ex	T-20260822-process-creation-costs-one-second-on-the	related
 T-20260912-reduce-peak-context-per-session-and-meas	T-20260914-the-escape-rate-numerator-has-no-writer-	related
+T-20260920-resident-overhead-has-no-reading-so-a-co	T-20260912-reduce-peak-context-per-session-and-meas	split-from

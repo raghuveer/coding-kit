@@ -258,3 +258,5 @@ T-20260912-reduce-peak-context-per-session-and-meas	T-20260914-the-escape-rate-n
 T-20260920-resident-overhead-has-no-reading-so-a-co	T-20260912-reduce-peak-context-per-session-and-meas	split-from
 T-20260920-the-mawk-segfault-reproduces-only-on-the	T-20260919-conformance-fixtures-are-too-small-to-ex	split-from
 T-20260919-conformance-fixtures-are-too-small-to-ex	T-20260920-the-mawk-segfault-reproduces-only-on-the	split-from
+T-20260920-joining-finding-to-spend-on-agent-id-wit	T-20260911-a-finding-recorded-by-hand-carries-no-ag	split-from
+T-20260920-joining-finding-to-spend-on-agent-id-wit	T-20260914-finding-run-ids-and-spend-run-ids-are-tw	related

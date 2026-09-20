@@ -32,8 +32,10 @@ returns nothing reads exactly like a join over data nobody recorded.
 - [x] It is decided and written down which space `agent_id` holds, and the other one either gets
       its own column or is refused at the writer. A column that accepts both is the state this
       task exists to end.
-- [ ] The 48 existing rows are dispositioned rather than left to look like failures — they were
+- [x] The 48 existing rows are dispositioned rather than left to look like failures — they were
       recorded correctly against the convention of their day.
+      **DISPOSITIONED 2026-09-20 by the operator. They are legacy, not errors, and they are
+      permanently unjoinable.** See the disposition below — and note the count is no longer 48.
 - [x] `kit-status.sh` keeps reporting the two faults apart. "No id" and "an id that matches
       nothing" have different remedies, and collapsing them would hide this defect class again.
 - [x] A check that can fail: a finding recorded with the harness id joins; one recorded with a
@@ -74,6 +76,44 @@ marking them, and every mark that retires a finding is operator-reserved — `.c
 is explicit. `kit-vindicate.sh --finding ID --false --note TEXT` now exists to make it possible
 at all (`T-20260914-a-finding-that-was-never-a-defect-has-no`); before it, the rows could not be
 aimed at. The marks themselves are proposed, not run.
+
+### Disposition of the non-joining rows, 2026-09-20 — operator
+
+**Re-derived rather than carried forward: the count is 55, not 48, and they are THREE faults, not
+one.** The 48 in this task's Intent was the label class alone, and seven more rows have landed
+since it was written.
+
+| id | rows | what it is |
+|---|---|---|
+| `blind-second` | 16 | operator-chosen run label |
+| `design2` | 15 | operator-chosen run label |
+| `entry-final` | 12 | operator-chosen run label |
+| `entry-impl` | 5 | operator-chosen run label |
+| `aa8f5759-c366-4687-b752-400b012601f0` | 3 | **a SESSION id** |
+| `aa8f5759-…-audit` | 3 | a session id with a suffix |
+| `preflight-probe` | 1 | a probe label |
+
+**The 48 labels are legacy and are dispositioned as such.** They were recorded correctly against
+the convention of their day, the decision of 2026-09-14 changed that convention, and the runs they
+name are gone — so no rewrite could recover the ids they would need. They stay in the record and
+are reported as a standing count rather than folded into zero.
+
+**The 6 session-id rows are a DIFFERENT fault and should not be filed under the same heading.** A
+session id covers every agent in the session and so identifies no single run;
+`kit-finding.sh`'s help says exactly this and says it was written because five rows here had been
+given one. They are equally unjoinable and equally unrewritable, but the *remedy* differs: a label
+needs a convention, a session id needs the writer to refuse it. `kit-finding.sh` has refused a
+non-resolving id at record time since PR #132, so this class is closed going forward — these six
+predate it.
+
+**No `kit-resolve.sh` mark is used, deliberately.** Its four marks are `--fixed`, `--unassessable`,
+`--superseded` and `--false`, and **none of them means "recorded correctly, permanently
+unjoinable"**. `--fixed` would claim something was addressed and nothing was; `--unassessable`
+says nobody can tell what the finding said, and these are perfectly legible; `--false` says it was
+never a defect, and they were real. Reaching for the nearest mark would destroy the distinction
+this task exists to preserve. The disposition is this written record plus the standing count
+`kit-status.sh` already prints apart from the no-id count.
+
 
 ## Notes
 

@@ -68,6 +68,53 @@ flag, so a test going through a different door proves the plumbing and cannot ca
 at all. The step now goes through the documented one, and the mutation that blanks its
 `--agent-id` pass-through takes arm 1 red.
 
+### The join returned rows for the first time, 2026-09-20
+
+**Every criterion above was recorded `met` on 2026-09-14, and the join had still never returned a
+row.** 637 findings, 0 joinable. The mechanism was proved in a conformance fixture and nowhere
+else, which is the shape this repository keeps filing against itself: a control demonstrated only
+where it was built.
+
+A reviewer was run as an Agent-tool subagent against a real change — the multi-awk conformance step
+— and its six findings were recorded through the documented door with `--agent-id` carrying the
+harness subagent id the spend hook had written. Re-derived from a rebuilt index:
+
+| | before | after |
+|---|---|---|
+| findings total | 637 | 643 |
+| no agent id | 582 | 582 |
+| id matching no spend row | 55 | 55 |
+| **joinable** | **0** | **6** |
+
+**What the join now answers, for one run, which nothing in this repository could answer before:**
+
+    agent            general-purpose      model   claude-opus-5
+    turns    36      tok_in  72           tok_out 28,440
+    cache_read  2,103,244                 cache_write 235,308
+    found    1 major, 4 minor, 1 nit
+
+646,731 billing-weighted input-token-equivalents (in x1 + cache-write x1.25 + cache-read x0.1 +
+out x5), so **107,789 per finding**. That figure is a first measurement, not a benchmark: n=1, one
+model, one reviewer, one subject.
+
+**TWO THINGS THE EXERCISE ITSELF EXPOSED, both worth more than the number.**
+
+**1. The naive join is a cartesian bomb, and it looks like success.** The first query run was
+`finding f JOIN spend s ON f.agent_id = s.agent_id` with no guard. `''` matches `''`, so 582
+id-less findings joined 35 id-less spend rows and produced 2.2MB of rows reading `critical` with
+an empty summary. Any consumer that joins these tables without excluding the empty string gets
+confident garbage rather than an empty result. This is AC2 of this task — *"an empty string that
+looks like a value is the failure"* — demonstrated accidentally, and it argues the guard belongs in
+a view or in the schema rather than in each caller's WHERE clause.
+
+**2. Spend and findings are recorded at different moments, which is WHY the ids diverge.** The
+reviewer's spend row was written by the Stop hook the instant the agent stopped, before its report
+had reached the orchestrator at all. Spend is automatic and always carries the id; the finding is
+recorded by whoever reads the reply and has to carry the id across by hand. That asymmetry is the
+mechanical reason 55 of 55 subagent spend rows carry ids while 582 of 643 findings do not, and no
+amount of documenting the flag changes it.
+
+
 ## Notes
 
 Adjacent: `T-20260808-record-which-mechanism-produced-a-findin` records *which mechanism* produced a

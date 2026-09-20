@@ -131,8 +131,27 @@ this is saying so.
       **MET, and here is the number: 2,110 ms** for the whole step across THREE implementations
       (gawk, mawk, original-awk) on a three-task fixture — roughly 700 ms per awk including its
       index build. Bounded by how many awks are installed, not by backlog size.
-- [ ] The step runs on every platform the matrix covers, and **pins the awk it tests** — otherwise
+- [x] The step runs on every platform the matrix covers, and **pins the awk it tests** — otherwise
       the Windows leg keeps testing one gawk and keeps passing
+      **MET on all three legs, run 35487558693 (PR #165).** The Windows probe was written as a
+      probe and not a promise, and it succeeded:
+
+      | leg | implementations the step ran | result |
+      |---|---|---|
+      | `ubuntu-latest` | **4** — gawk 5.2.1, mawk 1.3.4 20240123, original-awk 20231127, BusyBox 1.36.1 | PASS |
+      | `macos-latest` | 2 — BSD awk 20200816, gawk 5.4.1 | PASS |
+      | `windows-latest` | 2 — gawk 5.4.1, BusyBox 1.38.0 via choco | PASS |
+
+      Every version is printed by the step at run time, which is the "pins what it tests" half:
+      the log names the implementation rather than leaving `/usr/bin/awk` to mean whatever the
+      image happens to ship. **`busybox` turned out to be pre-installed on `ubuntu-latest`**, so
+      that leg gained a fourth implementation for free.
+
+      **The coverage is still carried by ONE of them.** gawk 5.2.1 on `ubuntu-latest` is the only
+      awk verified to catch the defect. macOS and Windows both run gawk 5.4.1, which passed the
+      pre-fix tree under the old fixtures, and whether either catches it under THIS step is
+      untested. So this criterion is met as written — the step runs everywhere — and that is not
+      the same claim as "every leg would catch a regression".
 - [x] **The scale question is answered rather than dropped.** The mawk segfault at 224 is a real
       second manifestation that no container reproduced. Either a scale fixture is shown to catch
       it, or this task records that it is only reachable on the runner and files that separately.
@@ -147,6 +166,21 @@ this is saying so.
       step exercising it under every installed awk covers that class. Running the whole suite once
       per awk would multiply ~100 steps by the awk count to re-test paths that embed no awk at
       all. If a second awk-bearing program appears, it gets a step, not a matrix.
+
+### All six criteria are met as of 2026-09-20. The close is the operator's.
+
+Recorded rather than closed, because ADR 0010 makes the transition the operator's and a session
+certifying its own output is the signature that carries no information. Each criterion above
+carries the evidence to check, so ticking is a read rather than a re-derivation.
+
+**What a reader should be sceptical of, named here rather than left to be discovered.** Three
+green-that-cannot-fail bugs were found INSIDE this work while building the control against that
+exact class: the awk dedupe ran gawk twice and reported PASS; the busybox banner would have counted
+an implementation that never ran; and the original scale premise would have built a two-hundred-task
+fixture that could not catch its own worked example. All three were caught by running the thing
+against a case that should fail. None was caught by reading it. A fourth of the same kind is the
+most likely defect remaining here.
+
 
 ## Notes
 

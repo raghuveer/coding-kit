@@ -6173,22 +6173,37 @@ bad=0
 #
 # `sec` extracts one `## ` section by name, so a match must occur INSIDE it. Anchoring costs
 # one awk per assertion and buys the only property that matters here.
-# STOPS AT ANY HEADING, AND AT A HORIZONTAL RULE. The first version closed a section only on
-# the next `## `, and `## Completion` is the LAST `## ` heading in SKILL.md -- so the "anchored"
-# extraction ran to end of file and swallowed anything appended there. A reviewer defeated the
-# whole assertion on 2026-09-20 by restoring the two-state text and adding one trailing
-# See-also footer. Any heading level closes it now, and so does `---`.
+# WHAT THIS CHECK CAN AND CANNOT DO, stated first because three attempts got it wrong.
 #
-# WHAT THIS STILL CANNOT DO, said plainly rather than discovered again: a grep cannot tell
-# NORMATIVE prose from a footnote that happens to use the same words. A mutation that inserts
-# the keywords INSIDE the section still passes. This step is a tripwire against the regression
-# that actually happened, not a proof that the section says what it should. The negative
-# assertion below is what carries most of the weight: the pre-fix rule is refused by name.
-sec() { awk -v h="## $2" '$0==h{f=1;next} /^#{1,6} /{f=0} /^---[[:space:]]*$/{f=0} f' "$1"; }
+# It is trying to assert a SEMANTIC property -- "this section says an unsatisfiable rung blocks
+# completion" -- with a LEXICAL tool. That gap is why every version so far was defeated, each by
+# a bypass one step sideways from the last:
+#
+#   file-wide greps        -> both strings lived in `## Satisfaction`; reverting `## Completion`
+#                             entirely stayed green.
+#   section-anchored       -> `## Completion` is the LAST `## ` heading, so the extract ran to
+#                             EOF and a trailing footer satisfied it.
+#   any-heading-anchored   -> `sec()` re-opened on a DUPLICATE `## Completion`, so the same
+#      + a negative grep      footer bypass worked with a heading in front of it; and the
+#                             negative grep was keyed to "either satisfied or", a literal the
+#                             fix itself had deleted, so dropping one word defeated it.
+#
+# THIS VERSION DOES NOT CLAIM TO CLOSE THAT GAP. It is a tripwire for the regression that
+# actually happened, and the weight of this step sits on the mechanical arms below, not here.
+# Two things are tightened because they are cheap and were genuinely broken:
+#   - the heading must occur EXACTLY ONCE, so a duplicate cannot splice a footer into the
+#     section. A duplicate heading is now itself the failure, which is easier to assert than
+#     the absence of its consequences.
+#   - `sec()` never re-opens once closed.
+# A mutation that edits the normative text IN PLACE still passes, and no grep will catch that.
+secn() { grep -c "^## $2\$" "$1"; }
+sec() { awk -v h="## $2" '$0==h && !seen{f=1;seen=1;next} seen && /^#{1,6} /{f=0} seen && /^---[[:space:]]*$/{f=0} f' "$1"; }
 printf '%s' "$(sec "$L" Completion)" > "$WORK.ladder-completion"
 printf '%s' "$(sec "$L" Satisfaction)" > "$WORK.ladder-satisfaction"
 [ -s "$WORK.ladder-completion" ] ||
   { echo "  SKILL.md has no ## Completion section to anchor to"; bad=1; }
+[ "$(secn "$L" Completion)" = 1 ] ||
+  { echo "  SKILL.md does not have exactly one ## Completion heading -- a duplicate splices a footer into the section"; bad=1; }
 grep -q "unsatisfiable" "$WORK.ladder-satisfaction" ||
   { echo "  ## Satisfaction does not name the third disposition"; bad=1; }
 grep -qi "blocks a completion claim\|blocks completion\|never COMPLETE" "$WORK.ladder-completion" ||
@@ -6263,7 +6278,7 @@ rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
   # permit is nobody having looked.
   out=$(KIT_COMMANDS_RED_DISPOSITIONED="typecheck:101=baseline" bash "$P" --commands 2>&1); rc=$?
   [ $rc -eq 0 ] ||
-    { echo "  arm 3b: a dispositioned known-red baseline was refused (rc=$rc)"; exit 1; }
+    { echo "  arm 3c: a dispositioned known-red baseline was refused (rc=$rc)"; exit 1; }
 
   # THE SWAP, AT CONSTANT COUNT. This is the case the count-based gate passed and the reason it
   # was rejected: one red rung before, one red rung after, a DIFFERENT rung. A stale disposition
@@ -6278,8 +6293,32 @@ rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
   # AND THE EXIT CODE MUST CARRY THE DECISION. An unsatisfiable rung is VOID-shaped, not an
   # answerable baseline, so a caller must be able to tell the two stops apart.
   out=$(KIT_COMMANDS_RED_DISPOSITIONED="lint:101=unsatisfiable" bash "$P" --commands 2>&1); rc=$?
-  [ $rc -eq 2 ] ||
-    { echo "  arm 3e: an unsatisfiable disposition did not exit 2 (rc=$rc)"; exit 1; }
+  [ $rc -eq 3 ] ||
+    { echo "  arm 3e: an unsatisfiable disposition did not exit 3 (rc=$rc)"; exit 1; }
+
+  # THE MALFORMED ENTRY. A suffix glob accepted `rung:exit=unsatisfiable=baseline` as baseline
+  # and exited 0 -- an entry naming the BLOCKING classification, read as the proceeding one.
+  out=$(KIT_COMMANDS_RED_DISPOSITIONED="lint:101=unsatisfiable=baseline" bash "$P" --commands 2>&1); rc=$?
+  [ $rc -eq 1 ] ||
+    { echo "  arm 3f: rung=unsatisfiable=baseline was accepted instead of refused (rc=$rc)"; exit 1; }
+
+  # THE ANSWER MUST ACTUALLY BE WRITTEN. The commit that added the event claimed "THE ANSWER IS
+  # PERSISTED" and nothing checked it: the write ends `|| true` with output discarded, so
+  # deleting it outright left this step green. Verifying that an event WAS written once is not
+  # the same claim as verifying it MUST be, and that distinction is the whole of this task.
+  rm -f .project/events.ndjson
+  KIT_COMMANDS_RED_DISPOSITIONED="lint:101=baseline" bash "$P" --commands >/dev/null 2>&1
+  grep -q '"kind":"preflight-commands"' .project/events.ndjson 2>/dev/null ||
+    { echo "  arm 3g: the disposition was not written to the event log"; exit 1; }
+  grep -q '"red":"lint:101"' .project/events.ndjson 2>/dev/null ||
+    { echo "  arm 3g: the event does not record WHICH rungs were red"; exit 1; }
+  grep -q '"dispositioned":"lint:101=baseline"' .project/events.ndjson 2>/dev/null ||
+    { echo "  arm 3g: the event does not record what the operator decided"; exit 1; }
+  # AND IT MUST BE VALID JSON. An entry carrying a quote used to append a line that no reader
+  # could parse, while the gate exited 0.
+  python3 -c "import json,sys
+[json.loads(l) for l in open('.project/events.ndjson') if l.strip()]" 2>/dev/null ||
+    { echo "  arm 3g: the event log is no longer valid JSON"; exit 1; }
   set_cmd lint "true"
   # COULD NOT RUN IS a stop, and 127 is the shell saying so. This is the state the box exists
   # for: the tooling is absent, and mid-trial there is no non-voiding remedy.

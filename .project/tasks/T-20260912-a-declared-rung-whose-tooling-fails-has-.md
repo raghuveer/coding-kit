@@ -328,6 +328,63 @@ second reviewer measured is unchanged — a subject with red commands still cost
 pre-flight run.
 
 
+### Third chain's findings addressed, 2026-09-20 — and the prose check is demoted, not fixed
+
+Third chain: **reject** and **revise**, 17 findings. It split cleanly, and the split decided what
+to do.
+
+**WHAT HELD, and it is the half that was rebuilt.** One reviewer ran a 15-value probe table against
+the identity match on a live subject: wrong order, duplicates, an extra non-red rung, a green rung,
+empty classification, wrong case, leading space, trailing text, and a rung red at a *different exit
+code* — **all stop**. The count-to-identity rebuild genuinely closed the stale-value bypass. Arm
+independence verified for all four arms, each reddening alone under a mutation isolating its own
+mechanism, including the correction made after a coarse mutation had reddened arm 3 first.
+
+**WHAT WAS DEFEATED, for the third time: the documentation assertion.** Two separate bypasses, both
+verified here before being accepted:
+
+- `sec()` set its flag on EVERY line equal to the heading, so a **duplicate `## Completion`** at EOF
+  spliced a footer into the section and the attempt-2 bypass worked again with a heading in front
+  of it.
+- The negative grep was keyed to `"either satisfied or"` — **a literal the fix itself had deleted**.
+  The current sentence reads *"is satisfied, or explicitly declared unavailable"*, so the grep
+  returns zero against the live file and only ever fires on a verbatim historical revert. Dropping
+  the single word *either* from a revert defeats it.
+
+**THE JUDGEMENT: stop trying to prove this with greps.** The check asserts a SEMANTIC property with
+a LEXICAL tool, and each fix moved the bypass one step sideways — file-wide, then section-anchored,
+then any-heading-anchored plus a negative grep. Three attempts, three defeats, four reviewers. That
+is the ceiling of the technique, not a run of bad luck.
+
+So the step now **says so in its own comment**, the claim that the negative assertion carries the
+weight is withdrawn, and the weight sits on the mechanical arms. Two cheap tightenings were kept
+because they were genuinely broken: the heading must occur **exactly once** (a duplicate is now
+itself the failure, which is easier to assert than the absence of its consequences), and `sec()`
+never re-opens once closed. **A mutation that edits the normative text in place still passes, and
+no grep will catch that** — recorded rather than left to be rediscovered a fourth time.
+
+**The four mechanical fixes, each proved:**
+
+| fix | proof |
+|---|---|
+| `sec()` duplicate-heading bypass | the exact attempt-3 bypass — reworded revert **plus** duplicate-heading footer — now fails on three counts, the duplicate assertion firing first |
+| the event write had no check | deleting the write outright now reddens **arm 3g**: *"the disposition was not written to the event log"*. Arms also assert the payload names which rungs were red and what was decided, and that the log is still valid JSON |
+| `exit 2` collided with not-a-repo, not-adopted and bad usage | **exit 3**, caught by arm 3e |
+| suffix-glob accepted `rung:exit=unsatisfiable=baseline` as baseline | exactly one `=` per entry, counted; caught by arm 3f |
+
+Also fixed: operator input is split on comma with globbing off, instead of being word-split and
+glob-expanded against the working directory; and two assertions that both printed "arm 3b" now
+print distinct labels.
+
+**STILL OPEN AND NOT PATCHED, deliberately.** The stop prints a paste-ready all-`=baseline` value —
+the exact classification the founding incident needed — so the gate forces a per-rung
+*transcription* rather than a per-rung *judgement*. That is a design question about where judgement
+lives, not a bug, and it stays filed. §3 still carries no unsatisfiable-rung condition though §6
+cites it for one, and `docs/TRIALS/TEMPLATE.md` still contains the string "rung" zero times. **So a
+trial can still reach COMPLETE**: the only thing between the founding scenario and that outcome is
+one paragraph of prose an agent must choose to apply, which is what failed on 2026-09-09.
+
+
 ## Notes
 
 **On the tier, stated plainly because it is an argument rather than a floor.** No

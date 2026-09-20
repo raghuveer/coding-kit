@@ -512,16 +512,32 @@ case "${1:-}" in
         [ -n "$_got" ] && kit_warn "  (the value supplied names \"$_gotids\"; this run observed \"$_want\")"
         exit 1
       fi
-      _unsat=""
-      for _e in $(printf '%s' "$_got" | tr ',' ' '); do
-        case "$_e" in
-          *=baseline)      ;;
-          *=unsatisfiable) _unsat="$_unsat ${_e%%=*}" ;;
-          *) kit_warn "STOP -- \"$_e\" carries no disposition"
+      # SPLIT ON COMMA WITH GLOBBING OFF. `for _e in $(... | tr , ' ')` word-split and
+      # GLOB-EXPANDED a fully operator-controlled value against the working directory. No
+      # fail-open was built from it because the identity check above runs first, but passing
+      # operator input through pathname expansion is not something to leave standing.
+      _unsat=""; _oldifs=$IFS; IFS=','; set -f
+      for _e in $_got; do
+        # EXACTLY ONE `=`, CHECKED BY COUNTING. A suffix glob accepted
+        # `typecheck:101=unsatisfiable=baseline` as baseline and exited 0 -- an entry that names
+        # the blocking classification, silently read as the proceeding one.
+        case "$(printf '%s' "$_e" | tr -cd '=' )" in
+          '=') ;;
+          *) IFS=$_oldifs; set +f
+             kit_warn "STOP -- \"$_e\" is not one rung and one disposition"
+             kit_warn "  Each entry is exactly rung:exit=baseline or rung:exit=unsatisfiable."
+             exit 1 ;;
+        esac
+        case "${_e##*=}" in
+          baseline)      ;;
+          unsatisfiable) _unsat="$_unsat ${_e%=*}" ;;
+          *) IFS=$_oldifs; set +f
+             kit_warn "STOP -- \"$_e\" carries no disposition"
              kit_warn "  Each entry ends =baseline or =unsatisfiable. Nothing else is a decision."
              exit 1 ;;
         esac
       done
+      IFS=$_oldifs; set +f
       bash "$(dirname "$0")/kit-event.sh" "" preflight-commands \
         "{\"red\":\"$_want\",\"dispositioned\":\"$_got\"}" >/dev/null 2>&1 || true
       if [ -n "$_unsat" ]; then
@@ -530,7 +546,11 @@ case "${1:-}" in
         kit_warn "  inside a trial the outcome is VOID rather than COMPLETE -- see the ladder's"
         kit_warn "  ## Completion. Fix the tooling now; after the clock starts there is no"
         kit_warn "  non-voiding remedy."
-        exit 2
+        # 3, NOT 2. In this same script 2 already means "not a git repository", "the kit is
+        # not adopted here" and bad usage -- the header defines it as "the question could not
+        # be asked". A caller seeing 2 could not tell an operator's VOID ruling from a
+        # precondition failure, so the previous claim that 2 distinguished them was false.
+        exit 3
       fi
     fi
     printf 'kit: %s pass, %s ran and reported failures, %s with nothing declared\n' \

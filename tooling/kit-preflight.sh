@@ -423,7 +423,7 @@ case "${1:-}" in
     ROOT=$(kit_root) || { kit_warn "not a git repository"; exit 2; }
     kit_active "$ROOT" || { kit_warn "the kit is not adopted here"; exit 2; }
     PROFILE=$(kit_profile "$ROOT")
-    _bad=0; _ran=0; _none=0; _red=0
+    _bad=0; _ran=0; _none=0; _red=0; _redlist=""
     for _k in build test lint typecheck; do
       _cmd=$(kit_cfg "$PROFILE" "commands.$_k" "")
       case "$_cmd" in
@@ -450,7 +450,7 @@ case "${1:-}" in
                  printf '       %s\n' "$_cmd" >&2
                  _bad=$((_bad+1)) ;;
         *)       printf 'kit: commands.%-10s ran, exit %s -- a baseline fact, not a stop\n' "$_k" "$_rc"
-                 _red=$((_red+1)) ;;
+                 _red=$((_red+1)); _redlist="$_redlist $_k:$_rc" ;;
       esac
     done
     if [ "$_bad" -gt 0 ]; then
@@ -462,6 +462,96 @@ case "${1:-}" in
       kit_warn "  editing commands.* mid-trial voids it (TRIAL-PROTOCOL.md section 2), so"
       kit_warn "  this has to be answered now rather than discovered later."
       exit 1
+    fi
+    # A COUNT IS NOT A FINGERPRINT, AND THE FIRST VERSION OF THIS GATE USED A COUNT.
+    #
+    # Rejected by the second T3 chain on 2026-09-20, by two reviewers independently. The gate
+    # compared `KIT_COMMANDS_RED_DISPOSITIONED` against the NUMBER of red commands, so a value
+    # given for one set silently blessed a different set of the same size: disposition
+    # `test,typecheck` at 2, fix typecheck, let `build` go red instead, and the stale 2 still
+    # passed. A single `export` in a shell profile or CI block blessed every same-sized case
+    # forever. The comment here previously asserted the opposite and was cited as evidence for
+    # it, which made it a false rationale rather than merely a weak check.
+    #
+    # So the disposition now carries IDENTITY and CLASSIFICATION, not cardinality:
+    #
+    #   KIT_COMMANDS_RED_DISPOSITIONED="build:101=baseline,test:101=unsatisfiable"
+    #
+    # The rung names and their exit codes must match exactly what this run observed, in the
+    # loop's own fixed order, so a stale value cannot survive a change in WHICH rung is red, in
+    # what it exited with, or in how many there are. And each entry carries what the operator
+    # decided, because the two branches of this stop are not the same outcome:
+    #
+    #   =baseline        a known-red subject, which section 0 blesses -- "only if you knew that
+    #                    first". Proceed.
+    #   =unsatisfiable   the tooling could not run. The rung is unsatisfiable, the trial is VOID
+    #                    rather than answerable, and this exits 2 rather than 0 or 1 so a caller
+    #                    can tell the two stops apart.
+    #
+    # THE ANSWER IS PERSISTED, because a disposition that lives only in an environment variable
+    # dies with the shell and no later reader can audit it. One event row per run.
+    if [ "$_red" -gt 0 ]; then
+      _want=""
+      for _p in $_redlist; do _want="$_want${_want:+,}$_p"; done
+      _got="${KIT_COMMANDS_RED_DISPOSITIONED:-}"
+      _gotids=$(printf '%s' "$_got" | tr ',' '\n' | sed 's/=.*$//' | tr '\n' ',' | sed 's/,$//')
+      if [ "$_gotids" != "$_want" ]; then
+        kit_warn "STOP -- $_red declared command(s) RAN AND REPORTED FAILURES"
+        kit_warn "  This script cannot tell a known-red baseline from tooling that could not"
+        kit_warn "  run: a missing build dependency and a real compile error both exit 101 --"
+        kit_warn "  measured on the 2026-09-09 trial, whose three failures all exited 101."
+        kit_warn "  So it does not guess. Disposition each one, by name, before the clock starts:"
+        kit_warn ""
+        kit_warn "    KIT_COMMANDS_RED_DISPOSITIONED=\"$(printf '%s' "$_want" | sed 's/\([^,]*\)/\1=baseline/g')\""
+        kit_warn ""
+        kit_warn "  Replace each =baseline with =unsatisfiable where the tooling could NOT run."
+        kit_warn "  =baseline      a known-red subject. Record the counts in the trial record's"
+        kit_warn "                 baseline box; section 0 blesses this only if you knew first."
+        kit_warn "  =unsatisfiable the rung cannot run. Fix it HERE -- editing commands.* after"
+        kit_warn "                 the clock starts voids the trial (TRIAL-PROTOCOL.md section 2)."
+        [ -n "$_got" ] && kit_warn "  (the value supplied names \"$_gotids\"; this run observed \"$_want\")"
+        exit 1
+      fi
+      # SPLIT ON COMMA WITH GLOBBING OFF. `for _e in $(... | tr , ' ')` word-split and
+      # GLOB-EXPANDED a fully operator-controlled value against the working directory. No
+      # fail-open was built from it because the identity check above runs first, but passing
+      # operator input through pathname expansion is not something to leave standing.
+      _unsat=""; _oldifs=$IFS; IFS=','; set -f
+      for _e in $_got; do
+        # EXACTLY ONE `=`, CHECKED BY COUNTING. A suffix glob accepted
+        # `typecheck:101=unsatisfiable=baseline` as baseline and exited 0 -- an entry that names
+        # the blocking classification, silently read as the proceeding one.
+        case "$(printf '%s' "$_e" | tr -cd '=' )" in
+          '=') ;;
+          *) IFS=$_oldifs; set +f
+             kit_warn "STOP -- \"$_e\" is not one rung and one disposition"
+             kit_warn "  Each entry is exactly rung:exit=baseline or rung:exit=unsatisfiable."
+             exit 1 ;;
+        esac
+        case "${_e##*=}" in
+          baseline)      ;;
+          unsatisfiable) _unsat="$_unsat ${_e%=*}" ;;
+          *) IFS=$_oldifs; set +f
+             kit_warn "STOP -- \"$_e\" carries no disposition"
+             kit_warn "  Each entry ends =baseline or =unsatisfiable. Nothing else is a decision."
+             exit 1 ;;
+        esac
+      done
+      IFS=$_oldifs; set +f
+      bash "$(dirname "$0")/kit-event.sh" "" preflight-commands \
+        "{\"red\":\"$_want\",\"dispositioned\":\"$_got\"}" >/dev/null 2>&1 || true
+      if [ -n "$_unsat" ]; then
+        kit_warn "STOP -- rung(s) declared UNSATISFIABLE by the operator:$_unsat"
+        kit_warn "  An unsatisfiable rung is not a baseline. It blocks a completion claim, and"
+        kit_warn "  inside a trial the outcome is VOID rather than COMPLETE -- see the ladder's"
+        kit_warn "  ## Completion. Fix the tooling now; after the clock starts there is no"
+        kit_warn "  non-voiding remedy."
+        # 3, NOT 2. In this same script 2 already means "not a git repository", "the kit is
+        # not adopted here" and bad usage -- the header defines it as "the question could not
+        # be asked". A caller seeing 2 could not tell an operator's VOID ruling from a
+        # precondition failure, so the previous claim that 2 distinguished them was false.
+        exit 3
+      fi
     fi
     printf 'kit: %s pass, %s ran and reported failures, %s with nothing declared\n' \
       "$_ran" "$_red" "$_none"

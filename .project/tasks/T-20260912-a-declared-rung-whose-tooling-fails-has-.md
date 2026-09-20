@@ -82,6 +82,309 @@ blindly would report the rung satisfiable while nothing is declared — the same
 ladder gap is about, one layer down in the control meant to catch it. The arm separates them and
 the mutation that collapses them is the one that takes conformance red.
 
+### The T3 chain finally ran, 2026-09-20 — and the verdict is REVISE, twice
+
+**Correction to the section above: PR #117 is MERGED** (`5304db9`, merged `aed2bf6`), not "open and
+UNREVIEWED". That line has been stale since 2026-09-14. All seven criteria were re-verified present
+on `main` before this review, so the work landed. **What had never run was the review the tier
+declares** — and this is the one task where skipping it is the defect it exists to name.
+
+Two reviewers, launched in parallel so neither could see the other's findings, which is what
+`skills/tier-classify/SKILL.md:30` requires of T3.
+
+| run | findings | critical | major | turns | weighted ITE |
+|---|---|---|---|---|---|
+| A | 11 | 2 | 5 | 48 | 649,361 |
+| B | 8 | 1 | 4 | 55 | 784,855 |
+| **chain** | **19** | **3** | **9** | — | **1,434,216** (75,485 per finding) |
+
+**BOTH VERDICTS ARE `revise`. THIS TASK MUST NOT BE CLOSED.**
+
+#### The critical both found independently, blind to each other
+
+**`kit-preflight.sh --commands` does not fire on the trial it was built from.** It calls a rung
+`unsatisfiable` only on shell exit **126 or 127**; every other non-zero prints *"ran, exit N — a
+baseline fact, not a stop"* and the arm exits 0. The 2026-09-09 trial's own notes record the
+actual exits: **101** for the jemalloc host probe, **101** for io-uring, **101** for the 1,464-second
+container probe on missing `protoc`. All three land in the pass branch.
+
+**Verified by this session at the source**, not taken on report: `tooling/kit-preflight.sh:447-453`
+for the case statement, `docs/TRIALS/2026-09-09-highper-gateway-plugin-mode/trial-notes.md:25,30,76`
+for the exit codes. §0 line 217 still promises the opposite — *"a command that is declared and does
+not run is **unsatisfiable**, and that is a stop."*
+
+Reviewer B traced the cause: follow-up commit `4d0785f`, *"a command that ran and failed is a
+baseline fact, not a stop"*, turned three outcomes into four. The distinction it drew is correct —
+ran-and-failed is genuinely not cannot-run — but the signal chosen to carry it does not.
+
+#### The second critical: the conformance step cannot fail on the defect it names
+
+The step's first `check` is four **file-wide** greps against `SKILL.md`. Two of them —
+`unsatisfiable` and `blocks a completion claim` — are satisfied by the `## Satisfaction` section
+alone. **Both reviewers independently restored `## Completion` to its pre-change two-state text —
+the exact regression this task exists to prevent — and the step stayed green, 2 passed 0 failed.**
+Verified here: the strings sit at `## Satisfaction` lines 15 and 20, and nothing anchors any
+assertion to `## Completion`.
+
+#### What only the SECOND reviewer found, which is the argument for T3
+
+- **§6:591 says *"A trial with any unsatisfiable rung is VOID, never COMPLETE — see §3"*, and §3
+  contains the word `unsatisfiable` zero times.** Verified. The eighth condition that was added
+  detects the *remedy* (a mid-trial profile change) rather than the *fault*. The cross-reference
+  points at nothing.
+- **`docs/TRIALS/TEMPLATE.md` has an `Outcome` row and no disposition row at all** — zero mentions.
+  The template says "Do not restructure it. Delete nothing", so a report following the mandated
+  shape reaches COMPLETE without passing a single rung disposition. That is the 2026-09-09 headline
+  failure, still reachable. Mutation-proven: deleting §6's rule entirely keeps the step green.
+- **The two documents contradict each other on the founding case.** `SKILL.md:62` calls a target
+  that does not compile before you touched it `unsatisfiable`, which blocks completion.
+  §0's baseline box and `kit-preflight.sh:452` call the same thing a blessed known-red baseline.
+  That is rung 2 of the incident.
+
+**So the second reviewer was not redundant, measured rather than asserted.** It converged on the
+critical independently — which is the strongest evidence either finding is real — and contributed
+three majors the first did not reach, all structural rather than local. `docs/MEASUREMENTS.md`
+asks *"Is T3's second reviewer redundant?"* and answers no; this is a fresh data point for it, and
+the first where both runs are joinable to their own cost.
+
+#### What holds
+
+The `unavailable` clause for a rung with nothing declared is byte-for-byte unchanged and still
+correct; trial 1's rung-3 path was right and still is. The `## Completion` sentence blocking
+COMPLETE is real prose that does hold on paper. **It is the only thing holding** — every mechanical
+support around it either does not fire, does not contain the rule, or is not enforced.
+
+#### One limit on this chain, stated rather than left to be assumed
+
+Both reviewers ran as `general-purpose` agents. **The kit's own named reviewer agents were not
+used, because they are plugin agents and were not loaded in this session** — adoption installs no
+agent anywhere, which is already on trial 3's agenda. So this chain exercised the ladder and the
+protocol; it did not exercise the kit's reviewer routing, and the tier should not be read as fully
+exercised in that second sense.
+
+
+### The two criticals are fixed, 2026-09-20. Nine majors remain open.
+
+**Critical 2 — the conformance assertion could not fail on the defect it names.** The four greps
+were file-wide over `SKILL.md`, and both ladder strings live in `## Satisfaction`, so `## Completion`
+could be reverted to its two-state text with the step still green. The assertions are now
+**section-anchored**: a small `awk` extracts one `## ` section by name and the match must occur
+inside it. `## Completion` must mention `unsatisfiable` AND say it blocks.
+
+**Mutation-proven.** Restoring `## Completion` to its pre-fix text — the exact mutation both
+reviewers used — now takes the step RED, naming which section lost the rule.
+
+**Critical 1 — the gate did not fire on its founding case.** Fixed, and NOT the way it first looks.
+
+The obvious repair, treating exit 101 as "cannot run", was rejected because it is a regression:
+commit `4d0785f` correctly established that `cargo check` exiting 101 over 91 real type errors
+**ran**, and §0's baseline box blesses exactly that subject. A gate that stops there stops on the
+case the protocol permits.
+
+**The real defect is that an exit code cannot carry the distinction.** A missing `protoc` exits 101.
+Ninety-one type errors exit 101. Every exit-code rule trades one false reading for the other. So
+the arm no longer decides: **a red command STOPS and requires a recorded disposition, carrying the
+count, before the clock starts.** The blessed baseline stays legal — the operator blesses it
+explicitly, which is what §0's "only if you knew that first" already demands, instead of this
+script guessing on their behalf.
+
+**Proved in four directions, not one:**
+
+| case | expected | got |
+|---|---|---|
+| two commands exiting 101, no disposition | STOP | `exit 1`, both named |
+| same, `KIT_COMMANDS_RED_DISPOSITIONED=2` | pass | `exit 0` |
+| same, stale count `=1` | STOP | `exit 1` — **but see the correction below: this proves far less than I claimed** |
+| all commands green, no variable | pass | `exit 0` — no new friction where nothing is red |
+
+**And the gate itself has a check that can fail.** Mutating `if [ "$_red" -gt 0 ] && …` to
+`if false` takes arm 3 red with *"a ran-and-failed command passed without a disposition (rc=0)"*.
+Run against a full clone, because a partial file copy fails `kit_active` at arm 1 and never
+reaches arm 3 — a first attempt at this proof failed for that reason and is recorded so the next
+reader does not repeat it.
+
+**STILL OPEN: the nine majors from the T3 chain**, recorded as findings against this task. The two
+most consequential, both from the second reviewer:
+
+- **§6:591 cites §3 for a VOID condition §3 does not contain** — verified, zero occurrences of
+  `unsatisfiable` in §3. The eighth condition that was added detects the remedy, not the fault.
+- **`docs/TRIALS/TEMPLATE.md` has an `Outcome` row and no disposition row**, while instructing
+  "Delete nothing". A report in the mandated shape still reaches COMPLETE without passing a rung
+  disposition — the 2026-09-09 headline failure, still reachable.
+
+Neither critical fix touches either. **This task does not close on this change.**
+
+
+### CORRECTION 2026-09-20 — the second T3 chain rejected the fix, and both criticals are real
+
+The fix above was reviewed by two more reviewers, in parallel and blind to each other. **Verdicts
+`reject` and `revise`. Both criticals below were reproduced by this session before being written
+down.** Seventeen further findings; the fix does not merge.
+
+**CRITICAL — `sec()` has no end anchor, so the anchoring is defeated by one line of boilerplate.**
+`awk -v h="## $2" '$0==h{f=1;next} /^## /{f=0} f'` closes a section only at the next `## `.
+**`## Completion` is the LAST `## ` heading in `SKILL.md`** — line 162 of 176 — so the "anchored"
+extraction runs to end of file. Restoring `## Completion` to its true pre-fix two-state text and
+appending one innocuous footer mentioning *"an unsatisfiable rung blocks a completion claim"* leaves
+the step **green**. Verified here. A `## Completion` line inside a fenced code block also re-opens
+the section, so quoted example prose satisfies a normative assertion.
+
+So the earlier "mutation-proven" claim held for exactly the one literal mutation the first chain
+used, and for nothing else. That is the same shape as the file-wide greps it replaced: an assertion
+tuned to the example rather than to the property.
+
+**CRITICAL — the disposition is a COUNT, and a count is not a fingerprint. My claim that the flag
+"cannot be set-and-forgotten" is FALSE.** Reproduced here: with the red pair `{test, typecheck}`
+dispositioned at `=2`, changing the subject so the red pair becomes `{build, test}` — a **different
+set** — still exits 0 under the stale `=2`. A single `export` in a shell profile, CI block or
+wrapper permanently blesses every same-sized case. Arm 3c only varied the count 1→2, which is
+precisely the half the mechanism happens to catch, so the arm's own comment asserting the stronger
+property is a false rationale I wrote and then cited as evidence.
+
+**Both reviewers found the count defect independently.** That is the second independent convergence
+of the day and the strongest signal available that it is real.
+
+**What the second reviewer added, and it is the more important half.** The gate moves detection
+earlier and **connects to nothing**: the count is compared and discarded, `--commands` writes no
+event, the variable dies with the shell, and both branches of the stop message — "known-red
+baseline" and "tooling that could not run" — share one exit, so nothing records which the operator
+chose. §3 still has no unsatisfiable-rung condition and the report template still has no disposition
+row. **So the 2026-09-09 outcome remains reachable even after the operator dispositions correctly.**
+
+It also measured the friction: the named evaluation subject runs `1 pass, 3 ran and reported
+failures` in-container, so this gate fires on every trial of it and mandates a second full run of a
+pre-flight whose typecheck probe was measured at **1,464 s**. A guaranteed doubling is what pushes
+an operator to export the variable permanently — the design creates the pressure that defeats it,
+and the stop message hands over the bypass token pre-formatted.
+
+**The recommended direction, which I did not invent and am recording as theirs:** key the
+disposition to the IDENTITY of the red commands — a sorted rung list or a digest of `rung:exit`
+pairs — rather than their cardinality; give the two branches two different outcomes; and persist the
+answer as an event row and a template row, the way `--unassessable` and `--superseded` counts are
+already carried into the report.
+
+**Also confirmed by both, and worth keeping:** the gate does fire on the founding case, the three
+mutations the second reviewer ran each take the step red, `--commands` still exits 0 on this
+repository, and nothing in the repo calls `--commands` in a way this breaks. The direction is right.
+The mechanism is not.
+
+
+### Rebuilt on identity, 2026-09-20 — third attempt at this control
+
+Both criticals from the second chain are addressed. **This has not been reviewed by a third chain**
+and is not claimed to be correct; what follows is what was changed and what was proved.
+
+**The disposition now carries IDENTITY and CLASSIFICATION, not cardinality.**
+
+    KIT_COMMANDS_RED_DISPOSITIONED="build:101=baseline,test:101=unsatisfiable"
+
+Each red rung is named with the exit code this run observed, in the loop's fixed order, so a stale
+value cannot survive a change in which rung is red, in what it exited with, or in how many there
+are. When it does not match, the stop prints both sides — *"the value supplied names X; this run
+observed Y"* — so the operator sees what moved.
+
+**The two branches are now two outcomes.** `=baseline` proceeds (exit 0). `=unsatisfiable` exits
+**2**, distinct from the cannot-run stop's 1, so a caller can tell a VOID-shaped rung from an
+answerable baseline. An entry carrying neither is refused: naming a rung is not deciding anything.
+
+**The answer is persisted.** One `preflight-commands` event per run records both the observed red
+set and the disposition given, so a later reader can audit what was blessed. Previously the
+variable was compared, discarded, and died with the shell.
+
+**Measured behaviour, re-run after the rebuild:**
+
+| case | expected | got |
+|---|---|---|
+| two red, no disposition | STOP | `exit 1` |
+| identity right, no `=class` | STOP | `exit 1` |
+| `build:101=baseline,test:101=baseline` | pass | `exit 0` |
+| **stale value naming a DIFFERENT red set** | **STOP** | `exit 1`, both sides printed |
+| one entry `=unsatisfiable` | VOID-shaped | `exit 2` |
+
+**THE `sec()` END ANCHOR IS FIXED AND ITS CEILING IS NOW STATED.** It closes on a heading of any
+level and on `---`, not only on `## `. But a grep cannot tell normative prose from a footnote using
+the same words, so the positive assertions are a tripwire rather than a proof. **The weight moved
+to a negative assertion**: the pre-fix rule *"either satisfied or explicitly declared unavailable"*
+must not reappear in `## Completion`. A footer cannot satisfy that, because adding words elsewhere
+does not remove the sentence.
+
+**Three mutation proofs, each isolating one mechanism:**
+
+| mutation | caught by |
+|---|---|
+| `## Completion` reverted to two states **plus the See-also footer** — the exact bypass that defeated the previous fix | the negative assertion: *"has the two-state completion rule back verbatim"* |
+| identity match downgraded to **cardinality only**, leaving arm 3 green | **arm 3d**: *"a stale disposition blessed a DIFFERENT red rung at the same count"* |
+| the red gate disabled entirely | arm 3 |
+
+The second one needed care: a coarser mutation broke arm 3 first, so arm 3d never ran and proved
+nothing about itself. The surgical version leaves arm 3 passing and isolates arm 3d — recorded
+because "the suite went red" is not the same claim as "this assertion can fail".
+
+**What is NOT fixed, and is not claimed to be.** The gate still only moves detection earlier: §3
+carries no unsatisfiable-rung condition and `docs/TRIALS/TEMPLATE.md` still has no disposition row,
+both filed as majors. The stop still prints a pre-formatted value the operator can paste without
+thinking, though it now forces a per-rung choice rather than a single number. And the friction the
+second reviewer measured is unchanged — a subject with red commands still costs a second full
+pre-flight run.
+
+
+### Third chain's findings addressed, 2026-09-20 — and the prose check is demoted, not fixed
+
+Third chain: **reject** and **revise**, 17 findings. It split cleanly, and the split decided what
+to do.
+
+**WHAT HELD, and it is the half that was rebuilt.** One reviewer ran a 15-value probe table against
+the identity match on a live subject: wrong order, duplicates, an extra non-red rung, a green rung,
+empty classification, wrong case, leading space, trailing text, and a rung red at a *different exit
+code* — **all stop**. The count-to-identity rebuild genuinely closed the stale-value bypass. Arm
+independence verified for all four arms, each reddening alone under a mutation isolating its own
+mechanism, including the correction made after a coarse mutation had reddened arm 3 first.
+
+**WHAT WAS DEFEATED, for the third time: the documentation assertion.** Two separate bypasses, both
+verified here before being accepted:
+
+- `sec()` set its flag on EVERY line equal to the heading, so a **duplicate `## Completion`** at EOF
+  spliced a footer into the section and the attempt-2 bypass worked again with a heading in front
+  of it.
+- The negative grep was keyed to `"either satisfied or"` — **a literal the fix itself had deleted**.
+  The current sentence reads *"is satisfied, or explicitly declared unavailable"*, so the grep
+  returns zero against the live file and only ever fires on a verbatim historical revert. Dropping
+  the single word *either* from a revert defeats it.
+
+**THE JUDGEMENT: stop trying to prove this with greps.** The check asserts a SEMANTIC property with
+a LEXICAL tool, and each fix moved the bypass one step sideways — file-wide, then section-anchored,
+then any-heading-anchored plus a negative grep. Three attempts, three defeats, four reviewers. That
+is the ceiling of the technique, not a run of bad luck.
+
+So the step now **says so in its own comment**, the claim that the negative assertion carries the
+weight is withdrawn, and the weight sits on the mechanical arms. Two cheap tightenings were kept
+because they were genuinely broken: the heading must occur **exactly once** (a duplicate is now
+itself the failure, which is easier to assert than the absence of its consequences), and `sec()`
+never re-opens once closed. **A mutation that edits the normative text in place still passes, and
+no grep will catch that** — recorded rather than left to be rediscovered a fourth time.
+
+**The four mechanical fixes, each proved:**
+
+| fix | proof |
+|---|---|
+| `sec()` duplicate-heading bypass | the exact attempt-3 bypass — reworded revert **plus** duplicate-heading footer — now fails on three counts, the duplicate assertion firing first |
+| the event write had no check | deleting the write outright now reddens **arm 3g**: *"the disposition was not written to the event log"*. Arms also assert the payload names which rungs were red and what was decided, and that the log is still valid JSON |
+| `exit 2` collided with not-a-repo, not-adopted and bad usage | **exit 3**, caught by arm 3e |
+| suffix-glob accepted `rung:exit=unsatisfiable=baseline` as baseline | exactly one `=` per entry, counted; caught by arm 3f |
+
+Also fixed: operator input is split on comma with globbing off, instead of being word-split and
+glob-expanded against the working directory; and two assertions that both printed "arm 3b" now
+print distinct labels.
+
+**STILL OPEN AND NOT PATCHED, deliberately.** The stop prints a paste-ready all-`=baseline` value —
+the exact classification the founding incident needed — so the gate forces a per-rung
+*transcription* rather than a per-rung *judgement*. That is a design question about where judgement
+lives, not a bug, and it stays filed. §3 still carries no unsatisfiable-rung condition though §6
+cites it for one, and `docs/TRIALS/TEMPLATE.md` still contains the string "rung" zero times. **So a
+trial can still reach COMPLETE**: the only thing between the founding scenario and that outcome is
+one paragraph of prose an agent must choose to apply, which is what failed on 2026-09-09.
+
+
 ## Notes
 
 **On the tier, stated plainly because it is an argument rather than a floor.** No

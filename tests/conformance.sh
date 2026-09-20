@@ -6210,11 +6210,16 @@ grep -qi "blocks a completion claim\|blocks completion\|never COMPLETE" "$WORK.l
   { echo "  ## Completion does not say an unsatisfiable rung blocks -- the two-state enumeration is back"; bad=1; }
 grep -q "unsatisfiable" "$WORK.ladder-completion" ||
   { echo "  ## Completion does not mention unsatisfiable at all"; bad=1; }
-# THE NEGATIVE ASSERTION, and it is the one a footer cannot satisfy. The defect was a completion
-# rule enumerating exactly two states -- "either satisfied or explicitly declared unavailable" --
-# and permitting the third by omission. That exact sentence must not come back. Adding keywords
-# elsewhere in the section does not remove it, so this catches the revert that the positive
-# greps above did not.
+# A TRIPWIRE FOR THE LITERAL REVERT, AND NOTHING MORE. This comment used to claim this was "the
+# one a footer cannot satisfy". A reviewer refuted that on 2026-09-20: the string below is keyed
+# to the PRE-FIX wording, and the fix itself deleted it -- today's sentence reads "is satisfied,
+# or explicitly declared unavailable", which this does not match. So deleting the single word
+# "either" from a revert defeats it, and it fires only on a byte-for-byte restoration.
+#
+# It is kept because a byte-for-byte restoration is a real thing that happens and costs nothing to
+# catch. It is NOT what protects this section -- the exactly-one-heading check above is, and even
+# that cannot catch an in-place reword. That ceiling is stated at the top of this step and is the
+# accepted limit of asserting a normative document by grep.
 grep -qi "either satisfied or" "$WORK.ladder-completion" &&
   { echo "  ## Completion has the two-state completion rule back verbatim"; bad=1; }
 grep -q "profile changed mid-trial" "$T" ||

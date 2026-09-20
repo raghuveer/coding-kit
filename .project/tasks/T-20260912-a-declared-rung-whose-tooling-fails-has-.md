@@ -194,7 +194,7 @@ script guessing on their behalf.
 |---|---|---|
 | two commands exiting 101, no disposition | STOP | `exit 1`, both named |
 | same, `KIT_COMMANDS_RED_DISPOSITIONED=2` | pass | `exit 0` |
-| same, stale count `=1` | STOP | `exit 1` — the flag cannot be set-and-forgotten |
+| same, stale count `=1` | STOP | `exit 1` — **but see the correction below: this proves far less than I claimed** |
 | all commands green, no variable | pass | `exit 0` — no new friction where nothing is red |
 
 **And the gate itself has a check that can fail.** Mutating `if [ "$_red" -gt 0 ] && …` to
@@ -213,6 +213,60 @@ most consequential, both from the second reviewer:
   disposition — the 2026-09-09 headline failure, still reachable.
 
 Neither critical fix touches either. **This task does not close on this change.**
+
+
+### CORRECTION 2026-09-20 — the second T3 chain rejected the fix, and both criticals are real
+
+The fix above was reviewed by two more reviewers, in parallel and blind to each other. **Verdicts
+`reject` and `revise`. Both criticals below were reproduced by this session before being written
+down.** Seventeen further findings; the fix does not merge.
+
+**CRITICAL — `sec()` has no end anchor, so the anchoring is defeated by one line of boilerplate.**
+`awk -v h="## $2" '$0==h{f=1;next} /^## /{f=0} f'` closes a section only at the next `## `.
+**`## Completion` is the LAST `## ` heading in `SKILL.md`** — line 162 of 176 — so the "anchored"
+extraction runs to end of file. Restoring `## Completion` to its true pre-fix two-state text and
+appending one innocuous footer mentioning *"an unsatisfiable rung blocks a completion claim"* leaves
+the step **green**. Verified here. A `## Completion` line inside a fenced code block also re-opens
+the section, so quoted example prose satisfies a normative assertion.
+
+So the earlier "mutation-proven" claim held for exactly the one literal mutation the first chain
+used, and for nothing else. That is the same shape as the file-wide greps it replaced: an assertion
+tuned to the example rather than to the property.
+
+**CRITICAL — the disposition is a COUNT, and a count is not a fingerprint. My claim that the flag
+"cannot be set-and-forgotten" is FALSE.** Reproduced here: with the red pair `{test, typecheck}`
+dispositioned at `=2`, changing the subject so the red pair becomes `{build, test}` — a **different
+set** — still exits 0 under the stale `=2`. A single `export` in a shell profile, CI block or
+wrapper permanently blesses every same-sized case. Arm 3c only varied the count 1→2, which is
+precisely the half the mechanism happens to catch, so the arm's own comment asserting the stronger
+property is a false rationale I wrote and then cited as evidence.
+
+**Both reviewers found the count defect independently.** That is the second independent convergence
+of the day and the strongest signal available that it is real.
+
+**What the second reviewer added, and it is the more important half.** The gate moves detection
+earlier and **connects to nothing**: the count is compared and discarded, `--commands` writes no
+event, the variable dies with the shell, and both branches of the stop message — "known-red
+baseline" and "tooling that could not run" — share one exit, so nothing records which the operator
+chose. §3 still has no unsatisfiable-rung condition and the report template still has no disposition
+row. **So the 2026-09-09 outcome remains reachable even after the operator dispositions correctly.**
+
+It also measured the friction: the named evaluation subject runs `1 pass, 3 ran and reported
+failures` in-container, so this gate fires on every trial of it and mandates a second full run of a
+pre-flight whose typecheck probe was measured at **1,464 s**. A guaranteed doubling is what pushes
+an operator to export the variable permanently — the design creates the pressure that defeats it,
+and the stop message hands over the bypass token pre-formatted.
+
+**The recommended direction, which I did not invent and am recording as theirs:** key the
+disposition to the IDENTITY of the red commands — a sorted rung list or a digest of `rung:exit`
+pairs — rather than their cardinality; give the two branches two different outcomes; and persist the
+answer as an event row and a template row, the way `--unassessable` and `--superseded` counts are
+already carried into the report.
+
+**Also confirmed by both, and worth keeping:** the gate does fire on the founding case, the three
+mutations the second reviewer ran each take the step red, `--commands` still exits 0 on this
+repository, and nothing in the repo calls `--commands` in a way this breaks. The direction is right.
+The mechanism is not.
 
 
 ## Notes

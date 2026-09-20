@@ -48,6 +48,51 @@ rather than patched when the mechanical defects around it were fixed.
       recorded as the boundary of what this control can do, the way the prose check's ceiling was
 - [ ] A check that can fail, whatever is built
 
+### END-TO-END REPLAY, 2026-09-20 — this task is now the ONLY thing between the founding scenario and COMPLETE
+
+Built the 2026-09-09 shape as a real `kit-init.sh` subject: `commands.typecheck` exits 101 printing
+*"protoc not found"*, `commands.test` exits 101 printing *"could not compile --lib"*, `commands.lint`
+passes, `commands.build` is a comment. Then ran the chain, rather than reading it.
+
+**Pre-flight reproduces the incident exactly:**
+
+    commands.build      NOTHING DECLARED -- unavailable; raise the tier
+    commands.test       ran, exit 101 -- a baseline fact, not a stop
+    commands.lint       runs
+    commands.typecheck  ran, exit 101 -- a baseline fact, not a stop
+    STOP -- 2 declared command(s) RAN AND REPORTED FAILURES          rc=1
+
+**Path A — the operator judges honestly.** Dispositions both rungs `=unsatisfiable`:
+
+| step | result |
+|---|---|
+| pre-flight | **rc=3**, VOID-shaped, distinct from the cannot-run stop |
+| §3's detection, run verbatim | returns **1** → **VOID** |
+
+**The chain now works.** That is what items 1 and 2 bought: before them, §3 carried no such
+condition and the detection did not exist, so an honest disposition reached nothing.
+
+**Path B — the operator pastes what the tool printed.** The stop offers:
+
+    KIT_COMMANDS_RED_DISPOSITIONED="test:101=baseline,typecheck:101=baseline"
+
+| step | result |
+|---|---|
+| pre-flight with that value | **rc=0**, proceed |
+| §3's detection | returns **0** → **NOT VOID, trial proceeds** |
+
+**And nothing downstream catches it.** The template now forces a disposition row, but the operator
+writes `baseline` there too, consistent with the ruling they just made. A wrong judgement is
+internally consistent all the way to COMPLETE.
+
+**SO THE ANSWER IS PRECISE.** Before today there were three holes between the founding scenario and
+COMPLETE: the gate did not fire, §3 carried no condition, the template required no disposition.
+**Two are closed. This task is the third, and it is the only one left.** It is also the one that
+cannot be closed by a mechanism, because the thing being asked for is a human judgement about
+whether a failure is pre-existing — and the tool currently makes the wrong answer one keystroke
+cheaper than the right one.
+
+
 ## Notes
 
 Found by both reviewers of the third T3 chain on 2026-09-20, one of whom demonstrated it end to end

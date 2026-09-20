@@ -33,15 +33,33 @@ counts all did, and each has a header row in the template.
 
 ## Acceptance criteria
 
-- [ ] The template carries a rung-disposition row or section, positioned so a reader reaches it
+- [x] The template carries a rung-disposition row or section, positioned so a reader reaches it
       before the outcome
-- [ ] Each rung's disposition is one of the ladder's three, and an `unsatisfiable` entry is
+- [x] Each rung's disposition is one of the ladder's three, and an `unsatisfiable` entry is
       visually inseparable from the outcome line rather than a footnote
-- [ ] A check that can fail: a conformance step asserting the template carries it, mutation-proven
+- [x] A check that can fail: a conformance step asserting the template carries it, mutation-proven
       by deleting the row. Assert on the TEMPLATE, not only the protocol, for the reason the
       baseline-cause step already gives
-- [ ] Whether the pre-flight's recorded disposition feeds this row is decided rather than left
+- [x] Whether the pre-flight's recorded disposition feeds this row is decided rather than left
       open. `T-20260912`'s gate writes a `preflight-commands` event that nothing reads
+
+### Done 2026-09-20 — asserted by POSITION, which a footnote cannot satisfy
+
+`TEMPLATE.md` carries a `Rung dispositions` row naming all three dispositions and stating that any
+`unsatisfiable` makes the outcome VOID. **It sits ABOVE the `Outcome` row**, because §6's rule is
+literally positional — *"a reader must not be able to reach the outcome without passing the
+dispositions"* — and position is the one property a footnote reusing the same words cannot fake.
+
+The conformance arm asserts the ORDER, not the presence: it compares the two line numbers.
+**Mutation-proven** by moving the row below `Outcome`, which reddens it with *"puts the
+dispositions at line 22, at or after the outcome at 21"*. A keyword grep would have passed that
+mutation, which is exactly how the three prose assertions recorded in the parent were defeated.
+
+**The last criterion, decided rather than left open:** the pre-flight event does NOT auto-fill this
+row. §3's detection READS the event to void a trial; the template row is authored by the operator
+alongside every other row. Wiring one to the other would make the report a copy of the tool's
+output rather than a statement by the person who ran it, and the thing being asked for here is a
+statement.
 
 ## Notes
 

@@ -6339,6 +6339,66 @@ check $? "pass, ran-and-failed, cannot-run and nothing-declared are four outcome
 rm -rf "$rd"
 fi
 
+if step "an unsatisfiable rung is a VOID condition with a runnable detection, and the report cannot skip it"; then
+# TWO DANGLING CLAIMS, BOTH FOUND BY REVIEWERS ON 2026-09-20 AND BOTH VERIFIED BEFORE FIXING.
+#
+#   §6 and the ladder both said "a trial with any unsatisfiable rung is VOID -- see §3", and §3
+#   contained the word `unsatisfiable` ZERO times. A condition asserted to be a control by two
+#   other documents, with nothing behind it. §0 routes an operator to "any VOID condition (§3)",
+#   so following the protocol literally found nothing and did not void.
+#
+#   `docs/TRIALS/TEMPLATE.md` contained the string `rung` ZERO times, while §6 requires one
+#   disposition line per rung "next to the outcome" and the template says "Delete nothing". A
+#   report in the mandated shape reached COMPLETE without passing a single disposition -- the
+#   2026-09-09 headline failure, reproducible.
+#
+# WHY THIS STEP IS NOT SHAPED LIKE THE PROSE ASSERTIONS NEXT DOOR. Three attempts at asserting a
+# normative document by keyword were each defeated by a bypass one step sideways -- file-wide
+# greps, then section-anchored, then any-heading-anchored plus a negative grep, all recorded in
+# `T-20260912-a-declared-rung-whose-tooling-fails-has-`. A grep cannot tell normative prose from
+# a footnote reusing its words. So the weight here is on two things a footnote CANNOT satisfy:
+#
+#   1. POSITION. §6's rule is literally positional -- "a reader must not be able to reach the
+#      outcome without passing the dispositions" -- so assert the line ORDER, not the presence.
+#   2. THE DETECTION ACTUALLY RUNS. §3's premise is that a condition without a detection is not
+#      a control. This runs §3's detection against a fixture where a rung IS unsatisfiable and
+#      one where none is, and requires it to separate them.
+T="$KIT/docs/TRIAL-PROTOCOL.md"; TM="$KIT/docs/TRIALS/TEMPLATE.md"
+bad=0
+
+# 1 -- the template carries the row, and it comes BEFORE the outcome. A footer cannot pass this.
+d_ln=$(grep -n '^| Rung dispositions' "$TM" | head -1 | cut -d: -f1)
+o_ln=$(grep -n '^| Outcome' "$TM" | head -1 | cut -d: -f1)
+if [ -z "$d_ln" ]; then
+  echo "  TEMPLATE.md has no rung-disposition row; a report can reach COMPLETE without one"; bad=1
+elif [ -z "$o_ln" ]; then
+  echo "  TEMPLATE.md has no Outcome row to order against"; bad=1
+elif [ "$d_ln" -ge "$o_ln" ]; then
+  echo "  TEMPLATE.md puts the dispositions at line $d_ln, at or after the outcome at $o_ln"; bad=1
+fi
+
+# 2 -- §3 carries the condition, inside §3 and not merely somewhere in the file.
+awk '/^## 3\./{f=1;next} /^## 4\./{f=0} f' "$T" > "$WORK.void3"
+grep -qi "unsatisfiable" "$WORK.void3" ||
+  { echo "  section 3 still carries no unsatisfiable-rung condition, which sections 6 cites it for"; bad=1; }
+rm -f "$WORK.void3"
+check $bad "the VOID condition exists where two other documents say it does, and the report states dispositions first"
+
+# 3 -- AND THE DETECTION SEPARATES THE TWO CASES. This is the half a document edit cannot fake.
+vd="$WORK.voiddet"; rm -rf "$vd"; mkdir -p "$vd"
+( cd "$vd" || exit 1
+  det() { grep -h '"kind":"preflight-commands"' events.ndjson 2>/dev/null | grep -c '=unsatisfiable'; }
+  printf '%s\n' '{"kind":"preflight-commands","payload":{"red":"test:101","dispositioned":"test:101=baseline"}}' > events.ndjson
+  [ "$(det)" = 0 ] || { echo "    a fully dispositioned baseline was read as void"; exit 1; }
+  printf '%s\n' '{"kind":"preflight-commands","payload":{"red":"test:101","dispositioned":"test:101=unsatisfiable"}}' >> events.ndjson
+  [ "$(det)" = 1 ] || { echo "    an unsatisfiable disposition was not detected"; exit 1; }
+  # AND AN ABSENT LOG MUST NOT READ AS A PASS -- the same zero, a different meaning.
+  rm -f events.ndjson
+  [ "$(det)" = 0 ] || { echo "    an absent log did not return zero"; exit 1; } )
+check $? "section 3's detection separates a dispositioned baseline from an unsatisfiable rung"
+rm -rf "$vd"
+fi
+
 if step "a zero escape count says which zero it is"; then
 # The denominator side of this table has refused to read as clean since it was written: an
 # absent `via:kit` population is called out as "not a clean result". The NUMERATOR had no such

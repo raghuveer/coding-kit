@@ -33,15 +33,36 @@ not exist at all.
 
 ## Acceptance criteria
 
-- [ ] §3 carries an unsatisfiable-rung VOID condition **with a detection**, like its other eight
-- [ ] The detection is runnable and is shown run, including what it prints when the condition has
+- [x] §3 carries an unsatisfiable-rung VOID condition **with a detection**, like its other eight
+- [x] The detection is runnable and is shown run, including what it prints when the condition has
       NOT fired. "Empty is a pass" needs a status check, because a command that could not run also
       prints nothing
-- [ ] §6's cross-reference resolves, and §0's routing to §3 reaches the condition
-- [ ] A check that can fail: a conformance step asserting §3 carries it, mutation-proven by
+- [x] §6's cross-reference resolves, and §0's routing to §3 reaches the condition
+- [x] A check that can fail: a conformance step asserting §3 carries it, mutation-proven by
       removing the row and seeing the step go red. **Not a grep that a footer can satisfy** — see
       the three defeated attempts recorded in
       `T-20260912-a-declared-rung-whose-tooling-fails-has-` before choosing the shape of this one
+
+### Done 2026-09-20 — and the detection is the gate's own event
+
+§3 now carries a **ninth** condition: *"A rung was declared UNSATISFIABLE and the trial continued."*
+Its detection is the `preflight-commands` event `kit-preflight.sh --commands` already writes:
+
+    grep -h '"kind":"preflight-commands"' <subject>/.project/events.ndjson | grep -c '=unsatisfiable'
+
+**That closes the loop the reviewers said was missing.** The previous criticism was that the gate
+moved detection earlier and connected to nothing; the event it writes is now what §3 reads, so
+pre-flight's answer reaches the document that voids the trial.
+
+**"Empty is a pass" carries its status check**, because an absent file and an unrun pre-flight both
+print zero — the "a question that could not be asked is not a pass" rule this document applies
+elsewhere and did not apply to its own eighth condition.
+
+**The check is deliberately NOT shaped like the prose assertions next door.** Three attempts at
+asserting a normative document by keyword were each defeated. This one runs §3's detection against
+a fixture where a rung IS unsatisfiable, one where none is, and one with no log at all, and
+requires it to separate them. Mutation-proven: deleting the condition row reddens arm 1; breaking
+the detection reddens arm 2.
 
 ## Notes
 

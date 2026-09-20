@@ -385,6 +385,45 @@ trial can still reach COMPLETE**: the only thing between the founding scenario a
 one paragraph of prose an agent must choose to apply, which is what failed on 2026-09-09.
 
 
+### Triage of the 7 criticals blocking trial 3, 2026-09-20 — six addressed, one is the ceiling
+
+`kit-preflight.sh --criticals` refuses a trial while any critical is unfixed, and it counts
+**distinct defects**, not rows. The seven it names are **all from this task's three T3 chains
+today** — not, as first reported here, old findings from August. That first reading came from
+`kit-resolve.sh --list`, which prints ROWS; the gate's own query excludes vindicated, superseded
+and unassessable rows and collapses carried-over duplicates. **The two outputs answer different
+questions and only one of them is the gate.**
+
+**Six are addressed in merged code, verified against `main` rather than from memory:**
+
+| defect | addressed by |
+|---|---|
+| `--commands` keyed cannot-run on 126/127 only (×3 rows, 2 defects) | the red-disposition gate — `RAN AND REPORTED FAILURES` |
+| the disposition was a count, not a fingerprint | identity matching — `"$_gotids" != "$_want"` |
+| conformance greps file-wide, satisfied by `## Satisfaction` | section anchoring |
+| `sec()` had no end anchor | closes on any heading level and `---` |
+| `sec()` re-opened on a duplicate heading | the heading must occur exactly once |
+
+**The seventh is not fixed, and cannot be by this technique.** The negative assertion greps
+`"either satisfied or"` — the PRE-FIX wording, which the fix itself deleted, so it matches nothing
+in today's file and fires only on a byte-for-byte revert. Its comment claimed it was *"the one a
+footer cannot satisfy"*, which the third chain refuted. **The comment is corrected here** rather
+than left contradicting the demotion comment forty lines above it; the grep is kept as a cheap
+tripwire for a literal restoration, labelled as exactly that.
+
+**AND THAT EXPOSES A GAP IN THE RESOLUTION VOCABULARY.** `kit-resolve.sh` offers `--fixed`,
+`--unassessable`, `--superseded` and `--false`. **None of them means "real, correctly reported, and
+permanently beyond what this control can do."** The finding is not fixed — the grep still cannot
+catch a reworded revert. It is not unassessable — it is perfectly legible. It is not superseded —
+its subject is live. It is not false — it was true and remains true.
+
+This is the same gap recorded for the 55 label-carrying findings under
+`T-20260914-finding-run-ids-and-spend-run-ids-are-tw`, reached from the opposite direction. Marking
+it `--fixed` to clear the gate would be the laundering this repository refuses; leaving it open
+blocks every trial indefinitely over an accepted limit. **The disposition is the operator's and the
+vocabulary does not currently have a word for it.**
+
+
 ## Notes
 
 **On the tier, stated plainly because it is an argument rather than a floor.** No

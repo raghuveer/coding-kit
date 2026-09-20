@@ -6210,11 +6210,34 @@ grep -qi "blocks a completion claim\|blocks completion\|never COMPLETE" "$WORK.l
   { echo "  ## Completion does not say an unsatisfiable rung blocks -- the two-state enumeration is back"; bad=1; }
 grep -q "unsatisfiable" "$WORK.ladder-completion" ||
   { echo "  ## Completion does not mention unsatisfiable at all"; bad=1; }
-# THE NEGATIVE ASSERTION, and it is the one a footer cannot satisfy. The defect was a completion
-# rule enumerating exactly two states -- "either satisfied or explicitly declared unavailable" --
-# and permitting the third by omission. That exact sentence must not come back. Adding keywords
-# elsewhere in the section does not remove it, so this catches the revert that the positive
-# greps above did not.
+# THE CLAIM THIS COMMENT USED TO MAKE WAS WITHDRAWN on 2026-09-20, in 52c83b2. It said this
+# assertion was "the one a footer cannot satisfy"; a reviewer defeated it by deleting one word.
+# The finding that caused the withdrawal is REAL -- being real is why the claim died -- so
+# `--fixed` would say it was addressed when nothing about the grep changed, and `--false` would
+# say it was never true when it was. That is `--superseded`, exactly.
+#
+# > **Superseded-by: 52c83b2**
+#
+# THE MARKER ABOVE IS THE WITHDRAWAL, recorded where the next reader of this assertion meets it,
+# which is what `kit-resolve.sh --superseded` requires before it will retire the finding.
+#
+# It could not be written until 2026-09-20. The guard's leading character class admitted markdown
+# decoration and not `#`, and every line of a shell script is a comment, so the verb was
+# unreachable for the 364 open findings anchored to files that are not markdown -- it read as a
+# strict gate and was an absolute one. Widened in `tooling/kit-resolve.sh`, tracked by
+# `T-20260920-the-supersession-marker-cannot-be-writte`. The equality rule on the cited artefact
+# is untouched.
+#
+# A TRIPWIRE FOR THE LITERAL REVERT, AND NOTHING MORE. This comment used to claim this was "the
+# one a footer cannot satisfy". A reviewer refuted that on 2026-09-20: the string below is keyed
+# to the PRE-FIX wording, and the fix itself deleted it -- today's sentence reads "is satisfied,
+# or explicitly declared unavailable", which this does not match. So deleting the single word
+# "either" from a revert defeats it, and it fires only on a byte-for-byte restoration.
+#
+# It is kept because a byte-for-byte restoration is a real thing that happens and costs nothing to
+# catch. It is NOT what protects this section -- the exactly-one-heading check above is, and even
+# that cannot catch an in-place reword. That ceiling is stated at the top of this step and is the
+# accepted limit of asserting a normative document by grep.
 grep -qi "either satisfied or" "$WORK.ladder-completion" &&
   { echo "  ## Completion has the two-state completion rule back verbatim"; bad=1; }
 grep -q "profile changed mid-trial" "$T" ||
@@ -6413,6 +6436,52 @@ vd="$WORK.voiddet"; rm -rf "$vd"; mkdir -p "$vd"
   [ "$(det)" = 0 ] || { echo "    an absent log did not return zero"; exit 1; } )
 check $? "section 3's detection separates a dispositioned baseline from an unsatisfiable rung"
 rm -rf "$vd"
+fi
+
+if step "a withdrawal can be marked in the subject, whatever language the subject is written in"; then
+# THE VERB WAS UNREACHABLE FOR TWO THIRDS OF THE FINDINGS AND NOTHING SAID SO.
+#
+# `kit-resolve.sh --superseded` refuses unless the finding's own file carries a line matching a
+# leading-decoration class then the key. That class admitted `>`, `*`, `_` and whitespace --
+# markdown -- and not `#`. Every line of a shell script, a python module or a workflow is a
+# comment, so in any subject that is not markdown the marker could not be written at all, and the
+# refusal printed a blockquote form that would be rejected in the very file it was refusing.
+# Measured 2026-09-20: 364 open findings anchored to a non-markdown file, none of them
+# superseded-able. The guard read as strict and was absolute.
+#
+# The same defect had already been recorded one step out -- the FIRST version accepted only
+# whitespace and `>`, and so refused the exact text of its own error message. This is that lesson
+# arriving a second time from a different direction, which is why the step below asserts the
+# PROPERTY (a marker is writable in the subject's own language) rather than one character class.
+sup="$WORK.supmark"; rm -rf "$sup"; mkdir -p "$sup"
+( cd "$sup" || exit 1
+  # One file per comment convention this repository's findings actually anchor to, plus the
+  # markdown form that already worked, plus two prose mentions that must NOT count as markers.
+  printf '%s\n' '# > **Superseded-by: ADR-0001**' > a.sh
+  printf '%s\n' '# Superseded-by: ADR-0001'       > b.py
+  printf '%s\n' '// Superseded-by: ADR-0001'      > c.go
+  printf '%s\n' '-- Superseded-by: ADR-0001'      > d.sql
+  printf '%s\n' '> **Superseded-by: ADR-0001**'   > e.md
+  printf '%s\n' 'The rule is Superseded-by: something'   > f.txt
+  printf '%s\n' '  see the Superseded-by: convention'    > g.txt
+  for f in a.sh b.py c.go d.sql e.md; do
+    grep -aqiE '^[[:space:]>*_#/;-]*Superseded-by:' "$f" ||
+      { echo "    $f: a marker in this language is not recognised"; exit 1; }
+  done
+  for f in f.txt g.txt; do
+    grep -aqiE '^[[:space:]>*_#/;-]*Superseded-by:' "$f" &&
+      { echo "    $f: prose MENTIONING the key was accepted as a marker"; exit 1; }
+  done
+  exit 0 )
+check $? "a Superseded-by marker is writable as a comment, and prose mentioning it is not one"
+
+# AND THE REFUSAL MUST NAME A FORM THAT WORKS IN THE FILE IT IS REFUSING. Printing a blockquote
+# for a shell script is the original defect restated as advice, and it is what kept operators
+# from believing the withdrawal was recordable at all.
+grep -q '\*\.md|\*\.markdown)' "$KIT/tooling/kit-resolve.sh" ||
+  { echo "  the refusal does not choose a marker form per file type"; false; }
+check $? "the refusal suggests a marker the subject's own language can carry"
+rm -rf "$sup"
 fi
 
 if step "a zero escape count says which zero it is"; then

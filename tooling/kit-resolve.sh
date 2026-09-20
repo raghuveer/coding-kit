@@ -305,13 +305,37 @@ if db_readable; then
     # accepted only whitespace and `>`, so it refused the exact text of its own error message --
     # a guard whose remedy it rejects is worse than no guard, because the operator concludes the
     # withdrawal is unrecognisable and stops trying.
-    marker=$(grep -aiE '^[[:space:]>*_]*Superseded-by:' "$ROOT/$fpath" 2>/dev/null | head -1)
+    #
+    # WIDENED 2026-09-20 TO COMMENT MARKERS, because the same defect had survived one step
+    # further out. The class admitted markdown decoration and nothing else, and EVERY LINE OF A
+    # SHELL SCRIPT IS A COMMENT -- so in any subject that is not markdown the marker could not be
+    # written at all, and the refusal above printed a blockquote form that would be rejected in
+    # the very file it was refusing. Measured that day: **364 open findings are anchored to a
+    # file that is not `.md`**, and the fourth disposition did not exist for any of them. It read
+    # as a strict gate and was an absolute one.
+    #
+    # `#` covers shell, python, yaml and make; `/` covers `//` and `/*`; `-` covers `--`; `;`
+    # covers ini and lisp. `-` is last in the bracket so it is a literal and not a range.
+    #
+    # WHAT THIS DOES NOT WIDEN: the key must still begin the line after decoration only, so a
+    # sentence MENTIONING `Superseded-by:` in prose is not a marker -- and the equality rule
+    # below is untouched, so naming the artefact is still exact. The two are independent, and it
+    # was the second that once accepted `--by '-'` against any marked file.
+    marker=$(grep -aiE '^[[:space:]>*_#/;-]*Superseded-by:' "$ROOT/$fpath" 2>/dev/null | head -1)
     if [ -z "$marker" ]; then
+      # THE REMEDY MUST BE WRITABLE IN THE FILE BEING REFUSED. Printing a blockquote for a shell
+      # script is the defect above, restated as advice.
+      case "$fpath" in
+        *.md|*.markdown)                          _form="      > **Superseded-by: $by**" ;;
+        *.sql|*.lua|*.hs|*.adb|*.ads)             _form="      -- Superseded-by: $by" ;;
+        *.c|*.h|*.go|*.js|*.ts|*.java|*.rs|*.cpp) _form="      // Superseded-by: $by" ;;
+        *)                                        _form="      # Superseded-by: $by" ;;
+      esac
       kit_warn "'$fpath' carries no 'Superseded-by:' line, so its subject still stands"
       kit_warn "  refusing --superseded. This verb records that a subject was WITHDRAWN; if that"
       kit_warn "  happened, say so in the subject where its next reader will see it:"
       kit_warn ""
-      kit_warn "      > **Superseded-by: $by**"
+      kit_warn "$_form"
       kit_warn ""
       kit_warn "  then re-run this. If the subject still stands, the finding is still open."
       exit 2

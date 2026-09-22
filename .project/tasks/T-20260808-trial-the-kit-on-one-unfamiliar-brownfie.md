@@ -284,6 +284,85 @@ real and separate, below. **Neither survived contact with a command**, which is 
 they are not in this table.
 
 
+### Baseline RE-TAKEN after the two pre-flight fixes, 2026-09-20 — 4 unsatisfiable became 0
+
+Both fixes were made **before the clock**, where a `commands.*`-adjacent change is legal; §2 makes
+the same edit mid-trial void the trial.
+
+**1. The runtime gained the rung tooling.** `RUN rustup component add clippy rustfmt`. The apt list
+above it was read from the subject's declared BUILD dependencies, which is why it served rung 1 and
+was blind to rungs 3 and 4 — lint and format tools are not build dependencies.
+**Digest changed and is re-recorded: `sha256:372fc7a9d864…` → `sha256:e5ed7efcc9b5…`**
+
+**2. The copy gained the one lockfile line the subject committed short**, as a recorded pre-flight
+commit. **Fixed in the COPY, not in the subject** — fixing the thing being measured to make the
+measurement work is contamination; the subject's owner gets it under §7.
+
+    subject   e588b53
+    copy      9cc4e55   = subject + 2 pre-flight commits (permissions removed, lockfile completed)
+
+**THE BASELINE, RE-MEASURED.** Read-only mount, `CARGO_TARGET_DIR=/tmp/target`, tree still clean
+after every run.
+
+| rung | command | exit | disposition | cause |
+|---|---|---|---|---|
+| 1 compiles | `cargo check --locked` | **0** | **satisfied** | 92 warnings |
+| 2 tests | `cargo test --locked --no-run` | 101 | **known-red baseline** | test target out of sync with the lib: `E0063` missing fields `graphql` and `webserver` in `Config` initializer; `E0061` function takes 1 argument, 2 supplied |
+| 3 lint | `cargo clippy --locked` | 101 | **known-red baseline** | one error — *"this loop never actually loops"* — then could not compile; 196 warnings |
+| 4 format | `cargo fmt --check` | **0** | **satisfied** | clean |
+
+**FOUR UNSATISFIABLE BECAME ZERO.** Before the fixes every rung returned non-zero and all four
+looked alike. They were not alike: two had tooling that could not run, and two had tooling that ran
+and found real defects. **That is the distinction the whole of 2026-09-20 was spent building, and
+it is doing the work here on a real subject.**
+
+**Rung 2 confirms trial 1's finding, still true.** That trial recorded *"the `--lib` target does not
+compile"*; the cause is now named — the test target initialises `Config` without `graphql` and
+`webserver`. It is a subject defect and routes under §7.
+
+**§0 item 12 is now satisfiable rather than satisfied.** Two rungs are known-red, and §0 blesses
+that *"only if you knew that first"*. This record is knowing it first. When the kit is adopted into
+the copy, `--commands` will stop and ask for a disposition, and the honest answer for rungs 2 and 3
+is `=baseline` — which is a judgement this record now supports rather than a box to tick.
+
+
+### CORRECTION 2026-09-20 — the baseline above used commands the subject does not run
+
+**Both baseline tables above are wrong, and the error is methodological rather than a slip.** They
+were measured with commands this session invented — `cargo check --locked`, `cargo clippy --locked`
+— not with the commands the subject's own CI runs. §0 says record the baseline with causes. It does
+not say *use the subject's declared verification commands*, and that omission produced a rosier
+answer on the first real use.
+
+**Re-measured with `.github/workflows/ci.yml`'s own commands:**
+
+| their CI job | command | our exit | their CI on `master` |
+|---|---|---|---|
+| Check | `cargo check --workspace --all-features` | **101** — *cannot find attribute `async_trait`* | ❌ |
+| Clippy | `cargo clippy --workspace --all-features -- -D warnings` | **101** — same root cause | ❌ |
+| Test | `cargo test --workspace --lib -- --test-threads=4` | **101** — *test failed* | ❌ |
+| Format | `cargo fmt --all -- --check` | **0** | ✅ |
+
+**Four for four against their runner.** The container is faithful; the earlier commands were not.
+
+**What the wrong baseline claimed:** *"THE SUBJECT COMPILES — `cargo check` exits 0 with 92
+warnings."* With `--all-features`, which is what the subject actually gates on, **it does not
+compile.** The one-line lockfile gap, the `Config` initializer and the non-looping loop were
+downstream symptoms visible only because `--all-features` was off. **The root cause is one thing:**
+`cannot find attribute async_trait`, which breaks Check, Clippy and Test alike.
+
+**The subject's CI has been red on `master` since 2026-09-14** — six days, four of seven jobs:
+Check, Clippy, Test and Security Audit. Build Release, Format and Validate Configs pass.
+
+**CONSEQUENCE FOR THE TRIAL'S TASK.** Roadmap item 3.4.A — *"wire 5 SAST tools into CI"* — is not
+the first step and its own status line is stale: clippy, cargo-audit and cargo-deny are already
+wired; only cargo-geiger and Semgrep are missing. **You cannot add SAST to a CI where four jobs
+have been failing for six days.** The blocking work is `async_trait`, a single-cause defect with a
+verifiable outcome, and it unblocks 3.4.A rather than performing it.
+
+**A kit gap filed from this**: `T-20260920-a-baseline-taken-with-invented-commands`.
+
+
 ## Notes
 
 Blocked by three things, and the order matters. Without

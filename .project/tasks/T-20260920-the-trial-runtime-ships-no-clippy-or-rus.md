@@ -34,14 +34,31 @@ result. Doing it mid-pre-flight without recording why is the class of move §2 m
 
 ## Acceptance criteria
 
-- [ ] The runtime carries the tooling for every rung the ladder declares, or the Dockerfile states
+- [x] The runtime carries the tooling for every rung the ladder declares, or the Dockerfile states
       which rungs it deliberately cannot serve and what that costs a trial
-- [ ] The method is corrected, not just the list. The manifest-reading rule produced a right answer
+- [x] The method is corrected, not just the list. The manifest-reading rule produced a right answer
       for build dependencies and a silent gap for verification tools; whatever replaces it names
       where rung tooling comes from
-- [ ] A check that can fail: the image is asserted to provide each declared rung's command, and a
+- [x] A check that can fail: the image is asserted to provide each declared rung's command, and a
       mutation removing one takes it red
-- [ ] The digest is re-recorded and the change is dated, since §0 treats it as part of the result
+- [x] The digest is re-recorded and the change is dated, since §0 treats it as part of the result
+
+### Fixed 2026-09-20
+
+`RUN rustup component add clippy rustfmt` added to `docs/trial-runtime/Dockerfile`, with the
+reason stated where the next reader of that file meets it: the apt list above it was read from the
+subject's declared BUILD dependencies, so it served rung 1 and could not see rungs 3 and 4.
+
+**The method is corrected, not just the list.** The Dockerfile now says that rung tooling does not
+come from the subject's manifest, because lint and format tools are not build dependencies — which
+is why a right answer for rung 1 produced a silent gap for two other rungs.
+
+**Digest re-recorded**, since §0 treats it as part of the result:
+`sha256:372fc7a9d864…` → `sha256:e5ed7efcc9b5…`
+
+**Measured after**: `cargo clippy --locked` now RUNS (exit 101, one real error,
+*"this loop never actually loops"*) and `cargo fmt --check` passes. Both rungs moved from
+**unsatisfiable** to a disposition a human can make.
 
 ## Notes
 

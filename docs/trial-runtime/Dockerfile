@@ -46,3 +46,20 @@ RUN apt-get update \
       sqlite3 cmake g++ protobuf-compiler libssl-dev \
       liburing-dev nasm perl \
  && rm -rf /var/lib/apt/lists/*
+
+# THE RUNG TOOLING, WHICH THE PACKAGE LIST ABOVE COULD NOT SEE. Every apt package above was read
+# from the subject's declared BUILD dependencies, and that method was right for rung 1 and blind
+# to rungs 3 and 4 -- lint and format tools are not build dependencies, so nothing in the
+# subject's manifest names them. Measured 2026-09-20 on the trial-3 pre-flight:
+#
+#   cargo clippy --locked   exit 1   'cargo-clippy' is not installed for the toolchain '1.98.1...'
+#   cargo fmt --check       exit 1   'cargo-fmt'   is not installed for the toolchain '1.98.1...'
+#
+# Two rungs of the verify ladder had no tooling in the runtime the protocol prescribes, which is
+# the 2026-09-09 failure one layer out: an obligation that cannot run, in the image built to let
+# it run. rust:1-bookworm ships cargo and rustc and neither component.
+#
+# THIS CHANGES THE DIGEST, and section 0 records the digest as part of the result. Done before a
+# clock starts, where it is legal; the same edit after one is a commands.* adjacent change that
+# section 2 makes void.
+RUN rustup component add clippy rustfmt

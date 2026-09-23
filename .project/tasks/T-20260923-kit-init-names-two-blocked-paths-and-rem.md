@@ -4,7 +4,6 @@ title: kit-init names two blocked paths and remedies one
 tier: T2
 lang: bash
 state: created
-via: kit
 ---
 
 ## Intent

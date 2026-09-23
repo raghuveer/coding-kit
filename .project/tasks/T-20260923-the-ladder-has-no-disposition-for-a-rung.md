@@ -4,7 +4,6 @@ title: The ladder has no disposition for a rung wider than the change
 tier: T3
 lang: bash
 state: created
-via: kit
 ---
 
 ## Intent

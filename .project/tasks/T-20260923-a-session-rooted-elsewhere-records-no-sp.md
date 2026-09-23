@@ -4,7 +4,6 @@ title: A session rooted elsewhere records no spend in the adopted repo
 tier: T2
 lang: bash
 state: created
-via: kit
 ---
 
 ## Intent

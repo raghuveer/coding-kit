@@ -4,7 +4,6 @@ title: Baseline and the ladder call one fact baseline and unsatisfiable
 tier: T3
 lang: bash
 state: created
-via: kit
 ---
 
 ## Intent

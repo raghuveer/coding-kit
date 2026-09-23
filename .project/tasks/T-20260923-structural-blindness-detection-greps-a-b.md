@@ -4,7 +4,6 @@ title: Structural blindness detection greps a basename so it is blind on Rust
 tier: T2
 lang: bash
 state: created
-via: kit
 ---
 
 ## Intent

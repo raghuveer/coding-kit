@@ -4,7 +4,6 @@ title: The reviewer reply example omits the fields the recorder requires
 tier: T2
 lang: bash
 state: created
-via: kit
 ---
 
 ## Intent

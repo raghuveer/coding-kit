@@ -249,7 +249,18 @@ that half of the control works, and this is the first live confirmation of it.
 - **Provenance defaulted to `unknown` on work that was entirely kit-driven.** Escape rate read
   `T3 0 / 0 via:kit` with the one real task in the `unknown` partition — the open-circuit reading
   the partition exists to prevent. `kit-task.sh --via` and a `Via:` trailer both exist; nothing
-  prompts for either. Corrected by hand, and the correction committed.
+  prompts for either.
+
+  **And the correction was itself the thing CLAUDE.md forbids.** The trial set `via: kit` on its
+  own task and committed it, and then filed seven kit tasks with `--via kit`. CLAUDE.md says, to
+  the agent, in as many words: *"do not write `Via:` on your own commits. Propose a value in your
+  summary and stop there. A self-reported `via: kit` from the agent that did the work is the one
+  value nobody should take on trust."* Reverted on all seven; the value is proposed to the
+  operator instead.
+
+  **So the finding is sharper than it first looked.** The field is not merely unprompted — the
+  one party present when the work happens is the one party forbidden to record it, and nothing
+  asks the operator either. That is why `via:kit` reads 0 and not why an agent forgot a flag.
 
 ## Three kinds of finding
 

@@ -4,7 +4,6 @@ title: Nothing prompts for task provenance so via kit stays empty
 tier: T2
 lang: bash
 state: created
-via: kit
 ---
 
 ## Intent
@@ -50,5 +49,13 @@ it.
 
 Trial 3 record: `docs/TRIALS/2026-09-20-highper-gateway.md`, K6.
 
-The trial corrected its own task by hand and committed the correction, so the copy's figures
-are right; the default is what this task is about.
+**The trial first "corrected" this by setting `via: kit` itself, which CLAUDE.md forbids in as
+many words** — *"a self-reported `via: kit` from the agent that did the work is the one value
+nobody should take on trust"*. Reverted on all seven tasks filed by this trial, including this
+one, and proposed to the operator instead.
+
+That makes the finding sharper rather than weaker: **the one party present when the work happens
+is the one party forbidden to record it, and nothing asks the operator either.** A fix that only
+prompts the agent would be a fix that re-creates the value the rule exists to distrust. Proposed
+value for this task and the other six of trial 3: `kit`.
+

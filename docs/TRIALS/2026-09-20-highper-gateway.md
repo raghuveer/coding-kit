@@ -12,8 +12,8 @@
 | Subject | highper-gateway, Rust workspace. Subject `e588b53` (untouched, verified after). Copy `9cc4e55` + 2 pre-flight + 3 trial commits |
 | Greenfield / brownfield | **brownfield**, history not truncated, all 3 branches present, 175 pre-kit commits |
 | Unassessable / superseded criticals | **9 / 40.** Previous trial to record them, 2026-09-09: **9 / 39.** Unassessable unchanged since 2026-08-24; the one new superseded row is `tests/conformance.sh` superseded by `52c83b2`. |
-| Rung dispositions | **See the table below — and two of the five land in a state the ladder cannot name.** |
-| Outcome | **COMPLETE, subject to the operator's disposition of rungs 1 and 2.** The trial ran end to end, every instrument recorded, no VOID condition fired. What is unresolved is a naming conflict between two kit documents, not a gap in the run. |
+| Rung dispositions | **See the table below.** 2 satisfied, 1 unavailable with the tier raised, and **2 in a state the ladder cannot name** — dispositioned `baseline-blocked` by operator ruling. |
+| Outcome | **COMPLETE.** Dispositioned by the operator on 2026-09-23: §0 governs, and the two states the ladder cannot name are filed as K3 and K4 rather than resolved by relabelling this trial. The trial ran end to end, every instrument recorded, no VOID condition fired. |
 | Baseline before the kit | **Red on 3 of 4 rungs — and the recorded cause was wrong.** See Baseline. |
 | Instruments verified live | spend rows > 0, findings rows landed, **2 `finding-gap reason=rejected` rows recorded and recovered** |
 | Copy isolation verified | `kit-preflight.sh --isolated` exit 0 |
@@ -24,13 +24,13 @@
 
 | Rung | Obligation | Command | Disposition |
 |---|---|---|---|
-| 1 | compiles + static analysis | `cargo check --workspace --all-features` → **101**; `cargo clippy … -D warnings` → **101**; `cargo build --release -p highper-gateway` → **0**; `cargo fmt --all -- --check` → **0** | **CONTESTED.** The change's own module went 89 errors → **0**. The 7 that remain are in two files the diff does not touch. The command ran; it cannot be made to pass for reasons outside the change. |
-| 2 | criteria proven by tests that fail without the change | `cargo test --workspace --lib -- --test-threads=4` → **101** | **CONTESTED.** The command RAN and gave a real signal: **972 passed / 2 failed, identical with and without the change** (measured by stashing). But no test proves *this* change — its effect is compile-time, under a feature the test job does not enable. |
+| 1 | compiles + static analysis | `cargo check --workspace --all-features` → **101**; `cargo clippy … -D warnings` → **101**; `cargo build --release -p highper-gateway` → **0**; `cargo fmt --all -- --check` → **0** | **baseline-blocked** (operator ruling, see below). The change's own module went 89 errors → **0**. The 7 that remain are in two files the diff does not touch. The command ran; it cannot be made to pass for reasons outside the change. |
+| 2 | criteria proven by tests that fail without the change | `cargo test --workspace --lib -- --test-threads=4` → **101** | **baseline-blocked** (operator ruling, see below). The command RAN and gave a real signal: **972 passed / 2 failed, identical with and without the change** (measured by stashing). But no test proves *this* change — its effect is compile-time, under a feature the test job does not enable. |
 | 3 | wiring proof | nothing declared (`ladder.rung3:` empty) | **UNAVAILABLE.** Tier raised T2 → T3. Compensating control: two adversarial readers instead of one. |
 | 4 | adversarial reader | Agent-tool subagent | **SATISFIED.** REJECT, 4 findings. |
 | 5 | blind second reader | Agent-tool subagent, spawned in parallel so neither could see the other | **SATISFIED.** REJECT, 4 findings. |
 
-### Why two rungs are CONTESTED rather than dispositioned
+### Why two rungs needed a ruling
 
 `skills/verify-ladder/SKILL.md` defines **unsatisfiable** as *"a satisfaction IS declared and it
 does not run, **or cannot be made to pass for reasons outside the change**"*, and gives as its own
@@ -54,7 +54,23 @@ Rung 2 needs a second missing name: **the tooling runs and the obligation does n
 change class.** That is the 2026-09-09 failure one layer out — *"the enumeration had two names and
 the situation was a third"* — and it is now two situations and two missing names.
 
-Filed as kit findings. **The outcome label is the operator's call.**
+Filed as kit findings K3 and K4.
+
+### The operator's ruling, 2026-09-23
+
+**§0 governs. The outcome is COMPLETE, and the missing names get added rather than the trial
+relabelled.** Rungs 1 and 2 are dispositioned `baseline-blocked` — a name that does not exist in
+the ladder yet, written here so the disposition is legible before K4 lands, and so that a reader
+comparing this trial to the next can see it was a ruling rather than a default.
+
+**The reasoning, recorded because the alternative was defensible.** Reading the ladder's text
+literally makes every red-baseline subject VOID by construction, which would make §0's explicit
+permission to trial one unreachable — a control that cannot be satisfied is not a control. The
+cost of the ruling is that the ladder's `unsatisfiable`, added *because* the 2026-09-09 trial
+reported COMPLETE over a change that does not compile, now has a case it does not cover. **K4
+carries the obligation that whatever name is added must make the 2026-09-09 case harder to
+reach, not easier.** Until it lands, this ruling is precedent for one trial and not a general
+licence.
 
 ## Stop rules, stated before the clock
 

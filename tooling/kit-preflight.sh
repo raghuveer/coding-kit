@@ -419,11 +419,12 @@ case "${1:-}" in
     # declared at all. That is the exact conflation the ladder gap is about, reproduced in the
     # control meant to catch it.
     #
-    #   declared and runs      -> satisfiable
-    #   nothing declared       -> unavailable. Correct, and the ladder already handles it:
-    #                             declare it, name the compensating control, raise the tier.
-    #   declared and does not  -> UNSATISFIABLE. Stop. Neither of the other two, and the state
-    #                             that reported COMPLETE over a change that does not compile.
+    # What the arm DOES with each result -- what each MEANS is the ladder's:
+    #
+    #   declared, ran, passed        -> reported, no stop
+    #   nothing declared (or `#...`) -> reported, no stop
+    #   declared, cannot run         -> stop, exit 1
+    #   declared, ran, failed        -> stop, exit 1, until each red rung is dispositioned below
     . "$(dirname "$0")/kit-lib.sh"
     ROOT=$(kit_root) || { kit_warn "not a git repository"; exit 2; }
     kit_active "$ROOT" || { kit_warn "the kit is not adopted here"; exit 2; }
@@ -489,7 +490,7 @@ case "${1:-}" in
     #
     #   =baseline        a known-red subject, which section 0 blesses -- "only if you knew that
     #                    first". Proceed; the ladder judges the rung against this baseline.
-    #   =unsatisfiable   the tooling could not run. The rung is unsatisfiable, the trial is VOID
+    #   =unsatisfiable   the ladder's disposition 3, decided now. The trial is VOID
     #                    rather than answerable, and this exits 2 rather than 0 or 1 so a caller
     #                    can tell the two stops apart.
     #

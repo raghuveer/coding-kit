@@ -6246,16 +6246,34 @@ grep -qi "either satisfied or" "$WORK.ladder-completion" &&
 # opposite outcomes (T-20260923-baseline-and-the-ladder-call-one-fact-ba). So the list is READ
 # FROM THE ARM'S OWN case statement, and every classification the operator can give must appear
 # as `=<word>` inside `## Satisfaction`. A new word added to the arm alone takes this red; so does
-# deleting the ladder's paragraph for one. Like every grep here it proves the word is present in
+# deleting the ladder's paragraph for one. Alternation arms (`a|b)`) are split, so a word
+# smuggled in beside an existing one counts too. Like every grep here it proves the word is present in
 # the right section, not that the prose around it is right -- the ceiling stated at the top.
 cls=$(awk 'index($0, "case \"${_e##*=}\" in") {f=1; next} f && /^[[:space:]]*esac/ {exit} f' \
-        "$KIT/tooling/kit-preflight.sh" | sed -n 's/^[[:space:]]*\([a-z][a-z]*\)).*/\1/p')
+        "$KIT/tooling/kit-preflight.sh" | sed -n 's/^[[:space:]]*\([a-z][a-z|]*\)).*/\1/p' | tr '|' ' ')
 [ -n "$cls" ] ||
   { echo "  could not read the classifications kit-preflight.sh --commands accepts"; bad=1; }
 for c in $cls; do
   grep -q "=$c\`" "$WORK.ladder-satisfaction" ||
     { echo "  --commands accepts =$c and the ladder's ## Satisfaction never defines it"; bad=1; }
 done
+# THE RULE, NOT ONLY THE WORD. A reviewer deleted the whole three-step paragraph on 2026-09-24
+# and the loop above stayed green, because the worked example also says `=baseline`. So the
+# paragraph's own lead and all three steps must be present -- and the clause that made one fact
+# read two ways must not come back as ladder text. It is still QUOTED, in the history blockquote,
+# so quoted lines (`>`) are excluded: the quote is the record of why, and must not trip this.
+grep -q '^\*\*Against a recorded baseline\*\*' "$WORK.ladder-satisfaction" ||
+  { echo "  ## Satisfaction has no 'Against a recorded baseline' rule"; bad=1; }
+for st in 'Did the AFTER run reach the change' 'Is any failure in a touched file' 'satisfied against the baseline'; do
+  grep -q "$st" "$WORK.ladder-satisfaction" ||
+    { echo "  the baseline rule lost the step: $st"; bad=1; }
+done
+# Joined into one line first: the original clause wrapped across a line break ("cannot be made
+# to" / "pass"), so a line-by-line grep missed the very text it names -- found by running this
+# against main's ladder, where it stayed silent.
+grep -v '^>' "$WORK.ladder-satisfaction" | tr '\n' ' ' | tr -s ' ' |
+  grep -qi 'cannot be made to pass for reasons outside' &&
+  { echo "  ## Satisfaction calls a pre-existing failure unsatisfiable again -- the K3 contradiction is back"; bad=1; }
 grep -q "profile changed mid-trial" "$T" ||
   { echo "  section 3 does not carry the profile-change condition"; bad=1; }
 grep -q "preflight.sh --commands" "$T" ||

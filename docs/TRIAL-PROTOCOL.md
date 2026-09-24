@@ -215,10 +215,9 @@ Stop unless every box is ticked. Record the answers; they are part of the result
       and running this check in the wrong place would report exactly the state it exists to
       catch. Run it **in the subject copy**, never in the subject itself.
 
-      **What each result MEANS is the ladder's to say, not this box's.** The dispositions --
-      satisfied, satisfied against a recorded baseline, unavailable, unsatisfiable -- have one
-      home, `skills/verify-ladder/SKILL.md` `## Satisfaction`. This box only asks the question
-      before the clock, and it has three results:
+      **What each result MEANS is the ladder's to say, not this box's.** The dispositions have
+      one home, `skills/verify-ladder/SKILL.md` `## Satisfaction`. This box only asks the
+      question before the clock, and it has three results:
 
       - a declared command that **cannot run** (the shell's 126/127) stops, exit 1. Fix it here;
       - a declared command that **ran and reported failures** stops, exit 1, until each red rung
@@ -227,10 +226,9 @@ Stop unless every box is ticked. Record the answers; they are part of the result
             KIT_COMMANDS_RED_DISPOSITIONED="test:101=baseline,lint:101=unsatisfiable" \
               bash tooling/kit-preflight.sh --commands
 
-        `=baseline` says *this was red before the kit, and I know why* -- the baseline box above.
-        The ladder then judges that rung after the change **against the baseline**: it must reach
-        the files the change touches and report nothing in them. `=unsatisfiable` says the command
-        cannot give a verdict here; it exits **3**, and a trial that proceeds is VOID (§3);
+        `=baseline` says *this was red before the kit, and I know why* -- the baseline box above --
+        and the ladder judges that rung after the change against it. `=unsatisfiable` is the
+        ladder's disposition 3 decided now; it exits **3**, and a trial that proceeds is VOID (§3);
       - nothing declared is *unavailable*, reported, and not a stop -- the ladder raises the tier.
 
       Each run writes one `preflight-commands` event naming the red rungs and the dispositions
@@ -469,7 +467,7 @@ the review rather than doubted afterwards.
 | **A per-file review is STRUCTURALLY BLIND to a defect whose halves live in different files.** Proved 2026-09-09: a reviewer was given `tooling/kit-guard.sh` and a ground-truth check asked whether it found the documented gap that the guard matcher omits `Bash`. It returned **zero** -- and could not have returned anything else, because the matcher is in `hooks/hooks.json` and the reviewer was handed only the script. Unlike every row above, this one produces a **confident, well-formed, complete-looking review**: 7 findings, 7/7 valid vocabulary, no correction loop. Nothing about the output says it was blind. | Before believing a review of `F` found nothing of a class, list what could hold the other half:<br><br>`git grep -lF "$(basename F)" -- . ':!docs' ':!.project' ':!*.md' \| grep -v "^F$"`<br><br>Every file that NAMES `F` is a place a defect about `F` can be half-written. On `kit-guard.sh` this returns 6 files and `hooks/hooks.json` is one of them. Either include them in the prompt, or record them in **Not exercised** by name. The unfiltered form returns 24 here and is unusable, which is why the pathspecs are part of the check rather than an optimisation. |
 | **A reviewer that returns nothing may not have reviewed nothing.** An empty `{"findings":[]}` records as `reason=empty` — *"looked and found nothing"*. | `sqlite3 .project/index.db "SELECT json_extract(payload,'$.reason') AS reason, COUNT(*) FROM event WHERE kind='finding-gap' GROUP BY 1"`. Any `rejected` row is a review whose findings were lost. Confirm the reviewer received a prompt before believing any zero. |
 | **The profile changed mid-trial.** §2 has said since revision 1 that changing `tier.rule`, `commands.*`, `ingest.*` or `accelerator.*` mid-trial voids it. **It was never carried into this section, and it is the only condition on this list that has actually fired.** On 2026-09-09 rung 1 needed `protoc` added to the wrapper to run at all; that is a `commands.*` change, so the only route to a green rung voided the trial. The trial reasoned it out and stopped, correctly — and then reported COMPLETE anyway, because the ladder had no name for the rung it left behind. | Record the profile's commit at §0 and compare at the end:<br><br>`git -C <subject> log --oneline <preflight-sha>..HEAD -- .claude/project-profile.md`<br><br>Any output is a mid-trial profile change and the trial is void. Empty is a pass. Verified runnable: it returns nothing on an unchanged profile and the file's own path comes from `paths.*`, so it follows an adopter who moved it. |
-| **A rung was declared UNSATISFIABLE and the trial continued.** §6 and the ladder's `## Completion` both say a trial with any unsatisfiable rung is VOID, never COMPLETE, and both cited THIS SECTION for it — which carried no such condition until now. That dangling reference was found by two reviewers independently on 2026-09-20, and it is the live half of the 2026-09-09 failure: rungs 1 and 2 had tooling declared that could not run, the ladder had no name for that state, and the trial reported COMPLETE over a change that does not compile. **The eighth condition above detects the REMEDY — a mid-trial profile edit — not the FAULT.** | `kit-preflight.sh --commands` exits **3** when the operator dispositions any red rung `=unsatisfiable`, and writes what was decided:<br><br>`grep -h '"kind":"preflight-commands"' <subject>/.project/events.ndjson | grep -c '=unsatisfiable'`<br><br>Non-zero is a rung the operator ruled could not run, and the trial is void. **Zero is a pass ONLY if the file exists and pre-flight ran** — an absent file and an unrun pre-flight both print zero, which is the "a question that could not be asked is not a pass" rule this document applies elsewhere. Check `kit-preflight.sh --commands; echo $?` is 0 or 3 before reading the count. |
+| **A rung was declared UNSATISFIABLE and the trial continued.** §6 and the ladder's `## Completion` both say a trial with any unsatisfiable rung is VOID, never COMPLETE, and both cited THIS SECTION for it — which carried no such condition until now. That dangling reference was found by two reviewers independently on 2026-09-20, and it is the live half of the 2026-09-09 failure: rungs 1 and 2 had tooling declared that could not run, the ladder had no name for that state, and the trial reported COMPLETE over a change that does not compile. **The eighth condition above detects the REMEDY — a mid-trial profile edit — not the FAULT.** | `kit-preflight.sh --commands` exits **3** when the operator dispositions any red rung `=unsatisfiable`, and writes what was decided:<br><br>`grep -h '"kind":"preflight-commands"' <subject>/.project/events.ndjson | grep -c '=unsatisfiable'`<br><br>Non-zero is a rung the operator ruled could not run, and the trial is void. **Zero is a pass ONLY if the file exists and pre-flight ran** — an absent file and an unrun pre-flight both print zero, which is the "a question that could not be asked is not a pass" rule this document applies elsewhere. Check `kit-preflight.sh --commands; echo $?` is 0 or 3 before reading the count.<br><br>**That detects the rung ruled unsatisfiable BEFORE the clock only.** The ladder also reaches unsatisfiable AFTER it -- step 1 of judging against a baseline, when the after run shows no evidence it reached the change -- and that writes no event. It is carried by the report's own dispositions row, which §6 puts before the outcome:<br><br>`grep -i '^| Rung dispositions' <record> \| grep -ci unsatisfiable`<br><br>Non-zero is a VOID trial whatever the outcome row says. |
 | **A reading taken inside the session omits the turn that produced it.** Main-loop spend is written at each `Stop`, so a status read mid-session reports the PREVIOUS turn's row. Measured 2026-09-09: 6,902.9 kBTE read against 10,259.6 actually spent — a third of the cost missing from the headline figure. | After the session closes, the index's `spend.at` for the main transcript must equal the last `spend` event for it in `events.ndjson`:<br><br>`sqlite3 .project/index.db "SELECT MAX(at) FROM spend WHERE scope='main';"` against `grep -o '"kind":"spend","at":"[^"]*"' .project/events.ndjson | tail -1`<br><br>If they differ, reindex before reading anything. Verified runnable against this repository. |
 
 **The last detection was itself undetectable, and that is a fourth instance of this section's
@@ -604,8 +602,9 @@ compared against the next trial on the same subject, which is the comparison §2
 legitimate.
 
 **State every rung's disposition, in the report, next to the outcome.** One line per rung:
-`satisfied`; `satisfied against baseline` (with the evidence it reached the change, and the
-**baseline** and **unmasked** counts); `unavailable` (with the compensating control and the raised
+`satisfied` -- written `satisfied (against baseline)` where the command was red before the change,
+with the after-run evidence it reached the change and the **baseline** and **unmasked** counts;
+`unavailable` (with the compensating control and the raised
 tier); or `unsatisfiable` (with what did not run, or what stopped it before the change). What each
 means is the ladder's `## Satisfaction`. Not a footnote and not prose elsewhere — a reader must
 not be able to reach the outcome without passing the dispositions.

@@ -71,48 +71,68 @@ YOUR change touches is the rung working -- fix the change. And distinguish it fr
 baseline: a command that was failing before you started, and still reaches your change, has a
 verdict to give. That is the next paragraph, not this one.
 
-**Against a recorded baseline.** When the declared command was red before the change -- in a
-trial, pre-flight recorded the rung as `rung:exit=baseline`; outside one, you ran the command on
-the unchanged tree first and kept its output -- judge the rung in three steps, in order, and stop
-at the first that decides:
+**Against a recorded baseline** -- a mode of disposition 1, not a fourth disposition. When the
+declared command was red before the change -- in a trial, pre-flight recorded the rung as
+`rung:exit=baseline`; outside one, you ran the command on the unchanged tree first and kept its
+output -- judge the rung in three steps, in order, and stop at the first that decides:
 
-1. **Did it reach the change?** Name the evidence that the command processed the files the diff
-   touches: a diagnostic in a touched file on the before or the after run, a test from a touched
-   module in the output, or the touched unit checked on its own. **No evidence is
-   `unsatisfiable`**, not satisfied. Zero failures in files the command never reached proves
-   nothing, and a build that stops before your unit reports exactly that.
+1. **Did the AFTER run reach the change?** Name the evidence, from the run made after the change
+   and from the declared command itself: a diagnostic of any severity in a touched file -- a
+   warning counts, since it shows the file got that far -- or a test from a touched module that
+   ran. **No such evidence is `unsatisfiable`**, not satisfied. Evidence from the before run does
+   not count: the change can stop the after run earlier than the baseline stopped, and then the
+   touched files are never reached while the before run says they were. A test rung that ran zero
+   tests after the change has no verdict, whatever it ran before.
 2. **Is any failure in a touched file after the change?** Then the rung is working. Fix the
    change; the work is not complete.
 3. **Otherwise the rung is satisfied against the baseline.** Record every failure that remains,
-   with its cause, in two counts: **baseline** (present in the before run) and **unmasked** (new,
-   and in a file the diff does not touch). Neither blocks. Hand the unmasked list to the rung 4
-   and rung 5 readers.
+   with its cause, in two counts: **baseline** (the same file and the same error code or test
+   name in the before run -- not the same line, which moves) and **unmasked** (anything else, in
+   a file the diff does not touch). Neither blocks. Hand the unmasked list to the rung 4 and rung
+   5 readers.
 
-**The cost, stated rather than discovered:** judged this way, the rung no longer catches a change
-that breaks a file it does not touch -- a changed signature whose caller fails elsewhere reads as
-unmasked. That is why the unmasked list goes to rungs 4 and 5, and why it is recorded rather than
-waved through. The stricter rule -- no failure anywhere that the baseline did not have -- was
-measured and refused: fixing one layer of errors routinely unmasks the next, so it fails nearly
-every red-baseline change, which is the "every red subject is void" outcome under another name.
+   **Except a test that ran before.** "Unmasked" means the before run never evaluated it. A test
+   the before run RAN and passed, and that fails after the change, is a regression wherever it
+   lives: step 2, fix the change. Only a test the before run could not run -- its target did not
+   build -- can be unmasked.
+
+**The cost, stated rather than discovered:** judged this way, a compile or lint rung no longer
+catches a change that breaks a file it does not touch -- a changed signature whose caller fails
+elsewhere reads as unmasked. That is why the unmasked list goes to rungs 4 and 5, and why it is
+recorded rather than waved through. The stricter rule -- no failure anywhere that the baseline
+did not have -- was refused on one observation: trial 3's change left 7 errors of which 6 were not
+in the before run, and the record's explanation of why (the compiler stopping at an earlier phase)
+is labelled there as an inference. One observation is enough to show the strict rule fails the
+case the protocol blesses; it is not a measurement of how often.
 
 This decides whether the command's red result blocks. **It does not replace the rung's
-obligation**: rung 2 still needs tests that fail without the change. A rung 2 whose obligation
-does not apply to the change's class at all -- a compile-time effect under a feature the test job
-does not enable -- has no disposition yet; it is
-`T-20260923-the-ladder-has-no-disposition-for-a-rung`. Until that lands, such a rung is recorded
-with an operator's ruling, never defaulted.
+obligation**: rung 2 still needs tests that fail without the change. A rung whose command runs
+but whose scope does not include the change at all -- the change's code compiled only under a
+feature the test job does not enable -- produces no step-1 evidence, so it is `unsatisfiable` by
+default. Whether that state deserves its own name is
+`T-20260923-the-ladder-has-no-disposition-for-a-rung`. Until that lands, only an operator's ruling,
+recorded in the report next to the disposition, may record such a rung as anything else. The
+default without one is unsatisfiable.
 
-**Worked example, trial 3 (2026-09-23), rung 1.** `cargo check --workspace --all-features`,
-pre-flight `typecheck:101=baseline`. Before: 90 errors, 89 of them in the three `plugin/` files
-the diff touches. After: 7 errors, 0 in touched files. Step 1: 89 diagnostics in touched files
-before -- it reached the change. Step 2: none after. Step 3: **satisfied against the baseline**, 1
-baseline and 6 unmasked, all in `discovery/consul.rs` and `middleware/waf/aws_engine.rs`.
+**Worked example, trial 3 (2026-09-23), rung 1.** Two declared commands, both red at pre-flight
+and dispositioned `=baseline`. `cargo check --workspace --all-features`: before 90 errors, 89 of
+them in the three `plugin/` files the change touches; after, 7 errors and none in touched files.
+Step 1 needs after-run evidence, and the record's rung-4 finding supplies it: *"newly type-checked
+code trips `dead_code` and `manual_range_contains"*, the change's own `plugin/` code, as warnings.
+Step 2: no errors in touched files; step 3: satisfied against the baseline for this command, 1
+baseline and 6 unmasked in `discovery/consul.rs` and `middleware/waf/aws_engine.rs`. But
+`cargo clippy ... -D warnings` turns those same warnings into errors in touched files: **step 2,
+fix the change.** Rung 1 is two commands and both must pass, so under this rule trial 3's rung 1
+was not complete. (The lint locations come from the record's finding, not a re-run; the subject
+does not build on this host.)
 
 **And the case this ladder exists for, 2026-09-09.** Rung 1 needed `protoc` and did not run:
-**unsatisfiable**. Rung 2's `--lib` target did not compile before the trial began, so no test
-ran and nothing reached the change: step 1, **unsatisfiable**. Had rung 1 run, the change's own
-`registry.rs:77` `error[E0597]` is a failure in a touched file: step 2, fix the change. None of
-the three routes reaches complete.
+**unsatisfiable**. Rung 2's `--lib` target did not compile before the trial began, and ran zero
+tests: no after-run evidence from a test. If the compiler also reports the change's own
+`registry.rs:77` `error[E0597]` while building that target -- rustc continues past errors in
+other items, which a reviewer reproduced on 1.94 with a toy, not on this subject -- that is a
+diagnostic in a touched file: step 1 passes on it and **step 2 says fix the change**. If it does
+not, step 1 has no evidence: **unsatisfiable**. None of the routes reaches complete.
 
 > **Why this exists.** The 2026-09-09 highper-gateway trial hit it on two rungs at once.
 > `commands.typecheck` failed everywhere — a Windows host died on jemalloc's autoconf, a

@@ -549,7 +549,8 @@ case "${1:-}" in
         kit_warn "  =baseline      a known-red subject. Record the causes in the trial record's"
         kit_warn "                 baseline box; the ladder judges the rung AGAINST it after the"
         kit_warn "                 change (verify-ladder SKILL.md, ## Satisfaction)."
-        kit_warn "  =unsatisfiable the rung cannot run. Fix it HERE -- editing commands.* after"
+        kit_warn "  =unsatisfiable the command gives no verdict on the change here (the ladder's"
+        kit_warn "                 disposition 3). Fix it HERE -- editing commands.* after"
         kit_warn "                 the clock starts voids the trial (TRIAL-PROTOCOL.md section 2)."
         [ -n "$_got" ] && kit_warn "  (the value supplied names \"$_gotids\"; this run observed \"$_want\")"
         exit 1

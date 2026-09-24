@@ -84,3 +84,23 @@ CONTESTED" section.
 
 This blocks the outcome label of trial 3 and of every future trial on a red-baseline subject,
 which is the whole brownfield population.
+
+### Operator decision 2026-09-24, after the second review chain: R1, reach is per UNIT
+
+Two T3 chains, four `revise`. Chain 1's critical (reach evidence taken from the BEFORE run) was
+fixed in `00f64eb` and both chain-2 readers confirmed it holds. Chain 2's critical, found by both
+independently and reproduced here in a three-crate cargo workspace: reach evidence was counted per
+FILE, so a warning in one touched crate stood in for a second touched crate that never built behind
+a red dependency -- "satisfied against baseline" over a change that does not compile. Diagnostics
+also cannot show reach for a clean change (it emits none) or for `cfg`-gated code.
+
+Each text fix to step 1 moved the hole sideways, so the question went back to the operator.
+**Decided: R1.** Every unit containing a touched file must get a complete verdict from the after
+run, with every failure in a touched file; a touched unit that fails elsewhere, is blocked by a
+dependency, or is skipped is `unsatisfiable`. A unit that passed before and fails after is a
+regression, not unmasked.
+
+**Stated consequence: under R1 trial 3's rung 1 is unsatisfiable and trial 3 would be VOID** --
+`plugin/` shares the `highper-gateway` crate with `discovery/consul.rs`. The 2026-09-23 record
+stands as the ruling made before the rule existed. Chain 2 also corrected a claim of mine: the
+after-run logs DO exist at `D:/trials/trial3-target/` (I had searched only the subject copy).

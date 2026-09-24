@@ -167,7 +167,9 @@ Stop unless every box is ticked. Record the answers; they are part of the result
       row per check — command, exit, seconds, and for every failure the error codes or advisory
       ids that produced it. A subject whose tests already fail is a valid trial subject, but only
       if you knew that first, and only if you knew WHY — otherwise the kit gets blamed for it,
-      or a later run cannot tell an old failure from a new one.
+      or a later run cannot tell an old failure from a new one. A red rung recorded here is
+      judged later **against this baseline** — see the ladder's `## Satisfaction` — so the
+      causes are what that judgement reads, not decoration.
 
       **`build pass/fail, tests pass/fail` is not a baseline, and this is measured rather than
       asserted.** On 2026-09-09 that shape recorded one subject as red; a later reading found
@@ -211,10 +213,28 @@ Stop unless every box is ticked. Record the answers; they are part of the result
       is inside the container, not on the host — a Linux-first subject's `commands.typecheck`
       failing on a Windows host is the runtime being wrong, not the rung being unsatisfiable,
       and running this check in the wrong place would report exactly the state it exists to
-      catch. Run it **in the subject copy**, never in the subject itself. Three outcomes, and they are the ladder's three
-      dispositions: a command that runs is satisfiable; a rung with nothing declared is
-      *unavailable* and the ladder already handles it by raising the tier; a command that is
-      declared and does not run is **unsatisfiable**, and that is a stop.
+      catch. Run it **in the subject copy**, never in the subject itself.
+
+      **What each result MEANS is the ladder's to say, not this box's.** The dispositions --
+      satisfied, satisfied against a recorded baseline, unavailable, unsatisfiable -- have one
+      home, `skills/verify-ladder/SKILL.md` `## Satisfaction`. This box only asks the question
+      before the clock, and it has three results:
+
+      - a declared command that **cannot run** (the shell's 126/127) stops, exit 1. Fix it here;
+      - a declared command that **ran and reported failures** stops, exit 1, until each red rung
+        is dispositioned by name and exit code:
+
+            KIT_COMMANDS_RED_DISPOSITIONED="test:101=baseline,lint:101=unsatisfiable" \
+              bash tooling/kit-preflight.sh --commands
+
+        `=baseline` says *this was red before the kit, and I know why* -- the baseline box above.
+        The ladder then judges that rung after the change **against the baseline**: it must reach
+        the files the change touches and report nothing in them. `=unsatisfiable` says the command
+        cannot give a verdict here; it exits **3**, and a trial that proceeds is VOID (§3);
+      - nothing declared is *unavailable*, reported, and not a stop -- the ladder raises the tier.
+
+      Each run writes one `preflight-commands` event naming the red rungs and the dispositions
+      given, so the answer outlives the shell that gave it.
 
       **This box exists because a trial had no move left without it.** On 2026-09-09 rung 1's
       `commands.typecheck` turned out to need `protoc`, discovered after the clock started. The
@@ -223,8 +243,7 @@ Stop unless every box is ticked. Record the answers; they are part of the result
       it without voiding itself. It reported COMPLETE over a change that does not compile.
       Asked here, the answer costs a pre-flight; asked later, it costs the trial.
 
-      **A comment is not a declaration.** `commands.build: # none` handed to a shell runs, exits
-      0, and would report the rung satisfiable while nothing is declared at all. The check
+      **A comment is not a declaration** -- the ladder's disposition 1 says why. The check
       separates the two rather than executing the value blindly.
 - [ ] The subject's owner has agreed, if that is not you.
 
@@ -585,8 +604,10 @@ compared against the next trial on the same subject, which is the comparison §2
 legitimate.
 
 **State every rung's disposition, in the report, next to the outcome.** One line per rung:
-`satisfied`, `unavailable` (with the compensating control and the raised tier), or
-`unsatisfiable` (with what did not run). Not a footnote and not prose elsewhere — a reader must
+`satisfied`; `satisfied against baseline` (with the evidence it reached the change, and the
+**baseline** and **unmasked** counts); `unavailable` (with the compensating control and the raised
+tier); or `unsatisfiable` (with what did not run, or what stopped it before the change). What each
+means is the ladder's `## Satisfaction`. Not a footnote and not prose elsewhere — a reader must
 not be able to reach the outcome without passing the dispositions.
 
 This exists because the alternative was measured. The 2026-09-09 report said **COMPLETE** while

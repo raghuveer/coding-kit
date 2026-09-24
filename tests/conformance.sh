@@ -6240,6 +6240,22 @@ grep -q "unsatisfiable" "$WORK.ladder-completion" ||
 # accepted limit of asserting a normative document by grep.
 grep -qi "either satisfied or" "$WORK.ladder-completion" &&
   { echo "  ## Completion has the two-state completion rule back verbatim"; bad=1; }
+# THE PRE-FLIGHT AND THE LADDER AGREE BY CONSTRUCTION, not by two copies kept in step. Until
+# 2026-09-24 `--commands` accepted `=baseline` and the ladder never used the word, while calling
+# "a target that does not compile before you touched it" unsatisfiable -- one fact, two documents,
+# opposite outcomes (T-20260923-baseline-and-the-ladder-call-one-fact-ba). So the list is READ
+# FROM THE ARM'S OWN case statement, and every classification the operator can give must appear
+# as `=<word>` inside `## Satisfaction`. A new word added to the arm alone takes this red; so does
+# deleting the ladder's paragraph for one. Like every grep here it proves the word is present in
+# the right section, not that the prose around it is right -- the ceiling stated at the top.
+cls=$(awk 'index($0, "case \"${_e##*=}\" in") {f=1; next} f && /^[[:space:]]*esac/ {exit} f' \
+        "$KIT/tooling/kit-preflight.sh" | sed -n 's/^[[:space:]]*\([a-z][a-z]*\)).*/\1/p')
+[ -n "$cls" ] ||
+  { echo "  could not read the classifications kit-preflight.sh --commands accepts"; bad=1; }
+for c in $cls; do
+  grep -q "=$c\`" "$WORK.ladder-satisfaction" ||
+    { echo "  --commands accepts =$c and the ladder's ## Satisfaction never defines it"; bad=1; }
+done
 grep -q "profile changed mid-trial" "$T" ||
   { echo "  section 3 does not carry the profile-change condition"; bad=1; }
 grep -q "preflight.sh --commands" "$T" ||

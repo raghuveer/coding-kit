@@ -407,7 +407,12 @@ case "${1:-}" in
     # void the trial. It had no non-voiding move left. Asking before the clock starts is the
     # only move that exists.
     #
-    # THREE OUTCOMES, MATCHING THE LADDER'S THREE DISPOSITIONS, and the middle one is the whole
+    # WHAT A RESULT MEANS IS THE LADDER'S, NOT THIS ARM'S: skills/verify-ladder/SKILL.md
+    # `## Satisfaction` is the one home, and this arm only asks the question before the clock.
+    # It had its own copy of the dispositions once, and the copy and the ladder read a red
+    # baseline with opposite outcomes (T-20260923-baseline-and-the-ladder-call-one-fact-ba).
+    #
+    # THE SEPARATION BELOW is what makes the question askable, and the middle case is the whole
     # reason this is not a one-liner. In this repository `commands.build` reads
     # `# none -- shell and markdown, nothing is compiled`: handed to a shell that is a COMMENT,
     # it runs, it exits 0, and a naive check reports the rung satisfiable when nothing is
@@ -483,7 +488,7 @@ case "${1:-}" in
     # decided, because the two branches of this stop are not the same outcome:
     #
     #   =baseline        a known-red subject, which section 0 blesses -- "only if you knew that
-    #                    first". Proceed.
+    #                    first". Proceed; the ladder judges the rung against this baseline.
     #   =unsatisfiable   the tooling could not run. The rung is unsatisfiable, the trial is VOID
     #                    rather than answerable, and this exits 2 rather than 0 or 1 so a caller
     #                    can tell the two stops apart.
@@ -539,8 +544,9 @@ case "${1:-}" in
         kit_warn "    KIT_COMMANDS_RED_DISPOSITIONED=\"$(printf '%s' "$_want" | sed 's/\([^,]*\)/\1=?/g')\""
         kit_warn ""
         kit_warn "  Replace each ? -- there is no default, and an unedited paste is refused."
-        kit_warn "  =baseline      a known-red subject. Record the counts in the trial record's"
-        kit_warn "                 baseline box; section 0 blesses this only if you knew first."
+        kit_warn "  =baseline      a known-red subject. Record the causes in the trial record's"
+        kit_warn "                 baseline box; the ladder judges the rung AGAINST it after the"
+        kit_warn "                 change (verify-ladder SKILL.md, ## Satisfaction)."
         kit_warn "  =unsatisfiable the rung cannot run. Fix it HERE -- editing commands.* after"
         kit_warn "                 the clock starts voids the trial (TRIAL-PROTOCOL.md section 2)."
         [ -n "$_got" ] && kit_warn "  (the value supplied names \"$_gotids\"; this run observed \"$_want\")"

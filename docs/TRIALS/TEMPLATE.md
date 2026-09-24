@@ -18,7 +18,7 @@
 | Time-box / actual | |
 | Subject | *languages, size, commit count, age of history* |
 | Greenfield / brownfield | *and whether history was truncated* |
-| Rung dispositions | *one line per rung: `satisfied` \| `unavailable` (compensating control, tier raised) \| `unsatisfiable` (what did not run). **Any `unsatisfiable` makes the outcome VOID** — §3, §6* |
+| Rung dispositions | *one line per rung: `satisfied` \| `satisfied against baseline` (evidence it reached the change; baseline and unmasked counts) \| `unavailable` (compensating control, tier raised) \| `unsatisfiable` (what did not run, or what stopped it before the change). **Any `unsatisfiable` makes the outcome VOID** — §3, §6* |
 | Outcome | COMPLETE \| ABORTED (*cause*) \| VOID (*condition*) |
 | Baseline before the kit | *one line per check, with its CAUSE — see the Baseline section below. `build pass, tests fail` is not a baseline* |
 | Instruments verified live | spend rows > 0, findings row landed |

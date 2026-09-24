@@ -45,6 +45,38 @@ errors to 0. The trial's outcome label could not be written without deciding thi
       the rung later, rather than re-derived from the same exit code.
 - [ ] A check that fails on the contradiction as it stands today.
 
+### Folded in from K4, 2026-09-24 — rung 1's "scope wider than the change"
+
+**Operator decision 2026-09-24: option A, and K4's rung-1 half moves here.** The two could not be
+separated. The obvious resolution of this task -- judge a `=baseline` rung against the recorded
+baseline, passing when every failure after the change was already in it -- is refuted by trial 3's
+own data: rung 1 went 90 -> 7 errors and **6 of the 7 were not in the before-log**
+(`docs/TRIALS/2026-09-20-highper-gateway.md`, "The 7 that remain were UNMASKED"). rustc stopped at
+name resolution while 89 import errors stood, so it never type-checked the other files. A strict
+subset rule fails the rung the operator ruled COMPLETE; any rule that passes it has to say what a
+failure outside the diff means, which was K4's rung-1 question.
+
+**Option A, as decided:**
+
+- the ladder owns the dispositions; `docs/TRIAL-PROTOCOL.md` and `kit-preflight.sh` cite it;
+- `unsatisfiable` narrows to *the command produces no verdict on the changed code* -- it does not
+  run, or a failure that predates the change stops it before it reaches the change. Both 2026-09-09
+  rungs stay VOID (`protoc` missing; the `--lib` target never compiled, so no test ran);
+- a rung that runs on a baseline dispositioned `=baseline` must show **zero failures in the files
+  the diff touches** -- a failure there is the rung working, fix the change. Failures elsewhere are
+  recorded with causes as baseline or unmasked and do not block;
+- **the cost, stated:** this rung no longer catches a change that breaks an untouched file, e.g.
+  through a signature. Compensating control: rungs 4 and 5 are handed the unmasked list;
+- the "no verdict" guard must catch a build that stops BEFORE the changed unit, or "zero failures
+  in touched files" is vacuous -- the 2026-09-09 shape again. Default: no evidence the command
+  processed the touched files means `unsatisfiable`.
+
+**Added acceptance criteria (from K4):**
+
+- [ ] The trial-3 rung-1 case is the worked example, and reaches its disposition without judgement.
+- [ ] The rule makes the 2026-09-09 case harder to reach, not easier -- both its rungs stay unsatisfiable, and its non-compiling change fails at rung 1.
+- [ ] Scope-narrowing is ruled on with its cost stated: touched files are judged, cross-module breakage is handed to rungs 4 and 5.
+
 ## Notes
 
 Trial 3 record: `docs/TRIALS/2026-09-20-highper-gateway.md`, K3, and the "Why two rungs are

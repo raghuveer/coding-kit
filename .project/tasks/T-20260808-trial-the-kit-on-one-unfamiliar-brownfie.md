@@ -3,7 +3,7 @@ id: T-20260808-trial-the-kit-on-one-unfamiliar-brownfie
 title: Trial the kit on one unfamiliar brownfield polyglot project
 epic: validation
 tier: T2
-blocked_by: T-20260808-record-how-a-task-was-executed-so-kit-wo, T-20260808-a-repeatable-trial-protocol-for-running-, T-20260808-adoption-paths-for-an-empty-folder-and-f, T-20260813-nine-criticals-predate-summary-and-canno, T-20260819-a-finding-whose-subject-no-longer-exists, T-20260912-a-declared-rung-whose-tooling-fails-has-, T-20260912-a-trial-runs-in-a-container-on-the-subje, T-20260912-the-baseline-records-that-the-subject-is, T-20260911-the-isolation-check-passes-while-the-cop, T-20260911-kit-status-reports-spend-with-no-as-of-t, T-20260911-a-finding-recorded-by-hand-carries-no-ag, T-20260911-a-carried-over-finding-is-recorded-as-a-, T-20260911-kit-init-next-steps-omit-choosing-git-ad
+blocked_by: T-20260808-record-how-a-task-was-executed-so-kit-wo, T-20260808-a-repeatable-trial-protocol-for-running-, T-20260808-adoption-paths-for-an-empty-folder-and-f, T-20260813-nine-criticals-predate-summary-and-canno, T-20260819-a-finding-whose-subject-no-longer-exists, T-20260912-a-declared-rung-whose-tooling-fails-has-, T-20260912-a-trial-runs-in-a-container-on-the-subje, T-20260912-the-baseline-records-that-the-subject-is, T-20260911-the-isolation-check-passes-while-the-cop, T-20260911-kit-status-reports-spend-with-no-as-of-t, T-20260911-a-finding-recorded-by-hand-carries-no-ag, T-20260911-a-carried-over-finding-is-recorded-as-a-, T-20260911-kit-init-next-steps-omit-choosing-git-ad, T-20260923-the-ladder-has-no-disposition-for-a-rung
 state: open
 ---
 
@@ -375,3 +375,7 @@ trial would be measuring an improvised procedure.
 T-20260731-run-one-real-task-with-the-model-in-the- should also land first. The kit has never
 been driven through the harness end to end — only its scripts from bash — and every defect
 found on 2026-07-31 lived in a path that had never been executed.
+
+**Blocked by `T-20260923-the-ladder-has-no-disposition-for-a-rung`, declared 2026-09-24.** The
+operator's ruling on trial 3's rungs 1 and 2 (`6a9873d`) is *"precedent for one trial, not a general
+licence"* until that task lands. The baseline/unsatisfiable task is reached through the rung task.

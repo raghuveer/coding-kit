@@ -45,6 +45,38 @@ errors to 0. The trial's outcome label could not be written without deciding thi
       the rung later, rather than re-derived from the same exit code.
 - [ ] A check that fails on the contradiction as it stands today.
 
+### Folded in from K4, 2026-09-24 — rung 1's "scope wider than the change"
+
+**Operator decision 2026-09-24: option A, and K4's rung-1 half moves here.** The two could not be
+separated. The obvious resolution of this task -- judge a `=baseline` rung against the recorded
+baseline, passing when every failure after the change was already in it -- is refuted by trial 3's
+own data: rung 1 went 90 -> 7 errors and **6 of the 7 were not in the before-log**
+(`docs/TRIALS/2026-09-20-highper-gateway.md`, "The 7 that remain were UNMASKED"). rustc stopped at
+name resolution while 89 import errors stood, so it never type-checked the other files. A strict
+subset rule fails the rung the operator ruled COMPLETE; any rule that passes it has to say what a
+failure outside the diff means, which was K4's rung-1 question.
+
+**Option A, as decided:**
+
+- the ladder owns the dispositions; `docs/TRIAL-PROTOCOL.md` and `kit-preflight.sh` cite it;
+- `unsatisfiable` narrows to *the command produces no verdict on the changed code* -- it does not
+  run, or a failure that predates the change stops it before it reaches the change. Both 2026-09-09
+  rungs stay VOID (`protoc` missing; the `--lib` target never compiled, so no test ran);
+- a rung that runs on a baseline dispositioned `=baseline` must show **zero failures in the files
+  the diff touches** -- a failure there is the rung working, fix the change. Failures elsewhere are
+  recorded with causes as baseline or unmasked and do not block;
+- **the cost, stated:** this rung no longer catches a change that breaks an untouched file, e.g.
+  through a signature. Compensating control: rungs 4 and 5 are handed the unmasked list;
+- the "no verdict" guard must catch a build that stops BEFORE the changed unit, or "zero failures
+  in touched files" is vacuous -- the 2026-09-09 shape again. Default: no evidence the command
+  processed the touched files means `unsatisfiable`.
+
+**Added acceptance criteria (from K4):**
+
+- [ ] The trial-3 rung-1 case is the worked example, and reaches its disposition without judgement.
+- [ ] The rule makes the 2026-09-09 case harder to reach, not easier -- both its rungs stay unsatisfiable, and its non-compiling change fails at rung 1.
+- [ ] Scope-narrowing is ruled on with its cost stated: touched files are judged, cross-module breakage is handed to rungs 4 and 5.
+
 ## Notes
 
 Trial 3 record: `docs/TRIALS/2026-09-20-highper-gateway.md`, K3, and the "Why two rungs are
@@ -52,3 +84,23 @@ CONTESTED" section.
 
 This blocks the outcome label of trial 3 and of every future trial on a red-baseline subject,
 which is the whole brownfield population.
+
+### Operator decision 2026-09-24, after the second review chain: R1, reach is per UNIT
+
+Two T3 chains, four `revise`. Chain 1's critical (reach evidence taken from the BEFORE run) was
+fixed in `00f64eb` and both chain-2 readers confirmed it holds. Chain 2's critical, found by both
+independently and reproduced here in a three-crate cargo workspace: reach evidence was counted per
+FILE, so a warning in one touched crate stood in for a second touched crate that never built behind
+a red dependency -- "satisfied against baseline" over a change that does not compile. Diagnostics
+also cannot show reach for a clean change (it emits none) or for `cfg`-gated code.
+
+Each text fix to step 1 moved the hole sideways, so the question went back to the operator.
+**Decided: R1.** Every unit containing a touched file must get a complete verdict from the after
+run, with every failure in a touched file; a touched unit that fails elsewhere, is blocked by a
+dependency, or is skipped is `unsatisfiable`. A unit that passed before and fails after is a
+regression, not unmasked.
+
+**Stated consequence: under R1 trial 3's rung 1 is unsatisfiable and trial 3 would be VOID** --
+`plugin/` shares the `highper-gateway` crate with `discovery/consul.rs`. The 2026-09-23 record
+stands as the ruling made before the rule existed. Chain 2 also corrected a claim of mine: the
+after-run logs DO exist at `D:/trials/trial3-target/` (I had searched only the subject copy).

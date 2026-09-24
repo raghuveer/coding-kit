@@ -2,6 +2,7 @@
 id: T-20260923-the-ladder-has-no-disposition-for-a-rung
 title: The ladder has no disposition for a rung wider than the change
 tier: T3
+blocked_by: T-20260923-baseline-and-the-ladder-call-one-fact-ba
 lang: bash
 state: created
 ---
@@ -30,16 +31,22 @@ This is the 2026-09-09 failure one layer out. That trial's lesson was recorded a
 enumeration had two names and the situation was a third"*. The enumeration now has three names
 and there are two more situations.
 
+> **Rung 1's half moved to `T-20260923-baseline-and-the-ladder-call-one-fact-ba` on 2026-09-24**
+> (operator decision). Resolving that task needed an answer to what a failure outside the diff
+> means, which was this task's rung-1 question. What remains here is rung 2: **the tooling runs and
+> the obligation does not apply to this change class.** The rung-1 criteria below are struck, not
+> deleted, so the history reads.
+
 ## Acceptance criteria
 
-- [ ] The ladder names both states, or states positively why each collapses into an existing
+- [ ] The ladder names the rung-2 state (~~both states~~ -- rung 1 moved), or states positively why it collapses into an existing
       one — with the trial-3 case as the worked example either way.
 - [ ] Whatever is added cannot be used to wave a rung through. The 2026-09-09 failure was a
       trial reporting COMPLETE over a change that does not compile, and any new name must make
       that case harder to reach, not easier.
 - [ ] A rung dispositioned under a new name still blocks or permits completion explicitly.
       Silence is what let the first gap through.
-- [ ] Scope-narrowing is considered and ruled on: whether a rung may be evaluated against the
+- ~~Scope-narrowing is considered and ruled on~~ -- moved with rung 1; ruled there: whether a rung may be evaluated against the
       changed paths rather than the declared command's whole scope, and what that costs in
       missed cross-module breakage.
 
@@ -49,3 +56,6 @@ Trial 3 record: `docs/TRIALS/2026-09-20-highper-gateway.md`, K4.
 
 Related: the baseline/unsatisfiable contradiction, which is the same area and must be resolved
 consistently with this.
+
+**Blocked by `T-20260923-baseline-and-the-ladder-call-one-fact-ba`, declared 2026-09-24.** That task
+decides which document owns the rung-disposition rule; the names this task adds go in that home.

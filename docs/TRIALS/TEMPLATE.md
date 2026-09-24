@@ -18,11 +18,27 @@
 | Time-box / actual | |
 | Subject | *languages, size, commit count, age of history* |
 | Greenfield / brownfield | *and whether history was truncated* |
-| Rung dispositions | *one line per rung: `satisfied` \| `unavailable` (compensating control, tier raised) \| `unsatisfiable` (what did not run). **Any `unsatisfiable` makes the outcome VOID** — §3, §6* |
+| Rung dispositions | *the counts from the Rung dispositions table below, e.g. `3 satisfied, 1 unavailable, 1 unsatisfiable`. **Any `unsatisfiable` row makes the outcome VOID** — §3, §6* |
 | Outcome | COMPLETE \| ABORTED (*cause*) \| VOID (*condition*) |
 | Baseline before the kit | *one line per check, with its CAUSE — see the Baseline section below. `build pass, tests fail` is not a baseline* |
 | Instruments verified live | spend rows > 0, findings row landed |
 | Copy isolation verified | `git remote -v` printed nothing |
+
+## Rung dispositions
+
+**Before the outcome, and one row per rung.** The Disposition cell STARTS with exactly one of
+`satisfied`, `satisfied (against baseline)`, `unavailable` or `unsatisfiable` — §3's detection
+reads that first word, so nothing else goes first. What each means is
+`skills/verify-ladder/SKILL.md` `## Satisfaction`. Against a baseline, name the touched units and
+their verdicts, and the baseline and unmasked counts.
+
+| Rung | Obligation | Command | Disposition |
+|---|---|---|---|
+| 1 | compiles + static analysis | | |
+| 2 | criteria proven by tests that fail without the change | | |
+| 3 | wiring proof | | |
+| 4 | adversarial reader | | |
+| 5 | blind second reader | | |
 
 ## Baseline before the kit
 

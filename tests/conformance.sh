@@ -6240,6 +6240,40 @@ grep -q "unsatisfiable" "$WORK.ladder-completion" ||
 # accepted limit of asserting a normative document by grep.
 grep -qi "either satisfied or" "$WORK.ladder-completion" &&
   { echo "  ## Completion has the two-state completion rule back verbatim"; bad=1; }
+# THE PRE-FLIGHT AND THE LADDER AGREE BY CONSTRUCTION, not by two copies kept in step. Until
+# 2026-09-24 `--commands` accepted `=baseline` and the ladder never used the word, while calling
+# "a target that does not compile before you touched it" unsatisfiable -- one fact, two documents,
+# opposite outcomes (T-20260923-baseline-and-the-ladder-call-one-fact-ba). So the list is READ
+# FROM THE ARM'S OWN case statement, and every classification the operator can give must appear
+# as `=<word>` inside `## Satisfaction`. A new word added to the arm alone takes this red; so does
+# deleting the ladder's paragraph for one. Alternation arms (`a|b)`) are split, so a word
+# smuggled in beside an existing one counts too. Like every grep here it proves the word is present in
+# the right section, not that the prose around it is right -- the ceiling stated at the top.
+cls=$(awk 'index($0, "case \"${_e##*=}\" in") {f=1; next} f && /^[[:space:]]*esac/ {exit} f' \
+        "$KIT/tooling/kit-preflight.sh" | sed -n 's/^[[:space:]]*"\{0,1\}\([A-Za-z][A-Za-z_|-]*\)"\{0,1\})[[:space:]].*/\1/p' | tr '|' ' ')
+[ -n "$cls" ] ||
+  { echo "  could not read the classifications kit-preflight.sh --commands accepts"; bad=1; }
+for c in $cls; do
+  grep -q "=$c\`" "$WORK.ladder-satisfaction" ||
+    { echo "  --commands accepts =$c and the ladder's ## Satisfaction never defines it"; bad=1; }
+done
+# THE RULE, NOT ONLY THE WORD. A reviewer deleted the whole three-step paragraph on 2026-09-24
+# and the loop above stayed green, because the worked example also says `=baseline`. So the
+# paragraph's own lead and all three steps must be present -- and the clause that made one fact
+# read two ways must not come back as ladder text. It is still QUOTED, in the history blockquote,
+# so quoted lines (`>`) are excluded: the quote is the record of why, and must not trip this.
+grep -q '^\*\*Against a recorded baseline\*\*' "$WORK.ladder-satisfaction" ||
+  { echo "  ## Satisfaction has no 'Against a recorded baseline' rule"; bad=1; }
+for st in 'Did the AFTER run reach the change' 'complete verdict' 'dependency record' 'passed in the before run' 'has no verdict on the change' 'Is any failure in a touched file' 'Otherwise the rung is satisfied against the baseline' '**regression**' '**unmasked**'; do
+  grep -q "$st" "$WORK.ladder-satisfaction" ||
+    { echo "  the baseline rule lost the step: $st"; bad=1; }
+done
+# Joined into one line first: the original clause wrapped across a line break ("cannot be made
+# to" / "pass"), so a line-by-line grep missed the very text it names -- found by running this
+# against main's ladder, where it stayed silent.
+grep -v '^>' "$WORK.ladder-satisfaction" | tr '\n' ' ' | tr -s ' ' |
+  grep -qi 'cannot be made to pass for reasons outside' &&
+  { echo "  ## Satisfaction calls a pre-existing failure unsatisfiable again -- the K3 contradiction is back"; bad=1; }
 grep -q "profile changed mid-trial" "$T" ||
   { echo "  section 3 does not carry the profile-change condition"; bad=1; }
 grep -q "preflight.sh --commands" "$T" ||
@@ -6436,6 +6470,46 @@ vd="$WORK.voiddet"; rm -rf "$vd"; mkdir -p "$vd"
   [ "$(det)" = 0 ] || { echo "    an absent log did not return zero"; exit 1; } )
 check $? "section 3's detection separates a dispositioned baseline from an unsatisfiable rung"
 rm -rf "$vd"
+
+# 4 -- THE POST-CLOCK HALF, RUN FROM THE DOCUMENT'S OWN TEXT. The ladder reaches unsatisfiable
+# AFTER the clock too (a touched unit with no complete verdict), and that route writes no event;
+# section 3 detects it from the report's per-rung table instead. The command is EXTRACTED from
+# section 3 and run as written, so the document and this check cannot drift -- the event
+# detection above is a copy, and a copy is the thing that drifted on 2026-09-24. It prints two
+# numbers: rungs whose disposition is `unsatisfiable`, and rungs whose disposition is none of the
+# ladder's words. Records, each derived from the REAL template so its shape is the one a trialist
+# fills in: blank (0 0); one unsatisfiable row, plain (1 0), backticked with a bold rung number
+# (1 0), and italic with a pipe in the Command cell (1 0) -- the last three are the shapes a
+# 2026-09-24 reviewer showed the first version read as 0; a cell that merely MENTIONS the word
+# (0 0); a word the ladder does not define (0 1); and trial 3's real record, whose two rungs were
+# ruled `baseline-blocked` (0 2).
+pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
+( line=$(grep -F "awk -F'\\174' '/^## Rung dispositions/" "$T") ||
+    { echo "    section 3 carries no per-rung-table detection"; exit 1; }
+  det=${line#*\`awk}; det="awk${det%%\`*}"
+  case "$det" in *'<record>'*) ;; *) echo "    the detection names no <record> to run against"; exit 1 ;; esac
+  run() { eval "${det/<record>/\"\$1\"}"; }
+  TM="$KIT/docs/TRIALS/TEMPLATE.md"
+  r1='^| 1 | compiles + static analysis | | |$'
+  r2='^| 2 | criteria proven by tests that fail without the change | | |$'
+  grep -q "$r2" "$TM" && grep -q "$r1" "$TM" ||
+    { echo "    the template's rung table changed shape; the fixtures below would test nothing"; exit 1; }
+  sed "s/$r2/| 2 | criteria | cargo test | **UNSATISFIABLE** -- target did not build |/" "$TM" > "$pc/one.md"
+  sed "s/$r2/| **2** | criteria | cargo test | \`unsatisfiable\` -- no verdict |/"      "$TM" > "$pc/tick.md"
+  sed "s/$r2/| 2 | criteria | \`a \\\\| b\` | _unsatisfiable_ |/"                       "$TM" > "$pc/pipe.md"
+  sed "s/$r1/| 1 | compiles | x | satisfied -- no rung unsatisfiable |/"                 "$TM" > "$pc/phrase.md"
+  sed "s/$r2/| 2 | criteria | x | baseline-blocked (ruling) |/"                          "$TM" > "$pc/odd.md"
+  expect() { got=$(run "$1"); [ "$got" = "$2" ] || { echo "    $3: got '$got', want '$2'"; exit 1; }; }
+  expect "$TM"          "0 0" "the blank template"
+  expect "$pc/one.md"    "1 0" "one unsatisfiable row"
+  expect "$pc/tick.md"   "1 0" "a backticked disposition with a bold rung number"
+  expect "$pc/pipe.md"   "1 0" "an italic disposition after a pipe in the Command cell"
+  expect "$pc/phrase.md" "0 0" "a cell that mentions the word without starting with it"
+  expect "$pc/odd.md"    "0 1" "a disposition the ladder does not define"
+  R3="$KIT/docs/TRIALS/2026-09-20-highper-gateway.md"
+  [ ! -f "$R3" ] || expect "$R3" "0 2" "trial 3's record, two rungs ruled baseline-blocked" )
+check $? "section 3's post-clock detection, run as written, reads the last cell's first word in every shape a report uses"
+rm -rf "$pc"
 fi
 
 if step "a withdrawal can be marked in the subject, whatever language the subject is written in"; then

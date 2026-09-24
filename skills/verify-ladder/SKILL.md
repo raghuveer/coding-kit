@@ -38,28 +38,118 @@ as evidence the rung is redundant.
 Read `.claude/project-profile.md` for `commands.*` and `ladder.*` keys. Never invoke a
 tool this skill names itself — it names none deliberately.
 
-A rung has exactly **three** dispositions and no fourth. Two of them let work complete.
+A rung has exactly **three** dispositions and no fourth. Two of them let work complete. **This
+section is their one home**: `docs/TRIAL-PROTOCOL.md` and `kit-preflight.sh --commands` cite it,
+and restate nothing.
 
-**1. Satisfied.** The declared command ran and passed.
+**1. Satisfied.** The declared command ran and passed -- or, where the command was already red
+before the change, it ran and passed **against that baseline** (below). A comment is not a
+declaration: `commands.build: # none` handed to a shell runs and exits 0, and it is disposition 2,
+nothing declared, not a pass.
 
 **2. Unavailable** — *nothing is declared for this stack.* Do not skip it silently. Declare it
 unavailable, name the compensating control, and **raise the tier by one**. Less mechanical
 verification means more adversarial reading, not a lower bar. A T3 change in a stack with no
 mutation tooling gets more human and reviewer attention, not less.
 
-**3. Unsatisfiable** — *a satisfaction IS declared and it does not run, or cannot be made to
-pass for reasons outside the change.* This is **not** unavailable: something was declared, so
-the clause above does not reach it, and raising the tier is not the remedy because the rung
-was supposed to be mechanical here and is not.
+**3. Unsatisfiable** — *a satisfaction IS declared and the command produces no verdict on the
+changed code.* Either it does not run -- a missing build dependency, a platform the toolchain
+does not support -- or it gives no verdict on the change (step 1 below): a touched file no unit
+compiles, a touched unit blocked, skipped or still failing in a file the change did not touch, or
+a unit that passed before and has no verdict after. This is **not** unavailable: something was declared, so the clause above does
+not reach it, and raising the tier is not the remedy because the rung was supposed to be
+mechanical here and is not.
+
+A trial's pre-flight can decide this before the clock: `kit-preflight.sh --commands` records a
+rung the operator dispositions `rung:exit=unsatisfiable` as exactly this, and exits 3.
 
 **`unsatisfiable` blocks a completion claim.** It is not a weaker satisfaction and there is no
 tier that compensates for it: an unsatisfiable rung means the verification the tier assumed
 did not happen, and nothing else in the ladder knows that.
 
-Distinguish it from an ordinary failing check. `commands.typecheck` reporting type errors in
-YOUR change is the rung working — fix the change. `unsatisfiable` is the rung not working: a
-missing build dependency, a platform the toolchain does not support, a target that does not
-compile before you touched it.
+Distinguish it from an ordinary failing check. `commands.typecheck` reporting errors in a file
+YOUR change touches is the rung working -- fix the change. And distinguish it from a red
+baseline: a command that was failing before you started, and still reaches your change, has a
+verdict to give. That is the next paragraph, not this one.
+
+**Against a recorded baseline** -- a mode of disposition 1, not a fourth disposition. When the
+declared command was red before the change -- in a trial, pre-flight recorded the rung as
+`rung:exit=baseline`; outside one, you ran the command on the unchanged tree first and kept its
+output -- judge the rung in three steps, in order, and stop at the first that decides.
+
+Every step reasons about **units**: the smallest thing the declared command reports a whole
+result for -- a crate or build target, a package, a test binary. The tool names them; you do not
+choose them. **Which files a unit contains comes from the tool's own dependency record, not from
+its console output** -- cargo's dep-info (`.d`) files, `go list`, the test runner's collected list.
+A unit has a **complete verdict** in a run when the command reports that it passed, or reports its
+failures. A unit the command never started, skipped, or served from cache without naming has none.
+Run the command so it names every unit -- a clean build, `--keep-going`, or its machine-readable
+output -- or accept that the ones it does not name have no verdict.
+
+1. **Did the AFTER run reach the change?** Three conditions, all from the run made after the
+   change and from the declared command itself:
+   - every touched source file is in some unit's dependency record. A touched file no unit
+     includes -- a module nothing declares, a directory the tool skips -- was never compiled;
+   - every unit containing a touched file has a complete verdict, with every failure located in
+     a touched file;
+   - every unit that **passed in the before run** has a complete verdict after it. A unit that
+     passed before and was not started after may have been broken by the change, and nothing can
+     say whether it was.
+
+   **Any of the three missing, and the rung has no verdict on the change: `unsatisfiable`.** One
+   unit's result says nothing about another's, and the before run says nothing about the after
+   run -- the change can stop the after run earlier than the baseline stopped. A touched test
+   binary that ran zero tests, where the before run ran some, has no verdict. What the tool does
+   not report is a changed line inside an included file that the command's configuration compiles
+   out -- a feature, `cfg` or build tag it does not enable. Say which configuration the changed
+   lines need and whether the command enables it.
+2. **Is any failure in a touched file after the change?** Then the rung is working. Fix the
+   change; the work is not complete. The failure's **primary** location decides; a note or
+   secondary span pointing into a touched file does not move an error out of the file it is in.
+3. **Otherwise the rung is satisfied against the baseline.** Every touched unit passed and every
+   unit that passed before still has a verdict, so every remaining failure is in an untouched
+   unit. Sort each, with its cause, into exactly one of three kinds:
+   - **regression** -- it is in a unit that passed in the before run; or it is a test that ran
+     and passed before and now fails. This is not a count to record and move past: **it blocks
+     exactly as step 2 does -- fix the change**, wherever it lives. A test the diff itself deletes
+     or renames is not a regression; name it as removed;
+   - **baseline** -- the same unit, file and error code or test name as the before run, and no
+     more occurrences of it than before;
+   - **unmasked** -- anything else, which can only be in a unit that did not pass in the before
+     run. It does not block. Hand the list to the rung 4 and rung 5 readers.
+
+**The cost, stated rather than discovered:** a unit that was already failing before the change
+and does not contain it can be broken further by the change, and that reads as unmasked. That is
+why the unmasked list goes to rungs 4 and 5 and is recorded rather than waved through. The price
+of step 1 is deliberate: **a change inside a unit that does not build cannot be verified by that
+unit's command** -- fix the unit's baseline first, or accept `unsatisfiable` -- and a command that
+stops at its first failing unit leaves the rest without a verdict, so on a red baseline declare it
+to run past failures (cargo `--keep-going`) or expect step 1 to fail. The stricter rule -- no
+failure anywhere that the baseline did not have -- was refused on one observation: trial 3's change
+left 7 errors of which 6 were not in the before run.
+
+This decides whether the command's red result blocks. **It does not replace the rung's
+obligation**: rung 2 still needs tests that fail without the change. A rung whose command runs but
+whose configuration compiles the change out produces no step-1 evidence, so it is `unsatisfiable`
+by default. Whether that state deserves its own name is
+`T-20260923-the-ladder-has-no-disposition-for-a-rung`. Until that lands, only an operator's ruling,
+recorded in the report next to the disposition, may record such a rung as anything else.
+
+**Worked example, trial 3 (2026-09-23), rung 1.** `cargo check --workspace --all-features`,
+pre-flight `=baseline`. The change touches three files in `highper-gateway/src/plugin/`, all in
+the `highper-gateway` library crate. After the change that crate still fails: 7 errors, none in
+touched files, all in `discovery/consul.rs` and `middleware/waf/aws_engine.rs` -- the same crate.
+Step 1: the touched unit fails in files the diff does not touch, so it has no complete verdict:
+**unsatisfiable**. Step 1 decides, so the lints the after run reports in touched files -- among
+them `unused_mut` at `plugin/host_functions.rs:544`, an error under `clippy -D warnings`
+(`D:/trials/trial3-target/check3.log`, `clippy.log`) -- are never reached. Under this rule trial 3
+is VOID. It was recorded COMPLETE on 2026-09-23 by an operator ruling made before the rule existed,
+and the record stands as that ruling.
+
+**And the case this ladder exists for, 2026-09-09.** Rung 1 needed `protoc` and did not run:
+**unsatisfiable**. Rung 2's `--lib` test target contains the touched `registry.rs` and failed to
+build over `runtime/signals.rs`, a file the change did not touch: step 1, **unsatisfiable**,
+whatever it reported about `registry.rs:77`. No route reaches complete.
 
 > **Why this exists.** The 2026-09-09 highper-gateway trial hit it on two rungs at once.
 > `commands.typecheck` failed everywhere — a Windows host died on jemalloc's autoconf, a
@@ -70,6 +160,14 @@ compile before you touched it.
 > change at rungs 4 and 5, and it does not compile** — `registry.rs:77`, `error[E0597]`, on
 > that trial's own commit. Rung 3, which genuinely had nothing declared, was declared
 > unavailable and the tier raised correctly; that path is unchanged and still right.
+>
+> **And why the baseline paragraph exists.** The first version of disposition 3 read *"or cannot
+> be made to pass for reasons outside the change"* and named *"a target that does not compile
+> before you touched it"* as its example. That is every red-baseline subject, and
+> `docs/TRIAL-PROTOCOL.md` §0 blesses trialling one -- so the two documents read one fact with
+> opposite outcomes, and trial 3 could not write its outcome label without an operator ruling.
+> What separates the cases is not whether the failure predates you. It is whether the command
+> still reaches your change.
 
 ## Recording findings
 
@@ -161,13 +259,15 @@ a finding that teaches nothing.
 
 ## Completion
 
-Work is complete when every obligation at the declared tier is **satisfied**, or explicitly
-declared **unavailable** with its tier raised. "I inspected it" satisfies no rung.
+Work is complete when every obligation at the declared tier is **satisfied** -- against the
+recorded baseline, where the command was red before the change -- or explicitly declared
+**unavailable** with its tier raised. "I inspected it" satisfies no rung.
 
 **An `unsatisfiable` rung blocks completion.** This section used to enumerate two states and
 permit anything outside them by omission, which is how a trial reported COMPLETE over a change
-that does not compile. There is no third way to complete: either the rung is made to run, or
-the work is not complete and says so.
+that does not compile. There is no third way to complete: either the rung is made to give a
+verdict on the change -- the tooling fixed, the unit's baseline repaired, the command run so it
+names every unit -- or the work is not complete and says so.
 
 Inside a trial the remedy is narrower still, and it is why §0 of `docs/TRIAL-PROTOCOL.md`
 proves every `commands.*` runs BEFORE the clock starts. Mid-trial, editing the profile to make

@@ -54,8 +54,9 @@ mutation tooling gets more human and reviewer attention, not less.
 
 **3. Unsatisfiable** — *a satisfaction IS declared and the command produces no verdict on the
 changed code.* Either it does not run -- a missing build dependency, a platform the toolchain
-does not support -- or it gives no complete verdict on a unit the change touches (step 1 below):
-the unit was blocked, skipped, or still fails in a file the change did not touch. This is **not** unavailable: something was declared, so the clause above does
+does not support -- or it gives no verdict on the change (step 1 below): a touched file no unit
+compiles, a touched unit blocked, skipped or still failing in a file the change did not touch, or
+a unit that passed before and has no verdict after. This is **not** unavailable: something was declared, so the clause above does
 not reach it, and raising the tier is not the remedy because the rung was supposed to be
 mechanical here and is not.
 
@@ -76,45 +77,56 @@ declared command was red before the change -- in a trial, pre-flight recorded th
 `rung:exit=baseline`; outside one, you ran the command on the unchanged tree first and kept its
 output -- judge the rung in three steps, in order, and stop at the first that decides.
 
-Every step reasons about **units**: the smallest thing the declared command itself reports a
-whole result for -- a crate or build target, a package, a test binary. The tool names them; you
-do not choose them. A unit has a **complete verdict** in a run when the command reports that it
-built or passed, or reports its failures. A unit the command never got to -- skipped, or blocked
-by a failure elsewhere -- has none.
+Every step reasons about **units**: the smallest thing the declared command reports a whole
+result for -- a crate or build target, a package, a test binary. The tool names them; you do not
+choose them. **Which files a unit contains comes from the tool's own dependency record, not from
+its console output** -- cargo's dep-info (`.d`) files, `go list`, the test runner's collected list.
+A unit has a **complete verdict** in a run when the command reports that it passed, or reports its
+failures. A unit the command never started, skipped, or served from cache without naming has none.
+Run the command so it names every unit -- a clean build, `--keep-going`, or its machine-readable
+output -- or accept that the ones it does not name have no verdict.
 
-1. **Did the AFTER run reach the change?** Every unit that contains a touched file must have a
-   complete verdict in the run made after the change, from the declared command, and every one
-   of its failures must be located in a touched file. **Any touched unit that fails in a file the
-   diff does not touch, that did not build because something it depends on failed, or that the
-   command skipped, has no verdict on the change: `unsatisfiable`.** One touched unit's result
-   says nothing about another's, and the before run says nothing about the after run -- the
-   change can stop the after run earlier than the baseline stopped. A test binary whose target
-   did not build ran nothing. And a changed line that the command's configuration compiles out
-   -- a feature, `cfg` or build tag the command does not enable -- was not reached even when its
-   unit was; that is the one check here the tool does not report for you, so say which
-   configuration the changed lines need and whether the command enables it.
+1. **Did the AFTER run reach the change?** Three conditions, all from the run made after the
+   change and from the declared command itself:
+   - every touched source file is in some unit's dependency record. A touched file no unit
+     includes -- a module nothing declares, a directory the tool skips -- was never compiled;
+   - every unit containing a touched file has a complete verdict, with every failure located in
+     a touched file;
+   - every unit that **passed in the before run** has a complete verdict after it. A unit that
+     passed before and was not started after may have been broken by the change, and nothing can
+     say whether it was.
+
+   **Any of the three missing, and the rung has no verdict on the change: `unsatisfiable`.** One
+   unit's result says nothing about another's, and the before run says nothing about the after
+   run -- the change can stop the after run earlier than the baseline stopped. A touched test
+   binary that ran zero tests, where the before run ran some, has no verdict. What the tool does
+   not report is a changed line inside an included file that the command's configuration compiles
+   out -- a feature, `cfg` or build tag it does not enable. Say which configuration the changed
+   lines need and whether the command enables it.
 2. **Is any failure in a touched file after the change?** Then the rung is working. Fix the
    change; the work is not complete. The failure's **primary** location decides; a note or
    secondary span pointing into a touched file does not move an error out of the file it is in.
-3. **Otherwise the rung is satisfied against the baseline.** Every touched unit passed, so every
-   remaining failure is in a unit the change does not touch. Sort each, with its cause, into one
-   of three kinds:
-   - **regression** -- the unit had a complete verdict BEFORE the change and passed, and now
-     fails; or a test that ran and passed before and now fails or no longer runs. This is not a
-     count to record and move past: **it blocks exactly as step 2 does -- fix the change**,
-     wherever it lives;
+3. **Otherwise the rung is satisfied against the baseline.** Every touched unit passed and every
+   unit that passed before still has a verdict, so every remaining failure is in an untouched
+   unit. Sort each, with its cause, into exactly one of three kinds:
+   - **regression** -- it is in a unit that passed in the before run; or it is a test that ran
+     and passed before and now fails. This is not a count to record and move past: **it blocks
+     exactly as step 2 does -- fix the change**, wherever it lives. A test the diff itself deletes
+     or renames is not a regression; name it as removed;
    - **baseline** -- the same unit, file and error code or test name as the before run, and no
      more occurrences of it than before;
-   - **unmasked** -- anything else, in a unit the before run never gave a complete verdict. It
-     does not block. Hand the list to the rung 4 and rung 5 readers.
+   - **unmasked** -- anything else, which can only be in a unit that did not pass in the before
+     run. It does not block. Hand the list to the rung 4 and rung 5 readers.
 
 **The cost, stated rather than discovered:** a unit that was already failing before the change
 and does not contain it can be broken further by the change, and that reads as unmasked. That is
-why the unmasked list goes to rungs 4 and 5 and is recorded rather than waved through. And the
-price of step 1 is deliberate: **a change inside a unit that does not build cannot be verified by
-that unit's command.** Fix the unit's baseline first, or accept `unsatisfiable`. The stricter rule
--- no failure anywhere that the baseline did not have -- was refused on one observation: trial 3's
-change left 7 errors of which 6 were not in the before run.
+why the unmasked list goes to rungs 4 and 5 and is recorded rather than waved through. The price
+of step 1 is deliberate: **a change inside a unit that does not build cannot be verified by that
+unit's command** -- fix the unit's baseline first, or accept `unsatisfiable` -- and a command that
+stops at its first failing unit leaves the rest without a verdict, so on a red baseline declare it
+to run past failures (cargo `--keep-going`) or expect step 1 to fail. The stricter rule -- no
+failure anywhere that the baseline did not have -- was refused on one observation: trial 3's change
+left 7 errors of which 6 were not in the before run.
 
 This decides whether the command's red result blocks. **It does not replace the rung's
 obligation**: rung 2 still needs tests that fail without the change. A rung whose command runs but
@@ -253,8 +265,9 @@ recorded baseline, where the command was red before the change -- or explicitly 
 
 **An `unsatisfiable` rung blocks completion.** This section used to enumerate two states and
 permit anything outside them by omission, which is how a trial reported COMPLETE over a change
-that does not compile. There is no third way to complete: either the rung is made to run, or
-the work is not complete and says so.
+that does not compile. There is no third way to complete: either the rung is made to give a
+verdict on the change -- the tooling fixed, the unit's baseline repaired, the command run so it
+names every unit -- or the work is not complete and says so.
 
 Inside a trial the remedy is narrower still, and it is why §0 of `docs/TRIAL-PROTOCOL.md`
 proves every `commands.*` runs BEFORE the clock starts. Mid-trial, editing the profile to make

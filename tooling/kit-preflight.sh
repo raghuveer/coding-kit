@@ -491,8 +491,9 @@ case "${1:-}" in
     #   =baseline        a known-red subject, which section 0 blesses -- "only if you knew that
     #                    first". Proceed; the ladder judges the rung against this baseline.
     #   =unsatisfiable   the ladder's disposition 3, decided now. The trial is VOID
-    #                    rather than answerable, and this exits 2 rather than 0 or 1 so a caller
-    #                    can tell the two stops apart.
+    #                    rather than answerable, and this exits 3 -- not 0 or 1, and not 2,
+    #                    which this script already spends on "the question could not be
+    #                    asked" -- so a caller can tell the two stops apart. See the exit below.
     #
     # WHETHER CONFIRMING A DISPOSITION MUST RE-RUN EVERY COMMAND: RULED YES, WITH THE COST.
     #

@@ -165,6 +165,12 @@ d=$(grep -cE '^[[:space:]]*(function[[:space:]]+)?check[[:space:]]*\(\)' "$SELF"
 check $? "only the initialisation and check() write the tally (found $n writes, want 3; $d definitions of check, want 1)"
 fi
 
+if step "PROBE: a check inside a subshell -- DO NOT MERGE"; then
+# Planted to show the CI layer red in CI: this prints FAIL into a copy of the tally, so the suite
+# reports "0 failed" and exits 0, and only the FAIL-lines-vs-summary comparison can catch it.
+( check 1 "probe: a FAIL printed from a subshell" )
+fi
+
 if step "environment"; then
 uname -srm 2>/dev/null || echo "(no uname)"
 bash --version | head -1; git --version; sqlite3 --version | awk '{print "sqlite3 "$1}'

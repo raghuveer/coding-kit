@@ -281,5 +281,31 @@ jobs:
             WORK="$(cygpath -u "$RUNNER_TEMP")/fixture"
           fi
           start=$(date +%s)
-          KIT="$PWD" WORK="$WORK" bash tests/conformance.sh
+          # THE EXIT CODE IS NOT TRUSTED ALONE. From 73dcaf7 (2026-09-17) to 2026-09-26 the suite
+          # printed FAIL lines and exited 0, because three steps reset its tally; every one of
+          # those runs was green here. So the output is kept and read: any FAIL line fails this
+          # job whatever the exit code says. Independent of how the suite counts, by design.
+          log="$WORK.log"     # WORK is already a POSIX path on every runner; RUNNER_TEMP is not
+          set +e
+          KIT="$PWD" WORK="$WORK" bash tests/conformance.sh 2>&1 | tee "$log"
+          rc=${PIPESTATUS[0]}
+          set -e
           echo "conformance wall clock: $(( $(date +%s) - start ))s on $RUNNER_OS"
+          # Unanchored: a FAIL printed after an unterminated line does not start one. The suite's
+          # FAIL lines are check() output only; this log is the suite's own output, not the job's.
+          fails=$(grep -c '  FAIL  ' "$log" || true)
+          summary=$(grep -E '^=== [0-9]+ passed, [0-9]+ failed' "$log" | tail -1)
+          if [ -z "$summary" ]; then
+            echo "FATAL: the suite printed no summary line -- it stopped before the end (exit $rc)"
+            exit 1
+          fi
+          counted=$(printf '%s' "$summary" | sed -E 's/^=== [0-9]+ passed, ([0-9]+) failed.*/\1/')
+          if [ "$fails" != "$counted" ]; then
+            echo "FATAL: the suite printed $fails FAIL line(s) but counted $counted -- its tally is wrong"
+            exit 1
+          fi
+          if [ "$fails" != 0 ] && [ "$rc" = 0 ]; then
+            echo "FATAL: the suite printed $fails FAIL line(s) and exited 0"
+            exit 1
+          fi
+          exit "$rc"

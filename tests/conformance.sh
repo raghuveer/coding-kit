@@ -570,8 +570,14 @@ prof_sb() { printf -- '---\npaths.tasks:  .project/tasks\npaths.state:  .project
 
   # No boundary: BOTH unsigned commits are refused -- the 0.11.0 behaviour.
   prof_sb ''
-  printf '%s' "$(t "$OLD..HEAD")" | grep -q 'missing  Signed-off-by' || exit 1
-  printf '%s' "$(t "main..$OLD")" | grep -q 'missing  Signed-off-by' || exit 1
+  # EVERY EXIT NAMES ITSELF AND SHOWS WHAT IT READ. Four of these were a bare `|| exit 1`, and
+  # the one macOS failure on 2026-09-20 printed nothing before FAIL, so which assertion fired is
+  # unknowable (T-20260926-the-sign-off-adoption-boundary-check-fai).
+  why() { echo "  $1"; printf '%s\n' "$2" | tail -8 | sed 's/^/    | /'; exit 1; }
+  o=$(t "$OLD..HEAD"); printf '%s' "$o" | grep -q 'missing  Signed-off-by' ||
+    why "no boundary: the post-rule commit was not refused" "$o"
+  o=$(t "main..$OLD"); printf '%s' "$o" | grep -q 'missing  Signed-off-by' ||
+    why "no boundary: the pre-rule commit was not refused" "$o"
 
   # With the boundary: the pre-rule commit is exempt, the post-rule one is still refused.
   prof_sb "git.signoff_adopted_at: $BND
@@ -585,8 +591,10 @@ prof_sb() { printf -- '---\npaths.tasks:  .project/tasks\npaths.state:  .project
   # the quiet way a gate stops gating.
   prof_sb "git.signoff_adopted_at: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
 "
-  printf '%s' "$(t "main..$OLD")" | grep -q 'is not a commit in this repository' || exit 1
-  printf '%s' "$(t "main..$OLD")" | grep -q 'missing  Signed-off-by' || exit 1 )
+  o=$(t "main..$OLD"); printf '%s' "$o" | grep -q 'is not a commit in this repository' ||
+    why "a boundary naming no commit was not reported" "$o"
+  printf '%s' "$o" | grep -q 'missing  Signed-off-by' ||
+    why "a boundary naming no commit did not fail closed" "$o" )
 check $? "pre-rule commits exempt, post-rule still refused, a bad boundary fails closed"
 rm -rf "$sb"
 fi

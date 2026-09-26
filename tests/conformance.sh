@@ -1896,9 +1896,14 @@ b
 ' > src/a.go
   git add -A && git commit -q --no-verify -m "chore: seed"
   rm -f .project/index.db
-  POSIXLY_CORRECT=1 bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  # THE OUTPUT IS KEPT, and printed on failure. This step failed intermittently on macOS from
+  # 2026-09-19 with nothing but "no index was written" -- the cause went to /dev/null, so every
+  # occurrence was a symptom with no evidence (T-20260926-kit-index-writes-no-index-under-posixly-).
+  kout=$(POSIXLY_CORRECT=1 bash "$KIT/tooling/kit-index.sh" 2>&1); krc=$?
   # No index at all is the shape of the defect: the parse died before any ingest.
-  [ -f .project/index.db ] || { echo "  no index was written under POSIXLY_CORRECT=1"; exit 1; }
+  [ -f .project/index.db ] || {
+    echo "  no index was written under POSIXLY_CORRECT=1 (kit-index exit $krc; awk: $(awk --version 2>&1 | head -1))"
+    printf '%s\n' "$kout" | tail -15 | sed 's/^/    | /'; exit 1; }
   f=$(sqlite3 .project/index.db "SELECT COALESCE(tier_floor,'-') FROM task WHERE id='T-p';" | sed $'s/\r$//')
   [ "$f" = T3 ] || { echo "  floor under POSIXLY_CORRECT=1 was '$f', wanted T3"; exit 1; }
   # And the same tree without the variable must agree, or the fix has changed what a glob means.

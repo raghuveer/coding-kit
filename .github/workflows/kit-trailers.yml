@@ -281,5 +281,19 @@ jobs:
             WORK="$(cygpath -u "$RUNNER_TEMP")/fixture"
           fi
           start=$(date +%s)
-          KIT="$PWD" WORK="$WORK" bash tests/conformance.sh
+          # THE EXIT CODE IS NOT TRUSTED ALONE. From 73dcaf7 (2026-09-17) to 2026-09-26 the suite
+          # printed FAIL lines and exited 0, because three steps reset its tally; every one of
+          # those runs was green here. So the output is kept and read: any FAIL line fails this
+          # job whatever the exit code says. Independent of how the suite counts, by design.
+          log="$WORK.log"     # WORK is already a POSIX path on every runner; RUNNER_TEMP is not
+          set +e
+          KIT="$PWD" WORK="$WORK" bash tests/conformance.sh 2>&1 | tee "$log"
+          rc=${PIPESTATUS[0]}
+          set -e
           echo "conformance wall clock: $(( $(date +%s) - start ))s on $RUNNER_OS"
+          fails=$(grep -c '^  FAIL  ' "$log" || true)
+          if [ "$fails" != 0 ] && [ "$rc" = 0 ]; then
+            echo "FATAL: the suite printed $fails FAIL line(s) and exited 0 -- its tally is wrong"
+            exit 1
+          fi
+          exit "$rc"

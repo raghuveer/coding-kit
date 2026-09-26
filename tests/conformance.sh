@@ -130,19 +130,36 @@ if [ -n "$ONLY" ]; then
   printf '.\n'
 fi
 
-ok=0; bad=0; skipped=0; ran=0; filtered=0
+# THE TALLY IS NAMED SO NO STEP CAN WRITE IT BY ACCIDENT. It was `ok`/`bad`, and three steps
+# used `bad` as their own accumulator with a top-level `bad=0` -- each reset erased every failure
+# counted before it, so the suite printed FAIL and exited 0. Every green main run from 73dcaf7
+# (2026-09-17) to 2026-09-26 hid failures that way (T-20260926-three-steps-reset-the-suite-s-failure-ta).
+# Only check() writes these; a step below asserts that, and CI separately refuses a run that
+# prints FAIL and exits 0, which catches this class whatever variable it goes through next time.
+CONF_PASSED=0; CONF_FAILED=0; skipped=0; ran=0; filtered=0
 step_selected() { [ -z "$ONLY" ] || printf '%s\n' "$SELECTED" | grep -qxF -- "$1"; }
 step() {
   if step_selected "$1"; then ran=$((ran+1)); printf '\n=== %s\n' "$1"; return 0; fi
   filtered=$((filtered+1)); return 1
 }
-check() { if [ "$1" = 0 ]; then ok=$((ok+1)); printf '  PASS  %s\n' "$2"
-          else bad=$((bad+1)); printf '  FAIL  %s\n' "$2"; fi; }
+check() { if [ "$1" = 0 ]; then CONF_PASSED=$((CONF_PASSED+1)); printf '  PASS  %s\n' "$2"
+          else CONF_FAILED=$((CONF_FAILED+1)); printf '  FAIL  %s\n' "$2"; fi; }
 # A control that could not run is not a control that passed. It does not fail the suite --
 # an unrunnable check is not a defect -- but it is counted and named in the tally, because
 # the tally and the exit code are what CI reads and "N passed, 0 failed" over a check that
 # never executed is the same green-that-means-nothing this suite exists to refuse.
 skip()  { skipped=$((skipped+1)); printf '  SKIP  %s — %s\n' "$2" "$1"; }
+
+if step "only check() writes the suite's tally"; then
+# The lexical half of the tally fix. A step may keep its own accumulator under any name it likes;
+# it may not assign CONF_PASSED or CONF_FAILED. Counted over this file, so a new assignment
+# anywhere -- including inside a step added later -- turns this red. The behavioural half is in
+# CI: a run that prints FAIL and exits 0 fails the job there, independent of any name here.
+n=$(grep -cE '(^|[^A-Za-z_])CONF_(PASSED|FAILED)=' "$SELF")
+# Exactly three: the initialisation, and the two increments inside check().
+[ "$n" = 3 ]
+check $? "only the initialisation and check() assign the tally (found $n assignments, want 3)"
+fi
 
 if step "environment"; then
 uname -srm 2>/dev/null || echo "(no uname)"
@@ -7089,13 +7106,13 @@ if [ -n "$ONLY" ]; then
   # word PARTIAL, the pattern, and the number of steps that did not run all appear
   # before the counts anyone reads.
   printf '\n=== PARTIAL RUN --only %s\n' "$ONLY"
-  printf '=== %d passed, %d failed' "$ok" "$bad"
+  printf '=== %d passed, %d failed' "$CONF_PASSED" "$CONF_FAILED"
   [ "$skipped" -gt 0 ] && printf ', %d NOT EXERCISED on this platform' "$skipped"
   printf ' over %d of %d steps; %d did not run\n' "$ran" "$STEP_COUNT" "$filtered"
   printf '=== NOT a conformance pass. Only the full run is, and only CI runs it on every platform.\n'
 else
-  printf '\n=== %d passed, %d failed' "$ok" "$bad"
+  printf '\n=== %d passed, %d failed' "$CONF_PASSED" "$CONF_FAILED"
   [ "$skipped" -gt 0 ] && printf ', %d NOT EXERCISED on this platform' "$skipped"
   printf '\n'
 fi
-exit $bad
+exit $CONF_FAILED

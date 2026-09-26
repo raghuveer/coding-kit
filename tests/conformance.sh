@@ -1919,7 +1919,8 @@ b
   git add -A && git commit -q --no-verify -m "chore: seed"
   rm -f .project/index.db
   # THE OUTPUT IS KEPT, and printed on failure. This step failed intermittently on macOS from
-  # 2026-09-19 with nothing but "no index was written" -- the cause went to /dev/null, so every
+  # 2026-09-19 -- on every macOS run, not intermittently -- with nothing but "no index was written";
+# the cause went to /dev/null, so every
   # occurrence was a symptom with no evidence (T-20260926-kit-index-writes-no-index-under-posixly-).
   kout=$(POSIXLY_CORRECT=1 bash "$KIT/tooling/kit-index.sh" 2>&1); krc=$?
   # No index at all is the shape of the defect: the parse died before any ingest.

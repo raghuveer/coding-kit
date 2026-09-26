@@ -30,8 +30,22 @@
   iterating, or a defect you cannot reproduce in CI. A full local Windows run is now the exception.
 
   **`conformance (windows-latest)` is a REQUIRED check as of 2026-09-18.** All five must be green
-  to merge. It was advisory from #137 until then, and was promoted on six green observations with
-  no failures after the two defects below were fixed -- three consecutive on `main`, three on PRs.
+  to merge. It was advisory from #137 until then, and was promoted on six green observations after
+  the two defects below were fixed -- three consecutive on `main`, three on PRs.
+
+  **Those six observations were not clean, and neither was any green run until 2026-09-26.** From
+  `73dcaf7` (2026-09-17) three steps reset the suite's failure tally (`bad=0` on a variable the
+  suite exits with), so runs printed `FAIL` lines and exited 0. Four defects hid behind it: the
+  state lists written twice (**all three legs, Windows included**), the python-only fixture (ubuntu,
+  macOS), `kit-index.sh` unparseable by bash 3.2 in POSIX mode (macOS, a real regression), and one
+  intermittent sign-off check (macOS, 1 in 36). PR #182 fixed them and the tally; the promotion is
+  re-established on its run `36241595242` (151 passed, 0 failed, no `FAIL` line on any leg).
+
+  **Read CI by its `FAIL` lines, not only its colour.** The workflow now fails any run that prints
+  `FAIL` and exits 0, and a conformance step allows only `check()` to write the tally -- but when
+  you read a log yourself, count `^  FAIL  ` in the suite's output and confirm the PASS count is
+  non-zero: `gh run view --job` returns an empty log until the whole run has finished, and GitHub
+  echoes each step's script into the log, so a bare grep for `FAIL` matches the script's own text.
 
   **A red Windows leg now blocks merges.** That is the point of promoting it, and it is reversible
   in seconds: remove the context from branch protection. The one demonstrated flake is a network

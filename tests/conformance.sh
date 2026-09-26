@@ -2068,45 +2068,39 @@ tier: T2
 b
 ' > .project/tasks/T-x.md
     git add -A && git commit -q --no-verify -m seed
-    # A shim named `python` ONLY, forwarding to whatever real interpreter this machine has.
-    printf '#!/usr/bin/env bash
-exec "%s" "$@"
-' "$py" > shim/python
-    chmod +x shim/python
-    # The REAL PATH minus every directory holding a python3, rather than a hand-built one.
-    # A narrow PATH was the first attempt and it proved nothing: without git the kit is
-    # correctly INERT, so the recorder exited 0 having written nothing and the arm read as a
-    # pass for the fix. Remove one tool; keep the rest of the environment intact.
-    nopy3=""
-    _oldifs=$IFS; IFS=:
-    for _d in $PATH; do
-      [ -n "$_d" ] || continue
-      if [ -x "$_d/python3" ] || [ -x "$_d/python3.exe" ]; then continue; fi
-      nopy3="$nopy3:$_d"
-    done
-    IFS=$_oldifs
-    nopy3="$PWD/shim$nopy3"
-    if PATH="$nopy3" command -v python3 >/dev/null 2>&1; then
-      echo "  fixture: python3 still reachable, the arm would prove nothing"; exit 1
-    fi
-    # Arm 1: python3 is NOT on PATH and a finding is still recorded.
-    PATH="$nopy3" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "recorded on a box where python3 does not exist" >/dev/null 2>&1 ||
+    # SHIMS IN FRONT OF THE REAL PATH, NOT A PATH WITH DIRECTORIES REMOVED. The first version
+    # dropped every PATH directory holding a python3. On Windows that is a directory of its own;
+    # on Linux and macOS it is /usr/bin, which also holds bash, git, sed and awk -- so the kit
+    # could not run at all, arm 1 recorded nothing, and the step failed on both Unix legs from
+    # the day it was written (851271f, 2026-09-17), unseen because three steps reset the
+    # suite's tally (T-20260926-three-steps-reset-the-suite-s-failure-ta). Reproduced under WSL
+    # Ubuntu: with /usr/bin and /bin dropped, `bash` itself is not found.
+    #
+    # So nothing is removed. A `python3` shim that is NOT an interpreter -- the Windows Store
+    # execution alias this step exists for -- shadows the real one, and a `python` shim forwards
+    # to the real interpreter. kit_python skips a python3 that fails its version probe exactly
+    # as it skips an absent one (the same `continue`), so the fallback path is the one exercised.
+    printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$py" > shim/python
+    printf '#!/usr/bin/env bash\necho "python3 is an execution alias, not an interpreter" >&2; exit 9009\n' > shim/python3
+    chmod +x shim/python shim/python3
+    only_py="$PWD/shim:$PATH"
+    # The fixture must actually present the state it claims, or the arm proves nothing: python3
+    # resolves to the shim, and that shim fails the probe kit_python runs.
+    [ "$(PATH="$only_py" command -v python3)" = "$PWD/shim/python3" ] ||
+      { echo "  fixture: python3 does not resolve to the shim"; exit 1; }
+    PATH="$only_py" python3 -c 'import sys' >/dev/null 2>&1 &&
+      { echo "  fixture: the python3 shim ran as an interpreter"; exit 1; }
+    # Arm 1: no usable python3, and a finding is still recorded.
+    PATH="$only_py" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "recorded on a box where python3 does not exist" >/dev/null 2>&1 ||
       { echo "  arm 1: no finding recorded when only python exists"; exit 1; }
     n=$(grep -c '"kind":"finding"' .project/events.ndjson 2>/dev/null)
     [ "${n:-0}" -ge 1 ] || { echo "  arm 1: recorder exited 0 but wrote nothing"; exit 1; }
-    # Arm 2: NEITHER interpreter. It must fail, and the message must name the interpreter
-    # rather than blaming the finding.
-    # Arm 2 strips the shim too, so NEITHER name resolves -- while keeping git, or the kit
-    # would be inert and exit 0, which is not the refusal this arm is looking for.
-    nopy=""
-    _oldifs=$IFS; IFS=:
-    for _d in $PATH; do
-      [ -n "$_d" ] || continue
-      if [ -x "$_d/python3" ] || [ -x "$_d/python3.exe" ] || [ -x "$_d/python" ] || [ -x "$_d/python.exe" ]; then continue; fi
-      nopy="$nopy:$_d"
-    done
-    IFS=$_oldifs
-    nopy=${nopy#:}
+    # Arm 2: NEITHER name is a usable interpreter. Both shims refuse, with git and the rest of
+    # the environment intact -- or the kit would be inert and exit 0, which is not the refusal
+    # this arm is looking for.
+    printf '#!/usr/bin/env bash\necho "python is an execution alias, not an interpreter" >&2; exit 9009\n' > shim/python
+    chmod +x shim/python
+    nopy="$only_py"
     out=$(PATH="$nopy" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "this one cannot be recorded" 2>&1); rc=$?
     [ "$rc" != 0 ] || { echo "  arm 2: recorded a finding with no interpreter at all"; exit 1; }
     case "$out" in

@@ -32,6 +32,29 @@
   **`conformance (windows-latest)` is a REQUIRED check as of 2026-09-18.** All five must be green
   to merge. It was advisory from #137 until then, and was promoted on six green observations with
   no failures after the two defects below were fixed -- three consecutive on `main`, three on PRs.
+  **That holds for the Windows leg:** every `main` Windows leg from `73dcaf7` to `1fe3268`
+  (2026-09-17 to 2026-09-19 14:40) printed no `FAIL` line.
+
+  **But the same runs were not clean elsewhere, and from 2026-09-19 neither was Windows.** From
+  `73dcaf7` three steps reset the suite's failure tally (`bad=0` on the variable it exited with),
+  so a run could print `FAIL` and exit 0. Runs on 2026-09-14/15 printed none; from 2026-09-17 to
+  2026-09-26 every green `main` run hid at least one:
+
+  - the python-only fixture removed `/usr/bin` on Unix -- ubuntu and macOS, from `73dcaf7`;
+  - the state lists written twice -- all three legs, Windows included, from `ebfa55c` (09-19);
+  - `kit-index.sh` unparseable by bash 3.2 in POSIX mode -- every macOS run from `ca4e589` (09-19),
+    a real regression;
+  - one sign-off check on macOS, 1 run in 36, not reproduced in five attempts -- instrumented, not
+    fixed.
+
+  PR #182 fixed the first three and the tally, and CI now fails a run whose `FAIL` lines and
+  summary disagree, or that prints no summary at all.
+
+  **Read CI by its `FAIL` lines, not only its colour.** In `gh run view --job <id> --log` every line
+  is prefixed with the job, the step and a timestamp, so count the suite's lines with
+  `grep -c 'Z   FAIL  '` and confirm the `PASS` count is non-zero. Two traps met while doing it: the
+  log is EMPTY until the whole run has finished, and each step's script is echoed into the log, so
+  a bare grep for `FAIL` matches the script's own text.
 
   **A red Windows leg now blocks merges.** That is the point of promoting it, and it is reversible
   in seconds: remove the context from branch protection. The one demonstrated flake is a network

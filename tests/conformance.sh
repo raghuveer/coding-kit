@@ -130,19 +130,46 @@ if [ -n "$ONLY" ]; then
   printf '.\n'
 fi
 
-ok=0; bad=0; skipped=0; ran=0; filtered=0
+# THE TALLY IS NAMED SO NO STEP CAN WRITE IT BY ACCIDENT. It was `ok`/`bad`, and three steps
+# used `bad` as their own accumulator with a top-level `bad=0` -- each reset erased every failure
+# counted before it, so the suite printed FAIL and exited 0. Every green main run from 73dcaf7
+# (2026-09-17) to 2026-09-26 hid failures that way (T-20260926-three-steps-reset-the-suite-s-failure-ta).
+# Only check() writes these; a step below asserts that, and CI separately refuses a run that
+# prints FAIL and exits 0, which catches this class whatever variable it goes through next time.
+CONF_PASSED=0; CONF_FAILED=0; skipped=0; ran=0; filtered=0
 step_selected() { [ -z "$ONLY" ] || printf '%s\n' "$SELECTED" | grep -qxF -- "$1"; }
 step() {
   if step_selected "$1"; then ran=$((ran+1)); printf '\n=== %s\n' "$1"; return 0; fi
   filtered=$((filtered+1)); return 1
 }
-check() { if [ "$1" = 0 ]; then ok=$((ok+1)); printf '  PASS  %s\n' "$2"
-          else bad=$((bad+1)); printf '  FAIL  %s\n' "$2"; fi; }
+check() { if [ "$1" = 0 ]; then CONF_PASSED=$((CONF_PASSED+1)); printf '  PASS  %s\n' "$2"
+          else CONF_FAILED=$((CONF_FAILED+1)); printf '  FAIL  %s\n' "$2"; fi; }
 # A control that could not run is not a control that passed. It does not fail the suite --
 # an unrunnable check is not a defect -- but it is counted and named in the tally, because
 # the tally and the exit code are what CI reads and "N passed, 0 failed" over a check that
 # never executed is the same green-that-means-nothing this suite exists to refuse.
 skip()  { skipped=$((skipped+1)); printf '  SKIP  %s — %s\n' "$2" "$1"; }
+
+if step "only check() writes the suite's tally"; then
+# The lexical half of the tally fix. A step may keep its own accumulator under any name it likes;
+# it may not assign CONF_PASSED or CONF_FAILED. Counted over this file, so a new assignment
+# anywhere -- including inside a step added later -- turns this red. The behavioural half is in
+# CI: a run that prints FAIL and exits 0 fails the job there, independent of any name here.
+# Lexical, so it has a ceiling: it sees every WRITE FORM below, not every conceivable one, and it
+# cannot see `check` called inside a subshell -- which prints FAIL into a copy of the tally. Both
+# gaps are closed by the CI layer, which compares the FAIL lines printed against the summary.
+n=$(grep -cE '(^|[^A-Za-z_])CONF_(PASSED|FAILED)[[:space:]]*(=|\+\+|--|\+=|-=)|(let|declare|typeset|local|unset|read|export)[[:space:]].*CONF_(PASSED|FAILED)|printf[[:space:]]+-v[[:space:]]+CONF_' "$SELF")
+d=$(grep -cE '^[[:space:]]*(function[[:space:]]+)?check[[:space:]]*\(\)' "$SELF")
+# Exactly three writes -- the initialisation and check()'s two increments -- and one check().
+[ "$n" = 3 ] && [ "$d" = 1 ]
+check $? "only the initialisation and check() write the tally (found $n writes, want 3; $d definitions of check, want 1)"
+fi
+
+if step "PROBE: a check inside a subshell -- DO NOT MERGE"; then
+# Planted to show the CI layer red in CI: this prints FAIL into a copy of the tally, so the suite
+# reports "0 failed" and exits 0, and only the FAIL-lines-vs-summary comparison can catch it.
+( check 1 "probe: a FAIL printed from a subshell" )
+fi
 
 if step "environment"; then
 uname -srm 2>/dev/null || echo "(no uname)"
@@ -570,8 +597,14 @@ prof_sb() { printf -- '---\npaths.tasks:  .project/tasks\npaths.state:  .project
 
   # No boundary: BOTH unsigned commits are refused -- the 0.11.0 behaviour.
   prof_sb ''
-  printf '%s' "$(t "$OLD..HEAD")" | grep -q 'missing  Signed-off-by' || exit 1
-  printf '%s' "$(t "main..$OLD")" | grep -q 'missing  Signed-off-by' || exit 1
+  # EVERY EXIT NAMES ITSELF AND SHOWS WHAT IT READ. Four of these were a bare `|| exit 1`, and
+  # the one macOS failure on 2026-09-20 printed nothing before FAIL, so which assertion fired is
+  # unknowable (T-20260926-the-sign-off-adoption-boundary-check-fai).
+  why() { echo "  $1"; printf '%s\n' "$2" | tail -8 | sed 's/^/    | /'; exit 1; }
+  o=$(t "$OLD..HEAD"); printf '%s' "$o" | grep -q 'missing  Signed-off-by' ||
+    why "no boundary: the post-rule commit was not refused" "$o"
+  o=$(t "main..$OLD"); printf '%s' "$o" | grep -q 'missing  Signed-off-by' ||
+    why "no boundary: the pre-rule commit was not refused" "$o"
 
   # With the boundary: the pre-rule commit is exempt, the post-rule one is still refused.
   prof_sb "git.signoff_adopted_at: $BND
@@ -585,8 +618,10 @@ prof_sb() { printf -- '---\npaths.tasks:  .project/tasks\npaths.state:  .project
   # the quiet way a gate stops gating.
   prof_sb "git.signoff_adopted_at: deadbeefdeadbeefdeadbeefdeadbeefdeadbeef
 "
-  printf '%s' "$(t "main..$OLD")" | grep -q 'is not a commit in this repository' || exit 1
-  printf '%s' "$(t "main..$OLD")" | grep -q 'missing  Signed-off-by' || exit 1 )
+  o=$(t "main..$OLD"); printf '%s' "$o" | grep -q 'is not a commit in this repository' ||
+    why "a boundary naming no commit was not reported" "$o"
+  printf '%s' "$o" | grep -q 'missing  Signed-off-by' ||
+    why "a boundary naming no commit did not fail closed" "$o" )
 check $? "pre-rule commits exempt, post-rule still refused, a bad boundary fails closed"
 rm -rf "$sb"
 fi
@@ -1886,11 +1921,22 @@ b
 ' > .project/tasks/T-p.md
   printf 'x
 ' > src/a.go
+  # A TRACKED PATH WITH AN APOSTROPHE, so the macOS leg -- bash 3.2 -- builds SQL from one. The
+  # tracked-path loop's quoting differed between bash 3.2 and 5 and broke the index there
+  # (T-20260926-a-tracked-path-with-an-apostrophe-breaks); this step already runs on every leg.
+  printf 'y
+' > "src/it's.go"
   git add -A && git commit -q --no-verify -m "chore: seed"
   rm -f .project/index.db
-  POSIXLY_CORRECT=1 bash "$KIT/tooling/kit-index.sh" >/dev/null 2>&1
+  # THE OUTPUT IS KEPT, and printed on failure. This step failed intermittently on macOS from
+  # 2026-09-19 -- on every macOS run, not intermittently -- with nothing but "no index was written";
+# the cause went to /dev/null, so every
+  # occurrence was a symptom with no evidence (T-20260926-kit-index-writes-no-index-under-posixly-).
+  kout=$(POSIXLY_CORRECT=1 bash "$KIT/tooling/kit-index.sh" 2>&1); krc=$?
   # No index at all is the shape of the defect: the parse died before any ingest.
-  [ -f .project/index.db ] || { echo "  no index was written under POSIXLY_CORRECT=1"; exit 1; }
+  [ -f .project/index.db ] || {
+    echo "  no index was written under POSIXLY_CORRECT=1 (kit-index exit $krc; awk: $(awk --version 2>&1 | head -1))"
+    printf '%s\n' "$kout" | tail -15 | sed 's/^/    | /'; exit 1; }
   f=$(sqlite3 .project/index.db "SELECT COALESCE(tier_floor,'-') FROM task WHERE id='T-p';" | sed $'s/\r$//')
   [ "$f" = T3 ] || { echo "  floor under POSIXLY_CORRECT=1 was '$f', wanted T3"; exit 1; }
   # And the same tree without the variable must agree, or the fix has changed what a glob means.
@@ -2068,45 +2114,39 @@ tier: T2
 b
 ' > .project/tasks/T-x.md
     git add -A && git commit -q --no-verify -m seed
-    # A shim named `python` ONLY, forwarding to whatever real interpreter this machine has.
-    printf '#!/usr/bin/env bash
-exec "%s" "$@"
-' "$py" > shim/python
-    chmod +x shim/python
-    # The REAL PATH minus every directory holding a python3, rather than a hand-built one.
-    # A narrow PATH was the first attempt and it proved nothing: without git the kit is
-    # correctly INERT, so the recorder exited 0 having written nothing and the arm read as a
-    # pass for the fix. Remove one tool; keep the rest of the environment intact.
-    nopy3=""
-    _oldifs=$IFS; IFS=:
-    for _d in $PATH; do
-      [ -n "$_d" ] || continue
-      if [ -x "$_d/python3" ] || [ -x "$_d/python3.exe" ]; then continue; fi
-      nopy3="$nopy3:$_d"
-    done
-    IFS=$_oldifs
-    nopy3="$PWD/shim$nopy3"
-    if PATH="$nopy3" command -v python3 >/dev/null 2>&1; then
-      echo "  fixture: python3 still reachable, the arm would prove nothing"; exit 1
-    fi
-    # Arm 1: python3 is NOT on PATH and a finding is still recorded.
-    PATH="$nopy3" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "recorded on a box where python3 does not exist" >/dev/null 2>&1 ||
+    # SHIMS IN FRONT OF THE REAL PATH, NOT A PATH WITH DIRECTORIES REMOVED. The first version
+    # dropped every PATH directory holding a python3. On Windows that is a directory of its own;
+    # on Linux and macOS it is /usr/bin, which also holds bash, git, sed and awk -- so the kit
+    # could not run at all, arm 1 recorded nothing, and the step failed on both Unix legs from
+    # the day it was written (851271f, 2026-09-17), unseen because three steps reset the
+    # suite's tally (T-20260926-three-steps-reset-the-suite-s-failure-ta). Reproduced under WSL
+    # Ubuntu: with /usr/bin and /bin dropped, `bash` itself is not found.
+    #
+    # So nothing is removed. A `python3` shim that is NOT an interpreter -- the Windows Store
+    # execution alias this step exists for -- shadows the real one, and a `python` shim forwards
+    # to the real interpreter. kit_python skips a python3 that fails its version probe exactly
+    # as it skips an absent one (the same `continue`), so the fallback path is the one exercised.
+    printf '#!/usr/bin/env bash\nexec "%s" "$@"\n' "$py" > shim/python
+    printf '#!/usr/bin/env bash\necho "python3 is an execution alias, not an interpreter" >&2; exit 9009\n' > shim/python3
+    chmod +x shim/python shim/python3
+    only_py="$PWD/shim:$PATH"
+    # The fixture must actually present the state it claims, or the arm proves nothing: python3
+    # resolves to the shim, and that shim fails the probe kit_python runs.
+    [ "$(PATH="$only_py" command -v python3)" = "$PWD/shim/python3" ] ||
+      { echo "  fixture: python3 does not resolve to the shim"; exit 1; }
+    PATH="$only_py" python3 -c 'import sys' >/dev/null 2>&1 &&
+      { echo "  fixture: the python3 shim ran as an interpreter"; exit 1; }
+    # Arm 1: no usable python3, and a finding is still recorded.
+    PATH="$only_py" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "recorded on a box where python3 is not a usable interpreter" >/dev/null 2>&1 ||
       { echo "  arm 1: no finding recorded when only python exists"; exit 1; }
     n=$(grep -c '"kind":"finding"' .project/events.ndjson 2>/dev/null)
     [ "${n:-0}" -ge 1 ] || { echo "  arm 1: recorder exited 0 but wrote nothing"; exit 1; }
-    # Arm 2: NEITHER interpreter. It must fail, and the message must name the interpreter
-    # rather than blaming the finding.
-    # Arm 2 strips the shim too, so NEITHER name resolves -- while keeping git, or the kit
-    # would be inert and exit 0, which is not the refusal this arm is looking for.
-    nopy=""
-    _oldifs=$IFS; IFS=:
-    for _d in $PATH; do
-      [ -n "$_d" ] || continue
-      if [ -x "$_d/python3" ] || [ -x "$_d/python3.exe" ] || [ -x "$_d/python" ] || [ -x "$_d/python.exe" ]; then continue; fi
-      nopy="$nopy:$_d"
-    done
-    IFS=$_oldifs
-    nopy=${nopy#:}
+    # Arm 2: NEITHER name is a usable interpreter. Both shims refuse, with git and the rest of
+    # the environment intact -- or the kit would be inert and exit 0, which is not the refusal
+    # this arm is looking for.
+    printf '#!/usr/bin/env bash\necho "python is an execution alias, not an interpreter" >&2; exit 9009\n' > shim/python
+    chmod +x shim/python
+    nopy="$only_py"
     out=$(PATH="$nopy" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "this one cannot be recorded" 2>&1); rc=$?
     [ "$rc" != 0 ] || { echo "  arm 2: recorded a finding with no interpreter at all"; exit 1; }
     case "$out" in
@@ -5855,8 +5895,16 @@ csk="$WORK.closedstateskit"; rm -rf "$csk"; mkdir -p "$csk" && cp -R "$KIT/tooli
   # it as zero; a hardcoded one omits it silently and this arm goes red, which is the whole
   # assertion. `superseded` is used because it is a real word in this project's finding
   # vocabulary and could plausibly be proposed for tasks one day.
-  sed -i.bak "s/printf 'created planned in-progress on-hold completed cancelled abandoned'/printf 'created planned in-progress on-hold completed cancelled abandoned superseded'/" "$csk/tooling/kit-lib.sh"
-  sed -i.bak "s/printf 'completed cancelled abandoned'/printf 'completed cancelled abandoned superseded'/"                                         "$csk/tooling/kit-lib.sh"
+  #
+  # The patterns are READ from kit-lib.sh, not written out. Spelled longhand here they made this
+  # file a second home for both lists, and the one-home step ("each state definition appears in
+  # exactly one file") failed on every leg from 2026-09-19 -- unseen, because three steps reset
+  # the suite's tally (T-20260926-three-steps-reset-the-suite-s-failure-ta).
+  _v=$(bash -c '. "$1"; kit_state_vocab'  _ "$csk/tooling/kit-lib.sh")
+  _c=$(bash -c '. "$1"; kit_state_closed' _ "$csk/tooling/kit-lib.sh")
+  [ -n "$_v" ] && [ -n "$_c" ] || { echo "  2: could not read the state lists from kit-lib.sh"; exit 1; }
+  sed -i.bak "s/printf '$_v'/printf '$_v superseded'/" "$csk/tooling/kit-lib.sh"
+  sed -i.bak "s/printf '$_c'/printf '$_c superseded'/" "$csk/tooling/kit-lib.sh"
   # BOTH substitutions are asserted SEPARATELY. One shared `grep 'abandoned superseded'` passes on
   # a HALF-applied mutation -- if only kit_state_closed is rewritten, the substring is present and
   # the check is satisfied while the vocabulary never gained the state. Arm 2 would then still go
@@ -6162,7 +6210,7 @@ if step "a declared rung that does not run is named, and blocks a completion cla
 #      so a naive check reports a rung satisfiable when nothing is declared -- the same
 #      conflation the ladder gap is about, one layer down.
 L="$KIT/skills/verify-ladder/SKILL.md"; T="$KIT/docs/TRIAL-PROTOCOL.md"
-bad=0
+step_bad=0
 # SECTION-ANCHORED, NOT FILE-WIDE. The first version of these greps searched the WHOLE of
 # SKILL.md, and both ladder strings live in `## Satisfaction`. So `## Completion` -- the section
 # whose two-state enumeration IS the defect this task exists to remove -- could be reverted to
@@ -6201,15 +6249,15 @@ sec() { awk -v h="## $2" '$0==h && !seen{f=1;seen=1;next} seen && /^#{1,6} /{f=0
 printf '%s' "$(sec "$L" Completion)" > "$WORK.ladder-completion"
 printf '%s' "$(sec "$L" Satisfaction)" > "$WORK.ladder-satisfaction"
 [ -s "$WORK.ladder-completion" ] ||
-  { echo "  SKILL.md has no ## Completion section to anchor to"; bad=1; }
+  { echo "  SKILL.md has no ## Completion section to anchor to"; step_bad=1; }
 [ "$(secn "$L" Completion)" = 1 ] ||
-  { echo "  SKILL.md does not have exactly one ## Completion heading -- a duplicate splices a footer into the section"; bad=1; }
+  { echo "  SKILL.md does not have exactly one ## Completion heading -- a duplicate splices a footer into the section"; step_bad=1; }
 grep -q "unsatisfiable" "$WORK.ladder-satisfaction" ||
-  { echo "  ## Satisfaction does not name the third disposition"; bad=1; }
+  { echo "  ## Satisfaction does not name the third disposition"; step_bad=1; }
 grep -qi "blocks a completion claim\|blocks completion\|never COMPLETE" "$WORK.ladder-completion" ||
-  { echo "  ## Completion does not say an unsatisfiable rung blocks -- the two-state enumeration is back"; bad=1; }
+  { echo "  ## Completion does not say an unsatisfiable rung blocks -- the two-state enumeration is back"; step_bad=1; }
 grep -q "unsatisfiable" "$WORK.ladder-completion" ||
-  { echo "  ## Completion does not mention unsatisfiable at all"; bad=1; }
+  { echo "  ## Completion does not mention unsatisfiable at all"; step_bad=1; }
 # THE CLAIM THIS COMMENT USED TO MAKE WAS WITHDRAWN on 2026-09-20, in 52c83b2. It said this
 # assertion was "the one a footer cannot satisfy"; a reviewer defeated it by deleting one word.
 # The finding that caused the withdrawal is REAL -- being real is why the claim died -- so
@@ -6239,13 +6287,13 @@ grep -q "unsatisfiable" "$WORK.ladder-completion" ||
 # that cannot catch an in-place reword. That ceiling is stated at the top of this step and is the
 # accepted limit of asserting a normative document by grep.
 grep -qi "either satisfied or" "$WORK.ladder-completion" &&
-  { echo "  ## Completion has the two-state completion rule back verbatim"; bad=1; }
+  { echo "  ## Completion has the two-state completion rule back verbatim"; step_bad=1; }
 grep -q "profile changed mid-trial" "$T" ||
-  { echo "  section 3 does not carry the profile-change condition"; bad=1; }
+  { echo "  section 3 does not carry the profile-change condition"; step_bad=1; }
 grep -q "preflight.sh --commands" "$T" ||
-  { echo "  pre-flight does not call --commands before the clock starts"; bad=1; }
+  { echo "  pre-flight does not call --commands before the clock starts"; step_bad=1; }
 rm -f "$WORK.ladder-completion" "$WORK.ladder-satisfaction"
-check $bad "the ladder names it in BOTH sections, and the protocol gates and voids on it"
+check $step_bad "the ladder names it in BOTH sections, and the protocol gates and voids on it"
 
 rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
 ( cd "$rd" || exit 1
@@ -6403,25 +6451,25 @@ if step "an unsatisfiable rung is a VOID condition with a runnable detection, an
 #      a control. This runs §3's detection against a fixture where a rung IS unsatisfiable and
 #      one where none is, and requires it to separate them.
 T="$KIT/docs/TRIAL-PROTOCOL.md"; TM="$KIT/docs/TRIALS/TEMPLATE.md"
-bad=0
+step_bad=0
 
 # 1 -- the template carries the row, and it comes BEFORE the outcome. A footer cannot pass this.
 d_ln=$(grep -n '^| Rung dispositions' "$TM" | head -1 | cut -d: -f1)
 o_ln=$(grep -n '^| Outcome' "$TM" | head -1 | cut -d: -f1)
 if [ -z "$d_ln" ]; then
-  echo "  TEMPLATE.md has no rung-disposition row; a report can reach COMPLETE without one"; bad=1
+  echo "  TEMPLATE.md has no rung-disposition row; a report can reach COMPLETE without one"; step_bad=1
 elif [ -z "$o_ln" ]; then
-  echo "  TEMPLATE.md has no Outcome row to order against"; bad=1
+  echo "  TEMPLATE.md has no Outcome row to order against"; step_bad=1
 elif [ "$d_ln" -ge "$o_ln" ]; then
-  echo "  TEMPLATE.md puts the dispositions at line $d_ln, at or after the outcome at $o_ln"; bad=1
+  echo "  TEMPLATE.md puts the dispositions at line $d_ln, at or after the outcome at $o_ln"; step_bad=1
 fi
 
 # 2 -- §3 carries the condition, inside §3 and not merely somewhere in the file.
 awk '/^## 3\./{f=1;next} /^## 4\./{f=0} f' "$T" > "$WORK.void3"
 grep -qi "unsatisfiable" "$WORK.void3" ||
-  { echo "  section 3 still carries no unsatisfiable-rung condition, which sections 6 cites it for"; bad=1; }
+  { echo "  section 3 still carries no unsatisfiable-rung condition, which sections 6 cites it for"; step_bad=1; }
 rm -f "$WORK.void3"
-check $bad "the VOID condition exists where two other documents say it does, and the report states dispositions first"
+check $step_bad "the VOID condition exists where two other documents say it does, and the report states dispositions first"
 
 # 3 -- AND THE DETECTION SEPARATES THE TWO CASES. This is the half a document edit cannot fake.
 vd="$WORK.voiddet"; rm -rf "$vd"; mkdir -p "$vd"
@@ -6535,25 +6583,25 @@ if step "the baseline template demands a cause, not a verdict"; then
 # Asserted on the TEMPLATE as well as the protocol, deliberately: the protocol is read once and
 # the template is copied into every trial report, so the template is where the shape survives.
 T="$KIT/docs/TRIALS/TEMPLATE.md"; P="$KIT/docs/TRIAL-PROTOCOL.md"
-bad=0
+step_bad=0
 # The per-check table, with a cause column -- not prose about causes somewhere in the file.
 grep -qE '^\| check \| command \| exit \| seconds \| cause' "$T" ||
-  { echo "  the template has no per-check baseline table with a cause column"; bad=1; }
+  { echo "  the template has no per-check baseline table with a cause column"; step_bad=1; }
 grep -q 'CI job' "$T" ||
-  { echo "  the template does not ask for each CI job's verdict separately"; bad=1; }
+  { echo "  the template does not ask for each CI job's verdict separately"; step_bad=1; }
 # The word itself, because "mark it as unverified" only works if the mark is a fixed token a
 # reader can grep for. A synonym per trial is not a mark.
 grep -q 'unverified' "$T" ||
-  { echo "  the template does not require an unverified cause to be named as such"; bad=1; }
+  { echo "  the template does not require an unverified cause to be named as such"; step_bad=1; }
 grep -q 'unverified' "$P" ||
-  { echo "  the protocol does not require an unverified cause to be named as such"; bad=1; }
+  { echo "  the protocol does not require an unverified cause to be named as such"; step_bad=1; }
 # And the old shape must not survive as an instruction anywhere. It may be QUOTED as the defect
 # it was -- that is how the reason travels -- so the test is that it never stands alone as the
 # thing to record.
 if grep -qE '^\| Baseline before the kit \| build pass/fail' "$T"; then
-  echo "  the template still instructs the aggregate shape"; bad=1
+  echo "  the template still instructs the aggregate shape"; step_bad=1
 fi
-check $bad "cause per check, per-CI-job verdicts, and unverified named as such"
+check $step_bad "cause per check, per-CI-job verdicts, and unverified named as such"
 fi
 
 
@@ -7074,13 +7122,15 @@ if [ -n "$ONLY" ]; then
   # word PARTIAL, the pattern, and the number of steps that did not run all appear
   # before the counts anyone reads.
   printf '\n=== PARTIAL RUN --only %s\n' "$ONLY"
-  printf '=== %d passed, %d failed' "$ok" "$bad"
+  printf '=== %d passed, %d failed' "$CONF_PASSED" "$CONF_FAILED"
   [ "$skipped" -gt 0 ] && printf ', %d NOT EXERCISED on this platform' "$skipped"
   printf ' over %d of %d steps; %d did not run\n' "$ran" "$STEP_COUNT" "$filtered"
   printf '=== NOT a conformance pass. Only the full run is, and only CI runs it on every platform.\n'
 else
-  printf '\n=== %d passed, %d failed' "$ok" "$bad"
+  printf '\n=== %d passed, %d failed' "$CONF_PASSED" "$CONF_FAILED"
   [ "$skipped" -gt 0 ] && printf ', %d NOT EXERCISED on this platform' "$skipped"
   printf '\n'
 fi
-exit $bad
+# Not `exit $CONF_FAILED`: an exit status is taken modulo 256, so 256 failures would exit 0.
+[ "$CONF_FAILED" -eq 0 ] || exit 1
+exit 0

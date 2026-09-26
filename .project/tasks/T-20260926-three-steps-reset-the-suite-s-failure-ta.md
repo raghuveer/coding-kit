@@ -32,7 +32,7 @@ Four checks were failing behind them; each is its own task and blocks this one.
 ## Acceptance criteria
 
 - [ ] No step writes the global tally except through `check()`; the three step-local accumulators get their own names.
-- [ ] A control that fails when a `FAIL` line is printed and the suite still exits 0 -- run in CI, and shown red by reintroducing one `bad=0`.
+- [ ] A control that fails when a `FAIL` line is printed and the suite still exits 0 -- run in CI, and shown red IN CI. (Drafted as "by reintroducing one `bad=0`"; after the rename a `bad=0` cannot reach the tally, so the demonstration is a `check` called in a subshell, which prints FAIL into a copy of the tally.)
 - [ ] `.claude/CLAUDE.md`'s Windows-promotion paragraph states that its six observations were taken with hidden failures, and what re-established them.
 - [ ] Lands LAST, after the four blockers, so `main` goes from hidden-red to honestly green rather than to red.
 

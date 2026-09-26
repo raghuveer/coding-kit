@@ -291,9 +291,21 @@ jobs:
           rc=${PIPESTATUS[0]}
           set -e
           echo "conformance wall clock: $(( $(date +%s) - start ))s on $RUNNER_OS"
-          fails=$(grep -c '^  FAIL  ' "$log" || true)
+          # Unanchored: a FAIL printed after an unterminated line does not start one. The suite's
+          # FAIL lines are check() output only; this log is the suite's own output, not the job's.
+          fails=$(grep -c '  FAIL  ' "$log" || true)
+          summary=$(grep -E '^=== [0-9]+ passed, [0-9]+ failed' "$log" | tail -1)
+          if [ -z "$summary" ]; then
+            echo "FATAL: the suite printed no summary line -- it stopped before the end (exit $rc)"
+            exit 1
+          fi
+          counted=$(printf '%s' "$summary" | sed -E 's/^=== [0-9]+ passed, ([0-9]+) failed.*/\1/')
+          if [ "$fails" != "$counted" ]; then
+            echo "FATAL: the suite printed $fails FAIL line(s) but counted $counted -- its tally is wrong"
+            exit 1
+          fi
           if [ "$fails" != 0 ] && [ "$rc" = 0 ]; then
-            echo "FATAL: the suite printed $fails FAIL line(s) and exited 0 -- its tally is wrong"
+            echo "FATAL: the suite printed $fails FAIL line(s) and exited 0"
             exit 1
           fi
           exit "$rc"

@@ -155,10 +155,14 @@ if step "only check() writes the suite's tally"; then
 # it may not assign CONF_PASSED or CONF_FAILED. Counted over this file, so a new assignment
 # anywhere -- including inside a step added later -- turns this red. The behavioural half is in
 # CI: a run that prints FAIL and exits 0 fails the job there, independent of any name here.
-n=$(grep -cE '(^|[^A-Za-z_])CONF_(PASSED|FAILED)=' "$SELF")
-# Exactly three: the initialisation, and the two increments inside check().
-[ "$n" = 3 ]
-check $? "only the initialisation and check() assign the tally (found $n assignments, want 3)"
+# Lexical, so it has a ceiling: it sees every WRITE FORM below, not every conceivable one, and it
+# cannot see `check` called inside a subshell -- which prints FAIL into a copy of the tally. Both
+# gaps are closed by the CI layer, which compares the FAIL lines printed against the summary.
+n=$(grep -cE '(^|[^A-Za-z_])CONF_(PASSED|FAILED)[[:space:]]*(=|\+\+|--|\+=|-=)|(let|declare|typeset|local|unset|read|export)[[:space:]].*CONF_(PASSED|FAILED)|printf[[:space:]]+-v[[:space:]]+CONF_' "$SELF")
+d=$(grep -cE '^[[:space:]]*(function[[:space:]]+)?check[[:space:]]*\(\)' "$SELF")
+# Exactly three writes -- the initialisation and check()'s two increments -- and one check().
+[ "$n" = 3 ] && [ "$d" = 1 ]
+check $? "only the initialisation and check() write the tally (found $n writes, want 3; $d definitions of check, want 1)"
 fi
 
 if step "environment"; then
@@ -6200,7 +6204,7 @@ if step "a declared rung that does not run is named, and blocks a completion cla
 #      so a naive check reports a rung satisfiable when nothing is declared -- the same
 #      conflation the ladder gap is about, one layer down.
 L="$KIT/skills/verify-ladder/SKILL.md"; T="$KIT/docs/TRIAL-PROTOCOL.md"
-bad=0
+step_bad=0
 # SECTION-ANCHORED, NOT FILE-WIDE. The first version of these greps searched the WHOLE of
 # SKILL.md, and both ladder strings live in `## Satisfaction`. So `## Completion` -- the section
 # whose two-state enumeration IS the defect this task exists to remove -- could be reverted to
@@ -6239,15 +6243,15 @@ sec() { awk -v h="## $2" '$0==h && !seen{f=1;seen=1;next} seen && /^#{1,6} /{f=0
 printf '%s' "$(sec "$L" Completion)" > "$WORK.ladder-completion"
 printf '%s' "$(sec "$L" Satisfaction)" > "$WORK.ladder-satisfaction"
 [ -s "$WORK.ladder-completion" ] ||
-  { echo "  SKILL.md has no ## Completion section to anchor to"; bad=1; }
+  { echo "  SKILL.md has no ## Completion section to anchor to"; step_bad=1; }
 [ "$(secn "$L" Completion)" = 1 ] ||
-  { echo "  SKILL.md does not have exactly one ## Completion heading -- a duplicate splices a footer into the section"; bad=1; }
+  { echo "  SKILL.md does not have exactly one ## Completion heading -- a duplicate splices a footer into the section"; step_bad=1; }
 grep -q "unsatisfiable" "$WORK.ladder-satisfaction" ||
-  { echo "  ## Satisfaction does not name the third disposition"; bad=1; }
+  { echo "  ## Satisfaction does not name the third disposition"; step_bad=1; }
 grep -qi "blocks a completion claim\|blocks completion\|never COMPLETE" "$WORK.ladder-completion" ||
-  { echo "  ## Completion does not say an unsatisfiable rung blocks -- the two-state enumeration is back"; bad=1; }
+  { echo "  ## Completion does not say an unsatisfiable rung blocks -- the two-state enumeration is back"; step_bad=1; }
 grep -q "unsatisfiable" "$WORK.ladder-completion" ||
-  { echo "  ## Completion does not mention unsatisfiable at all"; bad=1; }
+  { echo "  ## Completion does not mention unsatisfiable at all"; step_bad=1; }
 # THE CLAIM THIS COMMENT USED TO MAKE WAS WITHDRAWN on 2026-09-20, in 52c83b2. It said this
 # assertion was "the one a footer cannot satisfy"; a reviewer defeated it by deleting one word.
 # The finding that caused the withdrawal is REAL -- being real is why the claim died -- so
@@ -6277,13 +6281,13 @@ grep -q "unsatisfiable" "$WORK.ladder-completion" ||
 # that cannot catch an in-place reword. That ceiling is stated at the top of this step and is the
 # accepted limit of asserting a normative document by grep.
 grep -qi "either satisfied or" "$WORK.ladder-completion" &&
-  { echo "  ## Completion has the two-state completion rule back verbatim"; bad=1; }
+  { echo "  ## Completion has the two-state completion rule back verbatim"; step_bad=1; }
 grep -q "profile changed mid-trial" "$T" ||
-  { echo "  section 3 does not carry the profile-change condition"; bad=1; }
+  { echo "  section 3 does not carry the profile-change condition"; step_bad=1; }
 grep -q "preflight.sh --commands" "$T" ||
-  { echo "  pre-flight does not call --commands before the clock starts"; bad=1; }
+  { echo "  pre-flight does not call --commands before the clock starts"; step_bad=1; }
 rm -f "$WORK.ladder-completion" "$WORK.ladder-satisfaction"
-check $bad "the ladder names it in BOTH sections, and the protocol gates and voids on it"
+check $step_bad "the ladder names it in BOTH sections, and the protocol gates and voids on it"
 
 rd="$WORK.rungdisp"; rm -rf "$rd"; mkdir -p "$rd/src"
 ( cd "$rd" || exit 1
@@ -6441,25 +6445,25 @@ if step "an unsatisfiable rung is a VOID condition with a runnable detection, an
 #      a control. This runs §3's detection against a fixture where a rung IS unsatisfiable and
 #      one where none is, and requires it to separate them.
 T="$KIT/docs/TRIAL-PROTOCOL.md"; TM="$KIT/docs/TRIALS/TEMPLATE.md"
-bad=0
+step_bad=0
 
 # 1 -- the template carries the row, and it comes BEFORE the outcome. A footer cannot pass this.
 d_ln=$(grep -n '^| Rung dispositions' "$TM" | head -1 | cut -d: -f1)
 o_ln=$(grep -n '^| Outcome' "$TM" | head -1 | cut -d: -f1)
 if [ -z "$d_ln" ]; then
-  echo "  TEMPLATE.md has no rung-disposition row; a report can reach COMPLETE without one"; bad=1
+  echo "  TEMPLATE.md has no rung-disposition row; a report can reach COMPLETE without one"; step_bad=1
 elif [ -z "$o_ln" ]; then
-  echo "  TEMPLATE.md has no Outcome row to order against"; bad=1
+  echo "  TEMPLATE.md has no Outcome row to order against"; step_bad=1
 elif [ "$d_ln" -ge "$o_ln" ]; then
-  echo "  TEMPLATE.md puts the dispositions at line $d_ln, at or after the outcome at $o_ln"; bad=1
+  echo "  TEMPLATE.md puts the dispositions at line $d_ln, at or after the outcome at $o_ln"; step_bad=1
 fi
 
 # 2 -- §3 carries the condition, inside §3 and not merely somewhere in the file.
 awk '/^## 3\./{f=1;next} /^## 4\./{f=0} f' "$T" > "$WORK.void3"
 grep -qi "unsatisfiable" "$WORK.void3" ||
-  { echo "  section 3 still carries no unsatisfiable-rung condition, which sections 6 cites it for"; bad=1; }
+  { echo "  section 3 still carries no unsatisfiable-rung condition, which sections 6 cites it for"; step_bad=1; }
 rm -f "$WORK.void3"
-check $bad "the VOID condition exists where two other documents say it does, and the report states dispositions first"
+check $step_bad "the VOID condition exists where two other documents say it does, and the report states dispositions first"
 
 # 3 -- AND THE DETECTION SEPARATES THE TWO CASES. This is the half a document edit cannot fake.
 vd="$WORK.voiddet"; rm -rf "$vd"; mkdir -p "$vd"
@@ -6573,25 +6577,25 @@ if step "the baseline template demands a cause, not a verdict"; then
 # Asserted on the TEMPLATE as well as the protocol, deliberately: the protocol is read once and
 # the template is copied into every trial report, so the template is where the shape survives.
 T="$KIT/docs/TRIALS/TEMPLATE.md"; P="$KIT/docs/TRIAL-PROTOCOL.md"
-bad=0
+step_bad=0
 # The per-check table, with a cause column -- not prose about causes somewhere in the file.
 grep -qE '^\| check \| command \| exit \| seconds \| cause' "$T" ||
-  { echo "  the template has no per-check baseline table with a cause column"; bad=1; }
+  { echo "  the template has no per-check baseline table with a cause column"; step_bad=1; }
 grep -q 'CI job' "$T" ||
-  { echo "  the template does not ask for each CI job's verdict separately"; bad=1; }
+  { echo "  the template does not ask for each CI job's verdict separately"; step_bad=1; }
 # The word itself, because "mark it as unverified" only works if the mark is a fixed token a
 # reader can grep for. A synonym per trial is not a mark.
 grep -q 'unverified' "$T" ||
-  { echo "  the template does not require an unverified cause to be named as such"; bad=1; }
+  { echo "  the template does not require an unverified cause to be named as such"; step_bad=1; }
 grep -q 'unverified' "$P" ||
-  { echo "  the protocol does not require an unverified cause to be named as such"; bad=1; }
+  { echo "  the protocol does not require an unverified cause to be named as such"; step_bad=1; }
 # And the old shape must not survive as an instruction anywhere. It may be QUOTED as the defect
 # it was -- that is how the reason travels -- so the test is that it never stands alone as the
 # thing to record.
 if grep -qE '^\| Baseline before the kit \| build pass/fail' "$T"; then
-  echo "  the template still instructs the aggregate shape"; bad=1
+  echo "  the template still instructs the aggregate shape"; step_bad=1
 fi
-check $bad "cause per check, per-CI-job verdicts, and unverified named as such"
+check $step_bad "cause per check, per-CI-job verdicts, and unverified named as such"
 fi
 
 
@@ -7121,4 +7125,6 @@ else
   [ "$skipped" -gt 0 ] && printf ', %d NOT EXERCISED on this platform' "$skipped"
   printf '\n'
 fi
-exit $CONF_FAILED
+# Not `exit $CONF_FAILED`: an exit status is taken modulo 256, so 256 failures would exit 0.
+[ "$CONF_FAILED" -eq 0 ] || exit 1
+exit 0

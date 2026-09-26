@@ -1911,6 +1911,11 @@ b
 ' > .project/tasks/T-p.md
   printf 'x
 ' > src/a.go
+  # A TRACKED PATH WITH AN APOSTROPHE, so the macOS leg -- bash 3.2 -- builds SQL from one. The
+  # tracked-path loop's quoting differed between bash 3.2 and 5 and broke the index there
+  # (T-20260926-a-tracked-path-with-an-apostrophe-breaks); this step already runs on every leg.
+  printf 'y
+' > "src/it's.go"
   git add -A && git commit -q --no-verify -m "chore: seed"
   rm -f .project/index.db
   # THE OUTPUT IS KEPT, and printed on failure. This step failed intermittently on macOS from

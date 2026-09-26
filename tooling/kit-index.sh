@@ -281,7 +281,12 @@ while IFS= read -r -d '' _tf; do
   # `$(printf ... | sed ...)` spawns two processes per tracked file, and process creation costs
   # about a second on the development machine -- `T-20260822-process-creation-costs-one-second-on-the`
   # measured it, and a blind reviewer measured this loop at 49s for 379 files before the change.
-  printf "INSERT OR IGNORE INTO kit_tracked VALUES('%s');\n" "${_tf//\'/\'\'}"
+  # AN UNQUOTED ASSIGNMENT, THEN THE VARIABLE -- the form line ~662 uses. Written inside double
+  # quotes, `"${_tf//\'/\'\'}"` keeps its backslashes in bash 3.2 (`it\'\'s.md`, not `it''s.md`),
+  # so macOS's /bin/bash emitted SQL sqlite rejects for any tracked path with an apostrophe.
+  # Bash 5 and 3.2 agree on this form. T-20260926-a-tracked-path-with-an-apostrophe-breaks.
+  _tq=${_tf//\'/\'\'}
+  printf "INSERT OR IGNORE INTO kit_tracked VALUES('%s');\n" "$_tq"
 done < "$TRACKED"
 
 # ---- tier floors -------------------------------------------------------------

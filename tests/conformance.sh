@@ -2127,7 +2127,7 @@ b
     PATH="$only_py" python3 -c 'import sys' >/dev/null 2>&1 &&
       { echo "  fixture: the python3 shim ran as an interpreter"; exit 1; }
     # Arm 1: no usable python3, and a finding is still recorded.
-    PATH="$only_py" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "recorded on a box where python3 does not exist" >/dev/null 2>&1 ||
+    PATH="$only_py" bash "$KIT/tooling/kit-finding.sh" --task T-x       --agent implementation-reviewer --class race --severity major --lang bash       --summary "recorded on a box where python3 is not a usable interpreter" >/dev/null 2>&1 ||
       { echo "  arm 1: no finding recorded when only python exists"; exit 1; }
     n=$(grep -c '"kind":"finding"' .project/events.ndjson 2>/dev/null)
     [ "${n:-0}" -ge 1 ] || { echo "  arm 1: recorder exited 0 but wrote nothing"; exit 1; }

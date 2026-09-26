@@ -5855,8 +5855,16 @@ csk="$WORK.closedstateskit"; rm -rf "$csk"; mkdir -p "$csk" && cp -R "$KIT/tooli
   # it as zero; a hardcoded one omits it silently and this arm goes red, which is the whole
   # assertion. `superseded` is used because it is a real word in this project's finding
   # vocabulary and could plausibly be proposed for tasks one day.
-  sed -i.bak "s/printf 'created planned in-progress on-hold completed cancelled abandoned'/printf 'created planned in-progress on-hold completed cancelled abandoned superseded'/" "$csk/tooling/kit-lib.sh"
-  sed -i.bak "s/printf 'completed cancelled abandoned'/printf 'completed cancelled abandoned superseded'/"                                         "$csk/tooling/kit-lib.sh"
+  #
+  # The patterns are READ from kit-lib.sh, not written out. Spelled longhand here they made this
+  # file a second home for both lists, and the one-home step ("each state definition appears in
+  # exactly one file") failed on every leg from 2026-09-19 -- unseen, because three steps reset
+  # the suite's tally (T-20260926-three-steps-reset-the-suite-s-failure-ta).
+  _v=$(bash -c '. "$1"; kit_state_vocab'  _ "$csk/tooling/kit-lib.sh")
+  _c=$(bash -c '. "$1"; kit_state_closed' _ "$csk/tooling/kit-lib.sh")
+  [ -n "$_v" ] && [ -n "$_c" ] || { echo "  2: could not read the state lists from kit-lib.sh"; exit 1; }
+  sed -i.bak "s/printf '$_v'/printf '$_v superseded'/" "$csk/tooling/kit-lib.sh"
+  sed -i.bak "s/printf '$_c'/printf '$_c superseded'/" "$csk/tooling/kit-lib.sh"
   # BOTH substitutions are asserted SEPARATELY. One shared `grep 'abandoned superseded'` passes on
   # a HALF-applied mutation -- if only kit_state_closed is rewritten, the substring is present and
   # the check is satisfied while the vocabulary never gained the state. Arm 2 would then still go

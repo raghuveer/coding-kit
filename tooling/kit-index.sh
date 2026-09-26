@@ -216,7 +216,8 @@ if [ "${1:-}" = "--if-stale" ] && [ -f "$DB" ] && [ ! -e "$FAILED_MARK" ]; then
 fi
 SQL=$(mktemp); KIT_REFUSED=$(mktemp); export KIT_REFUSED
 KIT_PLAN_REFUSED=$(mktemp); export KIT_PLAN_REFUSED
-KIT_TRAP_RM='rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT" "$RAW" "$NEW"'
+TRACKED=$(mktemp)
+KIT_TRAP_RM='rm -f "$SQL" "$KIT_REFUSED" "$KIT_PLAN_REFUSED" "$KIT_SEEN" "$DECL_OUT" "$RAW" "$NEW" "$TRACKED"'
 trap "$KIT_TRAP_RM" EXIT
 mkdir -p "$ROOT/$STATE_DIR"
 ADAPTER_FAILED=0
@@ -267,8 +268,13 @@ echo "CREATE TEMP TABLE kit_declared(task TEXT, glob TEXT, PRIMARY KEY(task, glo
 # was chosen for, silently. Found by a blind reviewer, who could not reproduce it on NTFS and
 # said so; the fix does not depend on reproducing it.
 #
-# Process substitution rather than a pipe, so the loop runs in THIS shell and the counter below
-# survives it.
+# A FILE rather than a pipe, so the loop runs in THIS shell and the counter below survives it --
+# and a file rather than process substitution, which 1daf39a used and which is a SYNTAX ERROR in
+# bash 3.2 under POSIXLY_CORRECT: macOS's /bin/bash, running the pre-push check docs/LESSONS.md
+# 12 prescribes. The whole script failed to parse there from 2026-09-19, unseen because the
+# conformance step that catches it was hidden by a reset tally. Reproduced in bash:3.2.57:
+# `syntax error near unexpected token <`. See T-20260926-kit-index-writes-no-index-under-posixly-.
+git -C "$ROOT" ls-files -z > "$TRACKED" 2>/dev/null || :
 while IFS= read -r -d '' _tf; do
   [ -n "$_tf" ] || continue
   # NO SUBPROCESS PER PATH. `${_tf//\'/\'\'}` is parameter expansion; the obvious
@@ -276,7 +282,7 @@ while IFS= read -r -d '' _tf; do
   # about a second on the development machine -- `T-20260822-process-creation-costs-one-second-on-the`
   # measured it, and a blind reviewer measured this loop at 49s for 379 files before the change.
   printf "INSERT OR IGNORE INTO kit_tracked VALUES('%s');\n" "${_tf//\'/\'\'}"
-done < <(git -C "$ROOT" ls-files -z 2>/dev/null)
+done < "$TRACKED"
 
 # ---- tier floors -------------------------------------------------------------
 # tier.rule is `<path-glob> <tier>`, repeatable. A floor RAISES a tier and never lowers it,

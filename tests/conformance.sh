@@ -6328,7 +6328,8 @@ for c in 'every unit has a complete verdict in the before run and in the after r
 done
 rg=$(awk '/^   - \*\*regression\*\*/ {f=1; print; next} f && /^   - \*\*/ {f=0} f' "$WORK.ladder-satisfaction")
 rg1=$(printf '%s\n' "$rg" | tr '\n' ' ' | tr -s ' ')
-for c in 'it blocks exactly as step 2 does' 'now fails or no longer runs' 'list it as **removed**'; do
+for c in 'it blocks exactly as step 2 does' 'now fails or no longer runs' 'list it as **removed**' \
+         'passed in the before run or that the change adds'; do
   printf '%s\n' "$rg1" | grep -qF -- "$c" ||
     { echo "  the regression kind lost: $c"; step_bad=1; }
 done
@@ -6339,12 +6340,20 @@ for c in 'or failed it only because a unit it depends on failed' 'It has none wh
          'A cached result is not a verdict' 'has no verdict on the units it leaves silent' \
          'a baseline counts only when every red unit got through its own full analysis in both runs' \
          "from the tool's own listing of its scope" 'including one no record lists' 'ran zero tests' \
-         'any unit -- touched or not -- without its own verdict in both runs'; do
+         'any unit -- touched or not -- without its own verdict in both runs' \
+         'so every failure in it is a regression' 'never a different command per unit' \
+         'Doc-tests <crate>'; do
   printf '%s\n' "$sj" | grep -qF -- "$c" ||
     { echo "  ## Satisfaction lost: $c"; step_bad=1; }
 done
 grep -qF 'Keep all five rows' "$KIT/docs/TRIALS/TEMPLATE.md" ||
   { echo "  the template no longer says to keep all five rung rows"; step_bad=1; }
+# `not required` is cited by section 3, section 6 and the template; its one definition is the
+# ladder's Obligations, which a round-7 reader deleted with every check green.
+grep -qF 'is above the change'"'"'s tier is **not required**' "$L" ||
+  { echo "  the ladder no longer defines not required, which three documents cite"; step_bad=1; }
+grep -qF 'check the before half of' "$T" ||
+  { echo "  section 0 no longer checks the before half of step 1 at pre-flight"; step_bad=1; }
 # Joined into one line first: the original clause wrapped across a line break ("cannot be made
 # to" / "pass"), so a line-by-line grep missed the very text it names -- found by running this
 # against main's ladder, where it stayed silent.
@@ -6591,6 +6600,7 @@ pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
   grep -q '| 5 | .* | not required -- T2 |$' "$pc/notreq.md" ||
     { echo "    the not-required fixture did not apply"; exit 1; }
   sed "s/$f1/| 1 | compiles | cmd | not required |/"          "$pc/ok.md" > "$pc/notreq1.md"
+  sed "s/$f2/| 2 | criteria | cmd | not required |/"          "$pc/ok.md" > "$pc/notreq2.md"
   sed "s/$f2/| 2 | criteria | cmd | waived |/"                "$pc/ok.md" > "$pc/waived.md"
   expect() { got=$(run "$1"); [ "$got" = "$2" ] || { echo "    $3: got '$got', want '$2'"; exit 1; }; }
   expect "$TM"            "0 5 5" "the blank template: five rungs with no disposition"
@@ -6609,6 +6619,7 @@ pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
   expect "$pc/dot.md"     "0 0 4" "a rung numbered 2. is not read, and the count says so"
   expect "$pc/notreq.md"  "0 0 5" "a rung above the tier recorded as not required"
   expect "$pc/notreq1.md" "0 1 5" "rung 1 recorded as not required -- no tier leaves it out"
+  expect "$pc/notreq2.md" "0 1 5" "rung 2 recorded as not required -- no trial's tier leaves it out"
   expect "$pc/waived.md"  "0 1 5" "a word the ladder does not define, even a plausible one"
   R3="$KIT/docs/TRIALS/2026-09-20-highper-gateway.md"
   [ ! -f "$R3" ] || expect "$R3" "0 2 5" "trial 3's record, two rungs ruled baseline-blocked" )

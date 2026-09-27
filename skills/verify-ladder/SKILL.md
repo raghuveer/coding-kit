@@ -20,8 +20,9 @@ later without editing this skill.
 | 5 | A second reader, given no sight of the first's findings, has done the same | T3 |
 
 A rung whose **From (T)** is above the change's tier is **not required** -- out of the change's
-scope, not a fourth disposition, and recorded as `not required`. Rungs 1 and 2 are required from
-T1, so only rungs 3 to 5 can be not required in any trial.
+scope, not a fourth disposition, and recorded as `not required` with the trial's tier beside it.
+Rung 1 is required at every tier and rung 2 from T1, and a trial is at least T1, so only rungs 3
+to 5 can be not required in one.
 
 Rung 5 is a **completeness control, not a correctness control**, and the difference decides
 whether it is worth its cost. Measured on one T3 design: two reviewers, the second blind at
@@ -87,9 +88,11 @@ target), a Go package, a test binary. The tool names them; you do not choose the
 every one the declared command selects**, from the tool's own listing of its scope -- never the
 ones a run happened to print: for cargo, the `cargo metadata` targets of the kinds the command
 builds (`check` and `clippy` build libraries and binaries; `--all-targets` and `test` add the test,
-example and bench targets they select); for Go, the packages `go list <the command's pattern>`
-prints. List them from the tree each run was made on: a unit the change adds is judged by the after
-run alone, and one it deletes by the before run alone, and is listed as removed. **Which files a
+example and bench targets they select, and `test` runs each library's doc-tests as a unit of their
+own, `Doc-tests <crate>`); for Go, the packages `go list <the command's pattern>` prints. List them
+from the tree each run was made on: a unit the change adds is judged by the after run alone -- it
+had no before run to be red in, so every failure in it is a regression -- and one it deletes by the
+before run alone, and is listed as removed. **Which files a
 unit contains comes from the tool's own dependency record, not from its console output** --
 cargo's dep-info (`.d`) files, `go list`, the test runner's collected list with each test's file.
 A **touched file** is any file the diff changes, including one no record lists: a workspace
@@ -98,16 +101,17 @@ manifest, a lock file, a build script, the tool's configuration.
 A unit has a **complete verdict** in a run when the run names that unit's own result: it passed,
 or it failed with every failure in the unit's own files. It has none when the command never
 started it or skipped it, or failed it only because a unit it depends on failed -- every failure it
-reports is in another unit's files: cargo never compiling it, `go test` printing `[build failed]`,
-`go build ./b` reporting only `a`'s errors. **A cached result is not a verdict**: make both runs
+reports is in another unit's files: cargo never compiling it, `go test` printing `[build failed]`. **A cached result is not a verdict**: make both runs
 from a clean state -- `cargo clean` first, `go build -a`, `go test -count=1` -- because cargo can
 report a unit `fresh` over source that no longer compiles. **A command that does not name each
 unit's result has no verdict on the units it leaves silent**: `go build` and `go vet` print nothing
 for a package that passed and nothing for one that was blocked, and cargo's human output prints one
-line per package, not per target. Use the tool's per-unit machine-readable output (cargo
-`--message-format=json`), or run the command once per unit, where its exit status and the location
-of its failures are that unit's verdict. Run it so it reaches every unit it can -- `--keep-going`
-where the tool has it.
+line per package, not per target. Read the DECLARED command's own per-unit output -- cargo
+`--message-format=json`, `go test -json` -- and never a different command per unit: `cargo check
+-p b` enables features differently from `--workspace` and can pass what the declared command fails.
+A declared command that cannot name every unit's result -- `go build ./...`, `go vet ./...` --
+cannot be judged against a red baseline at all: `unsatisfiable`, or declare one that can. Run it so
+it reaches every unit it can -- `--keep-going` where the tool has it.
 
 1. **Does every unit have its own verdict in BOTH runs, and did the AFTER run reach the change?**
    Three conditions, from the declared command itself:
@@ -119,7 +123,8 @@ where the tool has it.
      run reached has nothing to be compared with; one only the before run reached may be what the
      change broke;
    - every touched source file that still exists after the change is in some unit's dependency
-     record. A touched file no unit includes -- a module nothing declares, a directory the tool
+     record -- a source file being one such a record can list; a manifest, lock file or build
+     script is not one, and the first condition covers it. A touched file no unit includes -- a module nothing declares, a directory the tool
      skips -- was never compiled. A file the diff deletes is covered by the first condition;
    - every unit containing a touched file has a verdict with every failure located in a touched
      file.
@@ -137,7 +142,8 @@ where the tool has it.
 3. **Otherwise the rung is satisfied against the baseline.** Every unit has its own verdict in
    both runs and no failure is in a touched file, so every remaining failure is in an untouched
    file. Sort each, with its cause, into exactly one of three kinds:
-   - **regression** -- it is in a unit that passed in the before run; or it is a test that ran
+   - **regression** -- it is in a unit that passed in the before run or that the change adds;
+     or it is a test that ran
      and passed before and now fails or no longer runs, including because its unit stopped
      building. This is not a count to record and move past: **it blocks exactly as step 2 does --
      fix the change**, wherever it lives. A test the diff itself deletes or renames is not a
@@ -173,7 +179,7 @@ of which 6 were not in the before run.
 
 This decides whether the command's red result blocks. **It does not replace the rung's
 obligation**: rung 2 still needs tests that fail without the change. A rung whose command runs but
-whose configuration compiles the change out produces no step-1 evidence, so it is `unsatisfiable`
+whose configuration compiles the change out gives no verdict on the change (step 1), so it is `unsatisfiable`
 by default. Whether that state deserves its own name is
 `T-20260923-the-ladder-has-no-disposition-for-a-rung`. Until that lands, only an operator's ruling,
 recorded in the report next to the disposition, may record such a rung as anything else.

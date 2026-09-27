@@ -21,8 +21,8 @@ later without editing this skill.
 
 A rung whose **From (T)** is above the change's tier is **not required** -- out of the change's
 scope, not a fourth disposition, and recorded as `not required` with the trial's tier beside it.
-Rung 1 is required at every tier and rung 2 from T1, and a trial is at least T1, so only rungs 3
-to 5 can be not required in one.
+Rung 1 is required at every tier, so only rungs 2 to 5 can be not required -- rung 2 only in a
+T0 trial.
 
 Rung 5 is a **completeness control, not a correctness control**, and the difference decides
 whether it is worth its cost. Measured on one T3 design: two reviewers, the second blind at
@@ -92,7 +92,9 @@ example and bench targets they select, and `test` runs each library's doc-tests 
 own, `Doc-tests <crate>`); for Go, the packages `go list <the command's pattern>` prints. List them
 from the tree each run was made on: a unit the change adds is judged by the after run alone -- it
 had no before run to be red in, so every failure in it is a regression -- and one it deletes by the
-before run alone, and is listed as removed. **Which files a
+before run alone, and is listed as removed. A unit is deleted only when the diff deletes its files;
+one that merely leaves the command's scope with its files still there -- a nested `go.mod` added, a
+workspace `exclude` -- is not removed, it has no verdict in the after run. **Which files a
 unit contains comes from the tool's own dependency record, not from its console output** --
 cargo's dep-info (`.d`) files, `go list`, the test runner's collected list with each test's file.
 A **touched file** is any file the diff changes, including one no record lists: a workspace
@@ -100,9 +102,13 @@ manifest, a lock file, a build script, the tool's configuration.
 
 A unit has a **complete verdict** in a run when the run names that unit's own result: it passed,
 or it failed with every failure in the unit's own files. It has none when the command never
-started it or skipped it, or failed it only because a unit it depends on failed -- every failure it
-reports is in another unit's files: cargo never compiling it, `go test` printing `[build failed]`. **A cached result is not a verdict**: make both runs
-from a clean state -- `cargo clean` first, `go build -a`, `go test -count=1` -- because cargo can
+started it or skipped it without building it, or failed it only because a unit it depends on failed -- every failure it
+reports is in another unit's files: cargo never compiling it, `go test` printing `[build failed]`.
+A package `go test` builds and reports `skip` for having no test files has a verdict: it compiled.
+Cargo's JSON carries only compile results; a test binary's result is libtest's own summary for
+that binary (`Running <binary>`, then `test result:`), and doc-tests' is the `Doc-tests <crate>`
+summary. **A cached result is not a verdict**: make both runs
+from a clean state -- `cargo clean` first, `go test -count=1` -- because cargo can
 report a unit `fresh` over source that no longer compiles. **A command that does not name each
 unit's result has no verdict on the units it leaves silent**: `go build` and `go vet` print nothing
 for a package that passed and nothing for one that was blocked, and cargo's human output prints one
@@ -139,6 +145,8 @@ it reaches every unit it can -- `--keep-going` where the tool has it.
 2. **Is any failure in a touched file after the change?** Then the rung is working. Fix the
    change; the work is not complete. The failure's **primary** location decides; a note or
    secondary span pointing into a touched file does not move an error out of the file it is in.
+   A failing test is located in the file that defines the test, wherever it panics -- in library
+   code, or in the temporary file rustdoc compiles a doc-test into (that doc-test's source file).
 3. **Otherwise the rung is satisfied against the baseline.** Every unit has its own verdict in
    both runs and no failure is in a touched file, so every remaining failure is in an untouched
    file. Sort each, with its cause, into exactly one of three kinds:
@@ -165,8 +173,10 @@ in a file the change does not touch** -- a crate that does not build, or a test 
 baseline failure among hundreds. Fix the baseline first, or accept `unsatisfiable`. A command that
 stops at its first failing unit leaves the rest without a verdict, so on a red baseline declare one
 that runs past failures -- `cargo check` and `cargo clippy` take `--keep-going`; `cargo test` does
-not, and `--no-fail-fast` still stops when a test target fails to compile, so run it per package
-(`-p`) -- or expect step 1 to find a unit with no verdict.
+not, and `--no-fail-fast` still stops when a test target fails to compile, so a red baseline
+with a test target that does not build leaves rung 2 `unsatisfiable` -- running `-p` per package
+instead is the substitute command this section forbids -- and otherwise expect step 1 to find a
+unit with no verdict.
 
 **Why every unit, and not a reach rule.** Five review chains (2026-09-23 to 2026-09-27) each showed
 the previous rule a unit it could not see: reach per file, then per unit, then units that passed

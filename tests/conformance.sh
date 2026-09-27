@@ -6342,7 +6342,9 @@ for c in 'or failed it only because a unit it depends on failed' 'It has none wh
          "from the tool's own listing of its scope" 'including one no record lists' 'ran zero tests' \
          'any unit -- touched or not -- without its own verdict in both runs' \
          'so every failure in it is a regression' 'never a different command per unit' \
-         'Doc-tests <crate>'; do
+         'Doc-tests <crate>' 'cannot be judged against a red baseline at all' \
+         'A unit is deleted only when the diff deletes its files' \
+         'A failing test is located in the file that defines the test'; do
   printf '%s\n' "$sj" | grep -qF -- "$c" ||
     { echo "  ## Satisfaction lost: $c"; step_bad=1; }
 done
@@ -6619,7 +6621,7 @@ pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
   expect "$pc/dot.md"     "0 0 4" "a rung numbered 2. is not read, and the count says so"
   expect "$pc/notreq.md"  "0 0 5" "a rung above the tier recorded as not required"
   expect "$pc/notreq1.md" "0 1 5" "rung 1 recorded as not required -- no tier leaves it out"
-  expect "$pc/notreq2.md" "0 1 5" "rung 2 recorded as not required -- no trial's tier leaves it out"
+  expect "$pc/notreq2.md" "0 0 5" "rung 2 recorded as not required -- a T0 trial leaves it out; the tier is the reader's check"
   expect "$pc/waived.md"  "0 1 5" "a word the ladder does not define, even a plausible one"
   R3="$KIT/docs/TRIALS/2026-09-20-highper-gateway.md"
   [ ! -f "$R3" ] || expect "$R3" "0 2 5" "trial 3's record, two rungs ruled baseline-blocked" )

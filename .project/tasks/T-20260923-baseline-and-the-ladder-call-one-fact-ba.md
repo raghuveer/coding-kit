@@ -118,8 +118,14 @@ adding to it. Five chains, each narrower reach rule shown a unit it could not se
 
 **Second decision, which supersedes the first: every unit, both runs.** Every unit the declared
 command covers, from the tool's listing of its scope, must have its own complete verdict -- analysed
-itself to the end, not blocked by another unit and not stopped at a parse or resolution error -- in
+itself, not blocked by another unit -- in
 the before run AND the after run; otherwise `unsatisfiable`. No dependency graph is consulted.
 Stated cost: a baseline counts only when every red unit gets through its own full analysis, so a
 red crate others depend on makes every change unsatisfiable at rung 1 until it is fixed. Trial 3's
 rung 1 stays unsatisfiable (its touched crate fails in untouched files).
+
+Chains 6 to 8 then worked the rule's wording, not its shape. Chain 6 (no critical): verdicts must be
+named per unit, from a clean state; the "stopped at a parse or resolution error" boundary proved
+undecidable both ways and became part of the stated cost (bc33806). Chain 7 found three criticals,
+all in bc33806's own new wording -- an added unit, a per-unit substitute command, doc-tests -- closed
+in 3a7b773. Chain 8: no critical from either reader.

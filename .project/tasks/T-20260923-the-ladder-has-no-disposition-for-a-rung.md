@@ -2,6 +2,7 @@
 id: T-20260923-the-ladder-has-no-disposition-for-a-rung
 title: The ladder has no disposition for a rung wider than the change
 tier: T3
+blocked_by: T-20260923-baseline-and-the-ladder-call-one-fact-ba
 lang: bash
 state: created
 ---
@@ -49,3 +50,6 @@ Trial 3 record: `docs/TRIALS/2026-09-20-highper-gateway.md`, K4.
 
 Related: the baseline/unsatisfiable contradiction, which is the same area and must be resolved
 consistently with this.
+
+**Blocked by `T-20260923-baseline-and-the-ladder-call-one-fact-ba`, declared 2026-09-24.** That task
+decides which document owns the rung-disposition rule; the names this task adds go in that home.

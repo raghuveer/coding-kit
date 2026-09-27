@@ -3,6 +3,7 @@ id: T-20260912-a-declared-rung-whose-tooling-fails-has-
 title: A declared rung whose tooling fails has no disposition, so work completes unverified
 epic: agent-contracts
 tier: T3
+blocked_by: T-20260923-baseline-and-the-ladder-call-one-fact-ba
 paths: skills/verify-ladder/SKILL.md, docs/TRIAL-PROTOCOL.md
 state: created
 ---
@@ -447,3 +448,8 @@ finding.
 **Not in scope:** whether the subject should be fixed. `registry.rs:77` and the undeclared
 `cmake`/`protoc` build dependencies are subject findings for that project's owner, routed by
 section 7's three kinds of finding, and they do not belong to the kit.
+
+**Blocked by `T-20260923-baseline-and-the-ladder-call-one-fact-ba`, declared 2026-09-24.** That task
+is one of this task's own open majors — *"SKILL.md calls a pre-existing non-compiling target
+unsatisfiable; section 0 and the tool call it a blessed baseline"* — refiled from trial 3 with a
+worked case. This task cannot close while it stands, and until today the edge existed only in prose.

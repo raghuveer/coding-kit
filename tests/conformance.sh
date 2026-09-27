@@ -6296,7 +6296,7 @@ grep -qi "either satisfied or" "$WORK.ladder-completion" &&
 # smuggled in beside an existing one counts too. Like every grep here it proves the word is present in
 # the right section, not that the prose around it is right -- the ceiling stated at the top.
 cls=$(awk 'index($0, "case \"${_e##*=}\" in") {f=1; next} f && /^[[:space:]]*esac/ {exit} f' \
-        "$KIT/tooling/kit-preflight.sh" | sed -n 's/^[[:space:]]*"\{0,1\}\([A-Za-z][A-Za-z_|-]*\)"\{0,1\})[[:space:]].*/\1/p' | tr '|' ' ')
+        "$KIT/tooling/kit-preflight.sh" | sed -n 's/^[[:space:]]*(\{0,1\}"\{0,1\}\([A-Za-z][A-Za-z_|-]*\)"\{0,1\})\([[:space:]].*\)\{0,1\}$/\1/p' | tr '|' ' ')
 [ -n "$cls" ] ||
   { echo "  could not read the classifications kit-preflight.sh --commands accepts"; step_bad=1; }
 for c in $cls; do
@@ -6314,6 +6314,20 @@ for st in 'Did the AFTER run reach the change' 'complete verdict' 'dependency re
   grep -qF -- "$st" "$WORK.ladder-satisfaction" ||
     { echo "  the baseline rule lost the step: $st"; step_bad=1; }
 done
+# EACH CONDITION IN ITS OWN PLACE. The loop above passes while every phrase survives ANYWHERE in
+# the section, and the fourth review chain (2026-09-27) deleted step 1's first and third
+# conditions, and made a regression not block, with this step still green: each phrase recurs in
+# the prose around it. So step 1's three conditions are looked for inside step 1 alone, and
+# "it blocks" inside the regression bullet alone.
+s1=$(awk '/^1\. \*\*Did the AFTER run reach the change/ {f=1} /^2\. \*\*Is any failure/ {f=0} f' \
+       "$WORK.ladder-satisfaction")
+for c in "in some unit's dependency record" 'with every failure located in' 'depends on a touched unit'; do
+  printf '%s\n' "$s1" | grep -qF -- "$c" ||
+    { echo "  step 1 lost a condition: $c"; step_bad=1; }
+done
+rg=$(awk '/^   - \*\*regression\*\*/ {f=1; print; next} f && /^   - \*\*/ {f=0} f' "$WORK.ladder-satisfaction")
+printf '%s\n' "$rg" | tr '\n' ' ' | tr -s ' ' | grep -qF 'it blocks exactly as step 2 does' ||
+  { echo "  the regression kind no longer blocks"; step_bad=1; }
 # Joined into one line first: the original clause wrapped across a line break ("cannot be made
 # to" / "pass"), so a line-by-line grep missed the very text it names -- found by running this
 # against main's ladder, where it stayed silent.
@@ -6521,16 +6535,15 @@ rm -rf "$vd"
 # AFTER the clock too (a touched unit with no complete verdict), and that route writes no event;
 # section 3 detects it from the report's per-rung table instead. The command is EXTRACTED from
 # section 3 and run as written, so the document and this check cannot drift -- the event
-# detection above is a copy, and a copy is the thing that drifted on 2026-09-24. It prints two
-# numbers: rungs whose disposition is `unsatisfiable`, and rungs whose disposition is none of the
-# ladder's words. Records, each derived from the REAL template so its shape is the one a trialist
-# fills in: blank (0 0); one unsatisfiable row, plain (1 0), backticked with a bold rung number
-# (1 0), and italic with a pipe in the Command cell (1 0) -- the last three are the shapes a
-# 2026-09-24 reviewer showed the first version read as 0; a cell that merely MENTIONS the word
-# (0 0); a word the ladder does not define (0 1); and trial 3's real record, whose two rungs were
-# ruled `baseline-blocked` (0 2).
+# detection above is a copy, and a copy is the thing that drifted on 2026-09-24. It prints three
+# numbers -- rungs whose disposition is `unsatisfiable`, rungs whose disposition is blank or none of
+# the ladder's words, and rung rows read -- and only `0 0 5` passes. The third exists because the
+# fourth review chain (2026-09-27) showed the two-number form printed `0 0` over a table it never
+# read: the section missing (the 2026-09-09 founding record), a heading in another case or level,
+# rows without the outer pipes, a rung written `1a`. Records are derived from the REAL template,
+# first filled in with `satisfied` on every rung so each fixture changes exactly one thing.
 pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
-( line=$(grep -F "awk -F'\\174' '/^## Rung dispositions/" "$T") ||
+( line=$(grep -F 'rung dispositions/{f=1;next}' "$T") ||
     { echo "    section 3 carries no per-rung-table detection"; exit 1; }
   det=${line#*\`awk}; det="awk${det%%\`*}"
   case "$det" in *'<record>'*) ;; *) echo "    the detection names no <record> to run against"; exit 1 ;; esac
@@ -6540,20 +6553,36 @@ pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
   r2='^| 2 | criteria proven by tests that fail without the change | | |$'
   grep -q "$r2" "$TM" && grep -q "$r1" "$TM" ||
     { echo "    the template's rung table changed shape; the fixtures below would test nothing"; exit 1; }
-  sed "s/$r2/| 2 | criteria | cargo test | **UNSATISFIABLE** -- target did not build |/" "$TM" > "$pc/one.md"
-  sed "s/$r2/| **2** | criteria | cargo test | \`unsatisfiable\` -- no verdict |/"      "$TM" > "$pc/tick.md"
-  sed "s/$r2/| 2 | criteria | \`a \\\\| b\` | _unsatisfiable_ |/"                       "$TM" > "$pc/pipe.md"
-  sed "s/$r1/| 1 | compiles | x | satisfied -- no rung unsatisfiable |/"                 "$TM" > "$pc/phrase.md"
-  sed "s/$r2/| 2 | criteria | x | baseline-blocked (ruling) |/"                          "$TM" > "$pc/odd.md"
+  sed -E 's/^\| ([1-5]) \| (.*) \| \| \|$/| \1 | \2 | cmd | satisfied |/' "$TM" > "$pc/ok.md"
+  f2='^| 2 | criteria proven by tests that fail without the change | cmd | satisfied |$'
+  f1='^| 1 | compiles + static analysis | cmd | satisfied |$'
+  grep -q "$f2" "$pc/ok.md" ||
+    { echo "    filling the template did not produce the rows the fixtures edit"; exit 1; }
+  sed "s/$f2/| 2 | criteria | cargo test | **UNSATISFIABLE** -- target did not build |/" "$pc/ok.md" > "$pc/one.md"
+  sed "s/$f2/| **2** | criteria | cargo test | \`unsatisfiable\` -- no verdict |/"      "$pc/ok.md" > "$pc/tick.md"
+  sed "s/$f2/| 2 | criteria | \`a \\| b\` | _unsatisfiable_ |/"                       "$pc/ok.md" > "$pc/pipe.md"
+  sed "s/$f1/| 1 | compiles | x | satisfied -- no rung unsatisfiable |/"                 "$pc/ok.md" > "$pc/phrase.md"
+  sed "s/$f2/| 2 | criteria | x | baseline-blocked (ruling) |/"                          "$pc/ok.md" > "$pc/odd.md"
+  sed "s/$f2/| 2 | criteria | | unsatisfiable/"                                          "$pc/ok.md" > "$pc/notrail.md"
+  sed "s/$f2/2 | criteria | cmd | unsatisfiable |/"                                      "$pc/ok.md" > "$pc/nolead.md"
+  sed 's/^| 4 |/| 1a |/'                                        "$pc/ok.md" > "$pc/1a.md"
+  sed 's/^## Rung dispositions/### Rung Dispositions/'          "$pc/ok.md" > "$pc/h3.md"
+  sed 's/^## Rung dispositions/## Checks/'                      "$pc/ok.md" > "$pc/gone.md"
   expect() { got=$(run "$1"); [ "$got" = "$2" ] || { echo "    $3: got '$got', want '$2'"; exit 1; }; }
-  expect "$TM"          "0 0" "the blank template"
-  expect "$pc/one.md"    "1 0" "one unsatisfiable row"
-  expect "$pc/tick.md"   "1 0" "a backticked disposition with a bold rung number"
-  expect "$pc/pipe.md"   "1 0" "an italic disposition after a pipe in the Command cell"
-  expect "$pc/phrase.md" "0 0" "a cell that mentions the word without starting with it"
-  expect "$pc/odd.md"    "0 1" "a disposition the ladder does not define"
+  expect "$TM"            "0 5 5" "the blank template: five rungs with no disposition"
+  expect "$pc/ok.md"      "0 0 5" "every rung satisfied"
+  expect "$pc/one.md"     "1 0 5" "one unsatisfiable row"
+  expect "$pc/tick.md"    "1 0 5" "a backticked disposition with a bold rung number"
+  expect "$pc/pipe.md"    "1 0 5" "an italic disposition after a pipe in the Command cell"
+  expect "$pc/phrase.md"  "0 0 5" "a cell that mentions the word without starting with it"
+  expect "$pc/odd.md"     "0 1 5" "a disposition the ladder does not define"
+  expect "$pc/notrail.md" "1 0 5" "an unsatisfiable row with no trailing pipe and an empty Command cell"
+  expect "$pc/nolead.md"  "1 0 5" "an unsatisfiable row with no leading pipe"
+  expect "$pc/1a.md"      "0 0 4" "a rung numbered 1a is not read, and the count says so"
+  expect "$pc/h3.md"      "0 0 5" "the heading at another level and case"
+  expect "$pc/gone.md"    "0 0 0" "no Rung dispositions section at all"
   R3="$KIT/docs/TRIALS/2026-09-20-highper-gateway.md"
-  [ ! -f "$R3" ] || expect "$R3" "0 2" "trial 3's record, two rungs ruled baseline-blocked" )
+  [ ! -f "$R3" ] || expect "$R3" "0 2 5" "trial 3's record, two rungs ruled baseline-blocked" )
 check $? "section 3's post-clock detection, run as written, reads the last cell's first word in every shape a report uses"
 rm -rf "$pc"
 fi

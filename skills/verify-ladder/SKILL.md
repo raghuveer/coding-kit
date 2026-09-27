@@ -56,7 +56,7 @@ mutation tooling gets more human and reviewer attention, not less.
 changed code.* Either it does not run -- a missing build dependency, a platform the toolchain
 does not support -- or it gives no verdict on the change (step 1 below): a touched file no unit
 compiles, a touched unit blocked, skipped or still failing in a file the change did not touch, or
-a unit that passed before and has no verdict after. This is **not** unavailable: something was declared, so the clause above does
+a unit depending on a touched unit that has no verdict after. This is **not** unavailable: something was declared, so the clause above does
 not reach it, and raising the tier is not the remedy because the rung was supposed to be
 mechanical here and is not.
 
@@ -80,7 +80,12 @@ output -- judge the rung in three steps, in order, and stop at the first that de
 Every step reasons about **units**: the smallest thing the declared command reports a whole
 result for -- a crate or build target, a package, a test binary. The tool names them; you do not
 choose them. **Which files a unit contains comes from the tool's own dependency record, not from
-its console output** -- cargo's dep-info (`.d`) files, `go list`, the test runner's collected list.
+its console output** -- cargo's dep-info (`.d`) files, `go list`, the test runner's collected list
+with each test's file. A **touched file** is any file the diff changes; a touched manifest or build
+script -- `Cargo.toml`, `build.rs`, `go.mod`, the runner's configuration -- is in no dependency
+record, so it touches every unit of its package. **Which units depend on which comes from the
+tool's dependency graph** -- `cargo metadata`, `go list -deps` -- never from which units happened
+to run: a command that stops at its first failing unit starts a different set each time.
 A unit has a **complete verdict** in a run when the command reports that it passed, or reports its
 failures. A unit the command never started, skipped, or served from cache without naming has none.
 Run the command so it names every unit -- a clean build, `--keep-going`, or its machine-readable
@@ -92,9 +97,10 @@ output -- or accept that the ones it does not name have no verdict.
      includes -- a module nothing declares, a directory the tool skips -- was never compiled;
    - every unit containing a touched file has a complete verdict, with every failure located in
      a touched file;
-   - every unit that **passed in the before run** has a complete verdict after it. A unit that
-     passed before and was not started after may have been broken by the change, and nothing can
-     say whether it was.
+   - every unit that **depends on a touched unit**, directly or through others, has a complete
+     verdict after it. A dependent the command never started may have been broken by the change,
+     and nothing can say whether it was -- including one blocked in BOTH runs by an unrelated red
+     unit, which the before run cannot vouch for either.
 
    **Any of the three missing, and the rung has no verdict on the change: `unsatisfiable`.** One
    unit's result says nothing about another's, and the before run says nothing about the after
@@ -106,25 +112,31 @@ output -- or accept that the ones it does not name have no verdict.
 2. **Is any failure in a touched file after the change?** Then the rung is working. Fix the
    change; the work is not complete. The failure's **primary** location decides; a note or
    secondary span pointing into a touched file does not move an error out of the file it is in.
-3. **Otherwise the rung is satisfied against the baseline.** Every touched unit passed and every
-   unit that passed before still has a verdict, so every remaining failure is in an untouched
-   unit. Sort each, with its cause, into exactly one of three kinds:
+3. **Otherwise the rung is satisfied against the baseline.** Every touched unit and every unit
+   depending on one has a verdict, and no failure is in a touched file, so every remaining failure
+   is in an untouched file. Sort each, with its cause, into exactly one of three kinds:
    - **regression** -- it is in a unit that passed in the before run; or it is a test that ran
-     and passed before and now fails. This is not a count to record and move past: **it blocks
-     exactly as step 2 does -- fix the change**, wherever it lives. A test the diff itself deletes
-     or renames is not a regression; name it as removed;
+     and passed before and now fails or no longer runs, including because its unit stopped
+     building. This is not a count to record and move past: **it blocks exactly as step 2 does --
+     fix the change**, wherever it lives. A test the diff itself deletes or renames is not a
+     regression; list it as **removed** in the report, beside the baseline and unmasked counts;
    - **baseline** -- the same unit, file and error code or test name as the before run, and no
      more occurrences of it than before;
    - **unmasked** -- anything else, which can only be in a unit that did not pass in the before
      run. It does not block. Hand the list to the rung 4 and rung 5 readers.
 
-**The cost, stated rather than discovered:** a unit that was already failing before the change
-and does not contain it can be broken further by the change, and that reads as unmasked. That is
-why the unmasked list goes to rungs 4 and 5 and is recorded rather than waved through. The price
-of step 1 is deliberate: **a change inside a unit that does not build cannot be verified by that
-unit's command** -- fix the unit's baseline first, or accept `unsatisfiable` -- and a command that
-stops at its first failing unit leaves the rest without a verdict, so on a red baseline declare it
-to run past failures (cargo `--keep-going`) or expect step 1 to fail. The stricter rule -- no
+**The cost, stated rather than discovered:** a dependent that was already failing before the
+change can be broken further by it, and that reads as unmasked. That is why the unmasked list goes
+to rungs 4 and 5 and is recorded rather than waved through. The price of step 1 is deliberate:
+**a touched unit that already fails in a file the change does not touch cannot be verified by that
+unit's command** -- a crate that does not build, or a test binary with one baseline failure among
+hundreds -- so fix the unit's baseline first, or accept `unsatisfiable`. The same holds for a
+dependent that an unrelated red unit keeps from starting: while that unit is red, a change to
+anything the dependent uses is `unsatisfiable` at this rung. A command that stops at its first
+failing unit leaves dependents without a verdict, so on a red baseline declare one that runs past
+failures -- `cargo check` and `cargo clippy` take `--keep-going`; `cargo test` does not, and
+`--no-fail-fast` still stops when a test target fails to compile, so run it per package (`-p`) --
+or expect step 1 to find a dependent with no verdict. The stricter rule -- no
 failure anywhere that the baseline did not have -- was refused on one observation: trial 3's change
 left 7 errors of which 6 were not in the before run.
 

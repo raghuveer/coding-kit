@@ -33,7 +33,7 @@
 `satisfied`, `satisfied (against baseline)`, `unavailable` or `unsatisfiable` — §3's detection
 reads that first word, so nothing else goes first. What each means is
 `skills/verify-ladder/SKILL.md` `## Satisfaction`. Against a baseline, name the touched units and
-their verdicts, and the baseline and unmasked counts.
+their verdicts, the baseline and unmasked counts, and any tests the diff removed.
 
 | Rung | Obligation | Command | Disposition |
 |---|---|---|---|

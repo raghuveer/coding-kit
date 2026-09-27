@@ -6296,7 +6296,7 @@ grep -qi "either satisfied or" "$WORK.ladder-completion" &&
 # smuggled in beside an existing one counts too. Like every grep here it proves the word is present in
 # the right section, not that the prose around it is right -- the ceiling stated at the top.
 cls=$(awk 'index($0, "case \"${_e##*=}\" in") {f=1; next} f && /^[[:space:]]*esac/ {exit} f' \
-        "$KIT/tooling/kit-preflight.sh" | sed -n 's/^[[:space:]]*(\{0,1\}"\{0,1\}\([A-Za-z][A-Za-z_|-]*\)"\{0,1\})\([[:space:]].*\)\{0,1\}$/\1/p' | tr '|' ' ')
+        "$KIT/tooling/kit-preflight.sh" | sed -n 's/^[[:space:]]*(\{0,1\}"\{0,1\}\([A-Za-z][A-Za-z_ |-]*\)"\{0,1\})\([[:space:]].*\)\{0,1\}$/\1/p' | tr '|' ' ')
 [ -n "$cls" ] ||
   { echo "  could not read the classifications kit-preflight.sh --commands accepts"; step_bad=1; }
 for c in $cls; do
@@ -6310,7 +6310,7 @@ done
 # so quoted lines (`>`) are excluded: the quote is the record of why, and must not trip this.
 grep -q '^\*\*Against a recorded baseline\*\*' "$WORK.ladder-satisfaction" ||
   { echo "  ## Satisfaction has no 'Against a recorded baseline' rule"; step_bad=1; }
-for st in 'Did the AFTER run reach the change' 'complete verdict' 'dependency record' 'passed in the before run' 'has no verdict on the change' 'Is any failure in a touched file' 'Otherwise the rung is satisfied against the baseline' '**regression**' '**unmasked**'; do
+for st in 'did the AFTER run reach the change' 'complete verdict' 'dependency record' 'passed in the before run' 'has no verdict on the change' 'Is any failure in a touched file' 'Otherwise the rung is satisfied against the baseline' '**regression**' '**unmasked**'; do
   grep -qF -- "$st" "$WORK.ladder-satisfaction" ||
     { echo "  the baseline rule lost the step: $st"; step_bad=1; }
 done
@@ -6319,15 +6319,28 @@ done
 # conditions, and made a regression not block, with this step still green: each phrase recurs in
 # the prose around it. So step 1's three conditions are looked for inside step 1 alone, and
 # "it blocks" inside the regression bullet alone.
-s1=$(awk '/^1\. \*\*Did the AFTER run reach the change/ {f=1} /^2\. \*\*Is any failure/ {f=0} f' \
-       "$WORK.ladder-satisfaction")
-for c in "in some unit's dependency record" 'with every failure located in' 'depends on a touched unit'; do
+s1=$(awk '/^1\. \*\*Does every unit have its own verdict in BOTH runs/ {f=1} /^2\. \*\*Is any failure/ {f=0} f' \
+       "$WORK.ladder-satisfaction" | tr '\n' ' ' | tr -s ' ')
+for c in 'every unit has a complete verdict in the before run and in the after run' \
+         "in some unit's dependency record" 'with every failure located in'; do
   printf '%s\n' "$s1" | grep -qF -- "$c" ||
     { echo "  step 1 lost a condition: $c"; step_bad=1; }
 done
 rg=$(awk '/^   - \*\*regression\*\*/ {f=1; print; next} f && /^   - \*\*/ {f=0} f' "$WORK.ladder-satisfaction")
-printf '%s\n' "$rg" | tr '\n' ' ' | tr -s ' ' | grep -qF 'it blocks exactly as step 2 does' ||
-  { echo "  the regression kind no longer blocks"; step_bad=1; }
+rg1=$(printf '%s\n' "$rg" | tr '\n' ' ' | tr -s ' ')
+for c in 'it blocks exactly as step 2 does' 'now fails or no longer runs' 'list it as **removed**'; do
+  printf '%s\n' "$rg1" | grep -qF -- "$c" ||
+    { echo "  the regression kind lost: $c"; step_bad=1; }
+done
+# What a complete verdict EXCLUDES, and the price, are the halves a quiet edit would drop: 64122ad
+# dropped "no longer runs" once without saying so. Joined, because each wraps across lines.
+sj=$(grep -v '^>' "$WORK.ladder-satisfaction" | tr '\n' ' ' | tr -s ' ')
+for c in 'or failed it only because a unit it depends on failed' 'whose own errors stop analysis early' \
+         'a baseline counts only when every red unit got through its own full analysis in both runs' \
+         "from the tool's own listing of its scope"; do
+  printf '%s\n' "$sj" | grep -qF -- "$c" ||
+    { echo "  ## Satisfaction lost: $c"; step_bad=1; }
+done
 # Joined into one line first: the original clause wrapped across a line break ("cannot be made
 # to" / "pass"), so a line-by-line grep missed the very text it names -- found by running this
 # against main's ladder, where it stayed silent.
@@ -6537,7 +6550,7 @@ rm -rf "$vd"
 # section 3 and run as written, so the document and this check cannot drift -- the event
 # detection above is a copy, and a copy is the thing that drifted on 2026-09-24. It prints three
 # numbers -- rungs whose disposition is `unsatisfiable`, rungs whose disposition is blank or none of
-# the ladder's words, and rung rows read -- and only `0 0 5` passes. The third exists because the
+# the ladder's words, and DISTINCT rungs read -- and only `0 0 5` passes. The third exists because the
 # fourth review chain (2026-09-27) showed the two-number form printed `0 0` over a table it never
 # read: the section missing (the 2026-09-09 founding record), a heading in another case or level,
 # rows without the outer pipes, a rung written `1a`. Records are derived from the REAL template,
@@ -6568,6 +6581,11 @@ pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
   sed 's/^| 4 |/| 1a |/'                                        "$pc/ok.md" > "$pc/1a.md"
   sed 's/^## Rung dispositions/### Rung Dispositions/'          "$pc/ok.md" > "$pc/h3.md"
   sed 's/^## Rung dispositions/## Checks/'                      "$pc/ok.md" > "$pc/gone.md"
+  sed -e 's/^| 3 |/| 1 |/'                                     "$pc/ok.md" > "$pc/split.md"
+  sed -e 's/^| 2 |/| 2. |/'                                    "$pc/ok.md" > "$pc/dot.md"
+  sed -e 's/^\(| 5 | .* | cmd | \)satisfied |$/\1not required -- T2 |/' "$pc/ok.md" > "$pc/notreq.md"
+  grep -q '| 5 | .* | not required -- T2 |$' "$pc/notreq.md" ||
+    { echo "    the not-required fixture did not apply"; exit 1; }
   expect() { got=$(run "$1"); [ "$got" = "$2" ] || { echo "    $3: got '$got', want '$2'"; exit 1; }; }
   expect "$TM"            "0 5 5" "the blank template: five rungs with no disposition"
   expect "$pc/ok.md"      "0 0 5" "every rung satisfied"
@@ -6581,6 +6599,9 @@ pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
   expect "$pc/1a.md"      "0 0 4" "a rung numbered 1a is not read, and the count says so"
   expect "$pc/h3.md"      "0 0 5" "the heading at another level and case"
   expect "$pc/gone.md"    "0 0 0" "no Rung dispositions section at all"
+  expect "$pc/split.md"   "0 0 4" "rung 1 on two rows does not stand in for a missing rung 3"
+  expect "$pc/dot.md"     "0 0 4" "a rung numbered 2. is not read, and the count says so"
+  expect "$pc/notreq.md"  "0 0 5" "a rung above the tier recorded as not required"
   R3="$KIT/docs/TRIALS/2026-09-20-highper-gateway.md"
   [ ! -f "$R3" ] || expect "$R3" "0 2 5" "trial 3's record, two rungs ruled baseline-blocked" )
 check $? "section 3's post-clock detection, run as written, reads the last cell's first word in every shape a report uses"

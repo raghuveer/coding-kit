@@ -104,3 +104,22 @@ regression, not unmasked.
 `plugin/` shares the `highper-gateway` crate with `discovery/consul.rs`. The 2026-09-23 record
 stands as the ruling made before the rule existed. Chain 2 also corrected a claim of mine: the
 after-run logs DO exist at `D:/trials/trial3-target/` (I had searched only the subject copy).
+
+### Operator decisions 2026-09-27, after the fourth and fifth review chains: every unit, both runs
+
+Chain 4 (A4, B4: revise, one shared critical, reproduced): the "passed before" condition protected
+only units the before run finished, so a dependent an unrelated red crate kept from starting --
+in both runs, or in one depending on job timing -- sorted as nothing. **First decision: dependents
+need a verdict**, read from the dependency graph (781fc58). Chain 5 (A5, B5: revise, four criticals
+between them) showed that graph blind too: a workspace-level manifest or lock file in no package, a
+binary target beside the touched library (`cargo metadata` has no edges inside a package), and a
+dependent a cold before-run never started; 781fc58 had also replaced "passed before" rather than
+adding to it. Five chains, each narrower reach rule shown a unit it could not see.
+
+**Second decision, which supersedes the first: every unit, both runs.** Every unit the declared
+command covers, from the tool's listing of its scope, must have its own complete verdict -- analysed
+itself to the end, not blocked by another unit and not stopped at a parse or resolution error -- in
+the before run AND the after run; otherwise `unsatisfiable`. No dependency graph is consulted.
+Stated cost: a baseline counts only when every red unit gets through its own full analysis, so a
+red crate others depend on makes every change unsatisfiable at rung 1 until it is fixed. Trial 3's
+rung 1 stays unsatisfiable (its touched crate fails in untouched files).

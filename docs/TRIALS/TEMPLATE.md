@@ -30,8 +30,10 @@
 ## Rung dispositions
 
 **Before the outcome, and one row per rung.** The Disposition cell STARTS with exactly one of
-`satisfied`, `satisfied (against baseline)`, `unavailable` or `unsatisfiable` — §3's detection
-reads that first word, so nothing else goes first. What each means is
+`satisfied`, `satisfied (against baseline)`, `unavailable`, `unsatisfiable` or `not required`
+(a rung above the trial's tier, from the ladder's Obligations table) — §3's detection reads that
+first word, so nothing else goes first. Keep all five rows; a missing or renumbered row reads as
+a table the detection could not read. What each means is
 `skills/verify-ladder/SKILL.md` `## Satisfaction`. Against a baseline, name the touched units and
 their verdicts, the baseline and unmasked counts, and any tests the diff removed.
 

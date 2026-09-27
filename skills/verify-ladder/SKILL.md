@@ -19,6 +19,10 @@ later without editing this skill.
 | 4 | An adversarial reader has looked for what the tests cannot express: fail-open guards, races behind a green suite, comments whose rationale is false | T2 |
 | 5 | A second reader, given no sight of the first's findings, has done the same | T3 |
 
+A rung whose **From (T)** is above the change's tier is **not required** -- out of the change's
+scope, not a fourth disposition, and recorded as `not required`. Rungs 1 and 2 are required from
+T1, so only rungs 3 to 5 can be not required in any trial.
+
 Rung 5 is a **completeness control, not a correctness control**, and the difference decides
 whether it is worth its cost. Measured on one T3 design: two reviewers, the second blind at
 a commit predating the first's findings, both returned REJECT and shared roughly 70% of
@@ -80,26 +84,36 @@ output -- judge the rung in three steps, in order, and stop at the first that de
 Every step reasons about **units**: the smallest thing the declared command reports a whole
 result for -- each build target of each package (a crate's library, each binary, each test
 target), a Go package, a test binary. The tool names them; you do not choose them. **The units are
-every one the declared command covers**, from the tool's own listing of its scope -- the targets
-in `cargo metadata`, `go list ./...` -- never the ones a run happened to print. **Which files a
+every one the declared command selects**, from the tool's own listing of its scope -- never the
+ones a run happened to print: for cargo, the `cargo metadata` targets of the kinds the command
+builds (`check` and `clippy` build libraries and binaries; `--all-targets` and `test` add the test,
+example and bench targets they select); for Go, the packages `go list <the command's pattern>`
+prints. List them from the tree each run was made on: a unit the change adds is judged by the after
+run alone, and one it deletes by the before run alone, and is listed as removed. **Which files a
 unit contains comes from the tool's own dependency record, not from its console output** --
 cargo's dep-info (`.d`) files, `go list`, the test runner's collected list with each test's file.
 A **touched file** is any file the diff changes, including one no record lists: a workspace
 manifest, a lock file, a build script, the tool's configuration.
 
-A unit has a **complete verdict** in a run when the tool analysed that unit itself, to the end,
-and reported that it passed or reported its failures. It has none when the command never started
-it, skipped it, served it from cache without naming it, or failed it only because a unit it
-depends on failed -- cargo never compiling it, `go test` printing `[build failed]` for an error in
-another package. A unit whose own errors stop analysis early -- a parse error, an unresolved
-module or import -- has none either: the errors it would report next are hidden, so a later run
-matching it proves nothing. Run the command so it reaches every unit it can -- a clean build,
-`--keep-going`, its machine-readable output.
+A unit has a **complete verdict** in a run when the run names that unit's own result: it passed,
+or it failed with every failure in the unit's own files. It has none when the command never
+started it or skipped it, or failed it only because a unit it depends on failed -- every failure it
+reports is in another unit's files: cargo never compiling it, `go test` printing `[build failed]`,
+`go build ./b` reporting only `a`'s errors. **A cached result is not a verdict**: make both runs
+from a clean state -- `cargo clean` first, `go build -a`, `go test -count=1` -- because cargo can
+report a unit `fresh` over source that no longer compiles. **A command that does not name each
+unit's result has no verdict on the units it leaves silent**: `go build` and `go vet` print nothing
+for a package that passed and nothing for one that was blocked, and cargo's human output prints one
+line per package, not per target. Use the tool's per-unit machine-readable output (cargo
+`--message-format=json`), or run the command once per unit, where its exit status and the location
+of its failures are that unit's verdict. Run it so it reaches every unit it can -- `--keep-going`
+where the tool has it.
 
 1. **Does every unit have its own verdict in BOTH runs, and did the AFTER run reach the change?**
    Three conditions, from the declared command itself:
-   - **every unit has a complete verdict in the before run and in the after run.** No dependency
-     graph is consulted, and none is needed: a unit anywhere without one may have been broken by
+   - **every unit has a complete verdict in the before run and in the after run** -- a unit the
+     change adds or deletes, in the one run whose tree has it. No dependency graph is consulted:
+     a unit anywhere without one may have been broken by
      the change -- through a workspace manifest, a lock file, feature unification, a binary or test
      target beside the touched library -- and nothing can say whether it was. A unit only the after
      run reached has nothing to be compared with; one only the before run reached may be what the
@@ -128,14 +142,15 @@ matching it proves nothing. Run the command so it reaches every unit it can -- a
      building. This is not a count to record and move past: **it blocks exactly as step 2 does --
      fix the change**, wherever it lives. A test the diff itself deletes or renames is not a
      regression; list it as **removed** in the report, beside the baseline and unmasked counts;
-   - **baseline** -- the same unit, file and error code or test name as the before run, and no
-     more occurrences of it than before;
+   - **baseline** -- the same unit, file and error code (or message, where the tool prints no
+     code) or test name as the before run, and no more occurrences of it than before;
    - **unmasked** -- anything else, which can only be in a unit that did not pass in the before
      run. It does not block. Hand the list to the rung 4 and rung 5 readers.
 
 **The cost, stated rather than discovered:** a unit that was already failing before the change can
 be broken further by it, and that reads as unmasked -- or as baseline, where the new failure
-repeats an old one exactly. That is why the unmasked list goes to rungs 4 and 5 and is recorded
+repeats an old one exactly, or is hidden: a failing unit's report is never proven complete, since
+one error can hide the next (a type error hides clippy's `dead_code`; Go stops at ten errors). That is why the unmasked list goes to rungs 4 and 5 and is recorded
 rather than waved through. The price of step 1 is deliberate, and larger than it looks: **a
 baseline counts only when every red unit got through its own full analysis in both runs.** A red
 crate that others depend on leaves them without a verdict, and then every change is

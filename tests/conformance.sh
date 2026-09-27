@@ -6335,12 +6335,16 @@ done
 # What a complete verdict EXCLUDES, and the price, are the halves a quiet edit would drop: 64122ad
 # dropped "no longer runs" once without saying so. Joined, because each wraps across lines.
 sj=$(grep -v '^>' "$WORK.ladder-satisfaction" | tr '\n' ' ' | tr -s ' ')
-for c in 'or failed it only because a unit it depends on failed' 'whose own errors stop analysis early' \
+for c in 'or failed it only because a unit it depends on failed' 'It has none when the command never started it or skipped it' \
+         'A cached result is not a verdict' 'has no verdict on the units it leaves silent' \
          'a baseline counts only when every red unit got through its own full analysis in both runs' \
-         "from the tool's own listing of its scope"; do
+         "from the tool's own listing of its scope" 'including one no record lists' 'ran zero tests' \
+         'any unit -- touched or not -- without its own verdict in both runs'; do
   printf '%s\n' "$sj" | grep -qF -- "$c" ||
     { echo "  ## Satisfaction lost: $c"; step_bad=1; }
 done
+grep -qF 'Keep all five rows' "$KIT/docs/TRIALS/TEMPLATE.md" ||
+  { echo "  the template no longer says to keep all five rung rows"; step_bad=1; }
 # Joined into one line first: the original clause wrapped across a line break ("cannot be made
 # to" / "pass"), so a line-by-line grep missed the very text it names -- found by running this
 # against main's ladder, where it stayed silent.
@@ -6586,6 +6590,8 @@ pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
   sed -e 's/^\(| 5 | .* | cmd | \)satisfied |$/\1not required -- T2 |/' "$pc/ok.md" > "$pc/notreq.md"
   grep -q '| 5 | .* | not required -- T2 |$' "$pc/notreq.md" ||
     { echo "    the not-required fixture did not apply"; exit 1; }
+  sed "s/$f1/| 1 | compiles | cmd | not required |/"          "$pc/ok.md" > "$pc/notreq1.md"
+  sed "s/$f2/| 2 | criteria | cmd | waived |/"                "$pc/ok.md" > "$pc/waived.md"
   expect() { got=$(run "$1"); [ "$got" = "$2" ] || { echo "    $3: got '$got', want '$2'"; exit 1; }; }
   expect "$TM"            "0 5 5" "the blank template: five rungs with no disposition"
   expect "$pc/ok.md"      "0 0 5" "every rung satisfied"
@@ -6602,6 +6608,8 @@ pc="$WORK.postclock"; rm -rf "$pc"; mkdir -p "$pc"
   expect "$pc/split.md"   "0 0 4" "rung 1 on two rows does not stand in for a missing rung 3"
   expect "$pc/dot.md"     "0 0 4" "a rung numbered 2. is not read, and the count says so"
   expect "$pc/notreq.md"  "0 0 5" "a rung above the tier recorded as not required"
+  expect "$pc/notreq1.md" "0 1 5" "rung 1 recorded as not required -- no tier leaves it out"
+  expect "$pc/waived.md"  "0 1 5" "a word the ladder does not define, even a plausible one"
   R3="$KIT/docs/TRIALS/2026-09-20-highper-gateway.md"
   [ ! -f "$R3" ] || expect "$R3" "0 2 5" "trial 3's record, two rungs ruled baseline-blocked" )
 check $? "section 3's post-clock detection, run as written, reads the last cell's first word in every shape a report uses"

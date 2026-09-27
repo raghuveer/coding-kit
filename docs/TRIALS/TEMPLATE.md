@@ -16,6 +16,9 @@
 | Question | *the one written at pre-flight, before the first command* |
 | Kit SHA | |
 | Time-box / actual | |
+| Runtime | *`uname -srm`, image digest or NONE, host OS* |
+| Unassessable crits | *n from `kit-preflight.sh --unassessable` (previous trial: n) — §0 stops if it went up* |
+| Superseded crits | *n from `kit-preflight.sh --superseded` (previous trial: n)* |
 | Subject | *languages, size, commit count, age of history* |
 | Greenfield / brownfield | *and whether history was truncated* |
 | Rung dispositions | *the counts from the Rung dispositions table below, e.g. `3 satisfied, 1 unavailable, 1 unsatisfiable`. **Any `unsatisfiable` row makes the outcome VOID** — §3, §6* |

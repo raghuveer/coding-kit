@@ -5484,7 +5484,11 @@ check $? "TRIAL-PROTOCOL section 0 calls the command rather than describing it"
 grep -qE 'kit-preflight\.sh --unassessable' "$KIT/tooling/kit-preflight.sh"
 check $? "and the flag it calls is one kit-preflight.sh documents"
 # The report has to carry the number, or §0's "count went up" stop is unevaluable next trial.
-grep -q 'Unassessable crits:' "$P"
+# Read from TEMPLATE.md, the template's one home since §7 became a pointer to it: that change
+# dropped this row and two others, and this check -- still reading §7 -- was the one that noticed,
+# on the first CI run whose tally could count it.
+grep -qF '| Unassessable crits |' "$KIT/docs/TRIALS/TEMPLATE.md" &&
+  grep -qF '| Superseded crits |' "$KIT/docs/TRIALS/TEMPLATE.md"
 check $? "the report template carries the count, so the next trial can compare"
 # EVERY EXCLUSION FROM --criticals NEEDS A BOX, and this is the check that says so for the fourth
 # one. The gate excludes superseded findings exactly as it excludes unassessable ones, so §0 is
@@ -6307,7 +6311,7 @@ done
 grep -q '^\*\*Against a recorded baseline\*\*' "$WORK.ladder-satisfaction" ||
   { echo "  ## Satisfaction has no 'Against a recorded baseline' rule"; step_bad=1; }
 for st in 'Did the AFTER run reach the change' 'complete verdict' 'dependency record' 'passed in the before run' 'has no verdict on the change' 'Is any failure in a touched file' 'Otherwise the rung is satisfied against the baseline' '**regression**' '**unmasked**'; do
-  grep -q "$st" "$WORK.ladder-satisfaction" ||
+  grep -qF -- "$st" "$WORK.ladder-satisfaction" ||
     { echo "  the baseline rule lost the step: $st"; step_bad=1; }
 done
 # Joined into one line first: the original clause wrapped across a line break ("cannot be made

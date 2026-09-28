@@ -67,3 +67,11 @@ Related:
 its own file-write tool — bypasses both skeletons.
 
 Source: idea 1 from the operator's review of Anthropic's playbook, 2026-09-11. Filed before any fix.
+
+**2026-09-28 — a second consequence, from preparing trial 4.** A task filed from an entry
+candidate keeps only its title: `kit-task.sh` has no flag for the candidate's `evidence:` line, so
+the citation that `docs/ENTRY-PROPOSAL.md` requires of every candidate is dropped at filing and the
+body is the empty skeleton. Tracing a filed task back to its roadmap item then depends on the title
+alone, which is why trial 4 prefixes every title with the roadmap id. Recorded here rather than as a
+new task because one skeleton fed from the candidate is the same change; if the operator wants the
+evidence carried by a flag instead, that is a separate task.

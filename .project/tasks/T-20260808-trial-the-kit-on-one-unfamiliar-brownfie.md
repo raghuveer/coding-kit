@@ -3,9 +3,17 @@ id: T-20260808-trial-the-kit-on-one-unfamiliar-brownfie
 title: Trial the kit on one unfamiliar brownfield polyglot project
 epic: validation
 tier: T2
-blocked_by: T-20260808-record-how-a-task-was-executed-so-kit-wo, T-20260808-a-repeatable-trial-protocol-for-running-, T-20260808-adoption-paths-for-an-empty-folder-and-f, T-20260813-nine-criticals-predate-summary-and-canno, T-20260819-a-finding-whose-subject-no-longer-exists, T-20260912-a-declared-rung-whose-tooling-fails-has-, T-20260912-a-trial-runs-in-a-container-on-the-subje, T-20260912-the-baseline-records-that-the-subject-is, T-20260911-the-isolation-check-passes-while-the-cop, T-20260911-kit-status-reports-spend-with-no-as-of-t, T-20260911-a-finding-recorded-by-hand-carries-no-ag, T-20260911-a-carried-over-finding-is-recorded-as-a-, T-20260911-kit-init-next-steps-omit-choosing-git-ad, T-20260923-the-ladder-has-no-disposition-for-a-rung
+blocked_by: T-20260808-record-how-a-task-was-executed-so-kit-wo, T-20260808-a-repeatable-trial-protocol-for-running-, T-20260808-adoption-paths-for-an-empty-folder-and-f, T-20260813-nine-criticals-predate-summary-and-canno, T-20260819-a-finding-whose-subject-no-longer-exists, T-20260912-a-declared-rung-whose-tooling-fails-has-, T-20260912-a-trial-runs-in-a-container-on-the-subje, T-20260912-the-baseline-records-that-the-subject-is, T-20260911-the-isolation-check-passes-while-the-cop, T-20260911-kit-status-reports-spend-with-no-as-of-t, T-20260911-a-finding-recorded-by-hand-carries-no-ag, T-20260911-a-carried-over-finding-is-recorded-as-a-, T-20260911-kit-init-next-steps-omit-choosing-git-ad, T-20260923-the-ladder-has-no-disposition-for-a-rung, T-20260928-trial-4-inventories-the-gateway-roadmap
 state: open
 ---
+
+> **Blocker fifteen added 2026-09-28: `T-20260928-trial-4-inventories-the-gateway-roadmap`.**
+> Three code-change trials have run and none reached the criteria that need a real backlog: the
+> roadmap becoming a task inventory, the planner's ordering on a backlog it did not author, and
+> clustering on one. Trial 4 is an inventory unit (`docs/TRIAL-INVENTORY-UNIT.md`) that does. The
+> ladder blockers stay: they gate the next code-change trial, and this task needs both kinds.
+> Upstream `e588b53` is red, so under PR #181's rule no code-change trial on it can reach a
+> verdict until its baseline is repaired outside the trial.
 
 > **Blockers six to thirteen added 2026-09-13, and every one of them comes from trial 1's own
 > record.** The first five are all `completed`, so this task read as ready work while the run it

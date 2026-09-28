@@ -12,6 +12,11 @@ where a rule exists because something went wrong there.
 The procedure is fixed **before** a trial, not reconstructed after it. A comparison assembled
 afterwards from whatever each run happened to record is not a comparison.
 
+**This procedure assumes the unit is a code change.** A trial whose unit is an inventory — a
+roadmap turned into filed, planned tasks, with no code changed — can run under
+`docs/TRIAL-INVENTORY-UNIT.md` once the operator adopts that annex for the trial at pre-flight. It
+names what here applies unchanged, what changes, and what it adds.
+
 **Revision 2, 2026-08-12.** Revision 1 was reviewed before first use and rejected with two
 criticals — its isolation rule left `git push` pointed at the subject, and it mandated a figure
 the kit does not emit while forbidding the only way to get it. Both are fixed below. The review

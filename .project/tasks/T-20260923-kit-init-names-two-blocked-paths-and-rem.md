@@ -6,6 +6,10 @@ lang: bash
 state: created
 ---
 
+> **CANCELLED 2026-09-28 as a duplicate of `T-20260911-kit-init-prints-the-claude-remedy-when-t`**,
+> which this file itself calls K5 of the 2026-09-09 trial. Its two new criteria and the trial-3
+> evidence were moved there; that file is kept because other records already point at it.
+
 ## Intent
 
 Adopting the trial-3 copy, `kit-init.sh` exited 1 and printed:

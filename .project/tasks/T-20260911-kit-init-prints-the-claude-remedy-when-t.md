@@ -32,8 +32,21 @@ An adopter who applies it still has every task file and the event log ignored, a
       `.project/tasks` gets the `.project/` re-include form.
 - [ ] A conformance step with `.project` ignored asserts that the printed remedy re-includes
       `.project/tasks/`, and that applying the printed lines verbatim lets `kit-init.sh` complete.
+- [ ] The remedy is derived from `paths.state` and `paths.tasks`, so an adopter who moved their
+      state directory gets a remedy naming where it actually is.
+- [ ] Verified on a repository that blocks BOTH paths, and by a test that fails against today's
+      `kit-init.sh`.
 
 ## Notes
+
+**2026-09-28 — merged in from `T-20260923-kit-init-names-two-blocked-paths-and-rem`, which is now
+cancelled as a duplicate.** Trial 3 (`docs/TRIALS/2026-09-20-highper-gateway.md`, K5) reproduced
+this unchanged on 2026-09-23: `kit-init.sh` exited 1 naming `.claude/project-profile.md`
+(`.gitignore:158:*.claude`) and `.project/tasks` (`.gitignore:39:.project`), then printed the
+`.claude/` remedy only. The two criteria above came from that task; its other two restate the
+first two here. This file is kept because `docs/dependency-map.tsv`, `docs/DEPENDENCIES.md` and two
+task files already point at it. The subject ignores `.claude` four ways -- `.claude/`,
+`**/.claude/`, `.claude-*`, `*.claude` -- so a fix that reasons about one rule will miss some.
 
 Proposed at T1 and filed at T2, the floor `tooling/**` sets in this repository's profile.
 

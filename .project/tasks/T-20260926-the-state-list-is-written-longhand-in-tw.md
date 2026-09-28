@@ -19,5 +19,5 @@ Hidden since at least 2026-09-19 by the tally reset filed alongside this task.
 
 ## Acceptance criteria
 
-- [ ] The list is written longhand in one file only; the other reads it.
-- [ ] The step passes on all three legs, counted by FAIL lines, not the tally.
+- [x] The list is written longhand in one file only; the other reads it.
+- [x] The step passes on all three legs, counted by FAIL lines, not the tally.

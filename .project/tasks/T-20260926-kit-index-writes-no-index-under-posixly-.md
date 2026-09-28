@@ -22,8 +22,8 @@ Hidden by the tally reset filed alongside this task.
 
 ## Acceptance criteria
 
-- [ ] Flaky test or real regression, decided from evidence (repeated runs on the macOS runner).
-- [ ] The step passes on macOS across repeated runs, counted by FAIL lines.
+- [x] Flaky test or real regression, decided from evidence (repeated runs on the macOS runner).
+- [x] The step passes on macOS across repeated runs, counted by FAIL lines.
 
 ## Evidence, 2026-09-26 -- deterministic, not intermittent
 

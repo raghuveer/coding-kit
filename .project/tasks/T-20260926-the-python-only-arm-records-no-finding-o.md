@@ -20,5 +20,5 @@ Hidden by the tally reset filed alongside this task.
 
 ## Acceptance criteria
 
-- [ ] The cause is named from a reproduction on a Unix runner or container, not inferred.
-- [ ] The step passes on all three legs, counted by FAIL lines.
+- [x] The cause is named from a reproduction on a Unix runner or container, not inferred.
+- [x] The step passes on all three legs, counted by FAIL lines.

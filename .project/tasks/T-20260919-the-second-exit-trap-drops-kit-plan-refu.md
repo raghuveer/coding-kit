@@ -31,13 +31,13 @@ any leak rather than the one it was written for.
 
 ## Acceptance criteria
 
-- [ ] Every temp file `kit-index.sh` creates is removed on exit, on a repository with task files
+- [x] Every temp file `kit-index.sh` creates is removed on exit, on a repository with task files
       and on one without
-- [ ] The two traps cannot drift apart again: either one trap covers every name, or the second is
+- [x] The two traps cannot drift apart again: either one trap covers every name, or the second is
       derived from the first rather than retyped
-- [ ] A conformance step fails if any temp file survives a run — the step exists already under
+- [x] A conformance step fails if any temp file survives a run — the step exists already under
       `T-20260817`; this criterion is that it stays green for the right reason
-- [ ] `$NEW` is checked too: it is named only by the second trap, so the reverse asymmetry is
+- [x] `$NEW` is checked too: it is named only by the second trap, so the reverse asymmetry is
       confirmed rather than assumed
 
 ## Notes

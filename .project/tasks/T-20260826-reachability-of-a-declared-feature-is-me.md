@@ -5,7 +5,7 @@ epic: measurement
 tier: T2
 paths: tooling, docs/DESIGN-NOTES.md
 blocked_by: T-20260826-a-verified-claim-about-the-tree-has-no-a
- created
+state: created
 ---
 
 ## Intent

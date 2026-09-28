@@ -23,9 +23,9 @@ of the SQL, not yet observed.
 
 ## Acceptance criteria
 
-- [ ] The expansion uses the form bash 3.2 and 5 agree on.
-- [ ] A conformance fixture tracks a path with an apostrophe, so the macOS leg (bash 3.2) exercises it.
-- [ ] Other double-quoted `${var//pat/rep}` uses in `tooling/*.sh` checked for the same shape.
+- [x] The expansion uses the form bash 3.2 and 5 agree on.
+- [x] A conformance fixture tracks a path with an apostrophe, so the macOS leg (bash 3.2) exercises it.
+- [x] Other double-quoted `${var//pat/rep}` uses in `tooling/*.sh` checked for the same shape.
 
 ## Notes
 

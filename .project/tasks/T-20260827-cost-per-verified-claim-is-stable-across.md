@@ -5,7 +5,7 @@ epic: measurement
 tier: T2
 paths: tooling, docs/TRIAL-PROTOCOL.md
 blocked_by: T-20260826-the-trial-environment-is-recorded-as-pro
- created
+state: created
 ---
 
 ## Intent

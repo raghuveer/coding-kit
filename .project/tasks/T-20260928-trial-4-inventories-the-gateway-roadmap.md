@@ -62,21 +62,37 @@ drafted by the agent and approved in that phrase, not written by the operator.
 3. **The researcher is a separate agent run, not the orchestrator**, and `kit-entry.sh --check`
    runs on its reply as returned, before anyone edits it.
 
-**Still to rule, before the clock** (proposals, not rulings):
+**Rulings 4-8, given 2026-09-28** as *"Accept all as proposed"*, answering the proposals below,
+which the agent drafted after reading `docs/planning/ROADMAP.md` at `e588b53` (blob `794c04e`)
+through the GitHub API, not from the maintainer's checkout:
 
-4. Adopt `docs/TRIAL-INVENTORY-UNIT.md` for this trial.
-5. Roadmap markers map as `[d]` → `on-hold`, `[k]` → `cancelled`, `[x]` → `completed --via unknown`
-   (unknown until `T-20260825-the-provenance-vocabulary-cannot-express` lands), and every candidate
-   title begins with its roadmap id (`UC3.A ...`; `.` is allowed, `/` is refused).
-6. The trial root's clustering criterion is recorded as **not exercisable on an imported
-   backlog**: with no `Task-Id` in the subject's history there are no `touches` edges, so
-   `cluster.min_shared` and `cluster.ignore_glob` add no links and clusters follow `--epic` only.
-7. The walk scope (every candidate, or a sample by a stated rule), the time-box, the stop rules,
-   and the method for comparing the plan with the roadmap's own order.
-8. The question. Draft: *"Given `docs/planning/ROADMAP.md` and the child documents it names at
-   `e588b53`, does the kit's entry path yield an inventory the maintainer confirms, and does
-   `kit-plan.sh` order it in a way the maintainer would work from, judged against the roadmap's
-   own stated order?"*
+4. **`docs/TRIAL-INVENTORY-UNIT.md` is adopted for this trial.**
+5. **Roadmap markers map as** `[d]` → `on-hold`, `[k]` → `cancelled`, `[x]` → `completed --via
+   unknown` (unknown until `T-20260825-the-provenance-vocabulary-cannot-express` lands), and every
+   candidate title begins with its roadmap id (`UC3.A ...`; `.` is allowed, `/` is refused). **The
+   mapping is dormant: all 85 items at `e588b53` are `[ ]`** (41 with UC ids, 44 with §3 ids such
+   as `3.1.A`); the legend at lines 37-40 defines the other markers and no item uses them. A
+   candidate is `completed` only on evidence in the tree at `e588b53`.
+6. **The trial root's clustering criterion is not exercisable on an imported backlog**: with no
+   `Task-Id` in the subject's history there are no `touches` edges, so `cluster.min_shared` and
+   `cluster.ignore_glob` add no links and clusters follow `--epic` only.
+7. **The walk, the time-box and the order comparison:**
+   - the maintainer judges every candidate whose disposition is not `created`, plus every 4th
+     `created` candidate in roadmap order; the rest are counted as unjudged;
+   - one hour with a recorded STOP / CONTINUE at the boundary, capped at two, plus the protocol's
+     §0 stop rules;
+   - the plan is compared with the roadmap's own order by two counts, and no rank correlation:
+     (a) of the item pairs implied by its four *Dependencies inherited* lines (a §2 item after the
+     §3 items it inherits), how many the plan respects; (b) among the 44 §3 items, which the
+     roadmap orders by risk class (line 520: security & correctness → completeness → hygiene →
+     validation → documentation), how many pairs the plan inverts, with tied pairs counted apart.
+8. **The question:** *"Given `docs/planning/ROADMAP.md` (85 open items) and the documents it names
+   at `e588b53`, does the kit's entry path yield candidates the maintainer confirms as real and
+   correctly scoped, and does `kit-plan.sh` order them consistently with the roadmap's stated
+   dependencies and risk-class order?"*
+
+With every item open, this trial mainly tests whether candidates are real and correctly scoped,
+and how the planner orders them. It says little about done-or-not claims.
 
 ## Acceptance criteria
 

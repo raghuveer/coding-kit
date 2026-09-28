@@ -70,3 +70,14 @@ and the question surfaced both the collision and the overstated comment.
 **Not a blocker for `T-20260808-trial-the-kit-on-one-unfamiliar-brownfie`** and deliberately not
 added to its `blocked_by`. A trial files few enough tasks that a same-day 40-character prefix
 collision is not a realistic risk there.
+
+**2026-09-28 — reproduced, and the note above no longer holds for every trial.** Filing
+`T-20260928-trial-4-inventories-the-gateway-roadmap` under its first title produced
+`T-20260928-trial-4-inventories-the-highper-gateway-`: the trailing `-` is stripped *before* the
+40-character cut (`kit-task.sh:70-71`), so a cut landing on a separator leaves one. That half is not
+in the criteria above; this repository already holds such a pair
+(`T-20260919-cluster-assignment-is-touches-only-so-a-` beside `...so-a`). **And trial 4 is an
+inventory unit expected to file on the order of 85 tasks on one UTC day**, so "a trial files few
+enough tasks" is true of a code-change trial only. Not added to that trial's `blocked_by`: a
+collision is refused with exit 1, so the trial counts it as a filing failure rather than being
+misled by it.

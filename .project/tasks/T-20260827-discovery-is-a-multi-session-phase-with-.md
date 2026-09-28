@@ -210,3 +210,12 @@ reconciled rather than left as two words for overlapping things.
 Evidence: `docs/TRIALS/2026-08-26-highper-gateway-reconciliation.md`,
 `docs/TRIALS/2026-08-27-aeon-reconciliation.md`, `.project/entry-candidates.md`,
 `tooling/kit-entry.sh` header (ADR 0001).
+
+**2026-09-28 — a slice of this runs as trial 4.** `T-20260928-trial-4-inventories-the-gateway-roadmap`
+carries five criteria narrowed from this task's, all met by procedure rather than by building: a
+named, bounded input set (from AC3); each candidate citing its source item; the confirmed inventory
+committed as one baseline artefact (from AC5, without "what changed since"); a gate that can fail
+(AC9, AC10); and `kit-entry.sh` still writing no task (AC2). Out of the slice: resumability and
+fact-change detection (AC1), cross-document reconciliation (AC6), non-text inputs (AC7), deployment
+environments (AC8), and the greenfield wording (AC4). This task is not closed by that trial; it
+gets its first evidence from it.

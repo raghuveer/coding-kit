@@ -105,15 +105,25 @@ researcher's reply the orchestrator did not write, so the first two detections r
 
 | condition | detection |
 |---|---|
-| **The judgement was the orchestrator's.** | A `scope=subagent` spend row whose `agent` is the researcher (confirm the spelling at pre-flight, so zero means absent, not misspelled). Its `agent_id` names a transcript whose final assistant text is the reply. Commit the candidates file in a **later turn** than the researcher returned, so the row exists before the commit even if it was recorded by the end-of-turn sweep. No row, or no transcript: VOID. |
-| **The reply was edited before `--check`.** | `<paths.state>/entry-candidates.md` is the reply **verbatim, whole**; `--check` needs both its sections in that one file. The questions file is a derived copy of the questions section. The researcher's final assistant text, extracted from its transcript, is compared with `git show <first commit>:<paths.state>/entry-candidates.md` using `cmp`, and `--check`'s output on that commit is recorded. Any difference: VOID. |
+| **The judgement was the orchestrator's.** | A `scope=subagent` spend row whose `agent` is the researcher (confirm the spelling at pre-flight, so zero means absent, not misspelled), **other than any pre-flight probe's, whose `agent_id` is recorded before the clock**. Its `agent_id` names a transcript whose final assistant text is the reply. Commit the candidates file in a **later turn** than the researcher returned, so the row exists before the commit even if it was recorded by the end-of-turn sweep. No row, or no transcript: VOID. |
+| **The reply was edited before `--check`.** | `<paths.state>/entry-candidates.md` is the reply **verbatim, whole**; `--check` needs both its sections in that one file. The questions file is a derived copy of the questions section. The researcher's final assistant text, extracted from its transcript, is compared with `git show <first commit>:<paths.state>/entry-candidates.md` using `cmp`, both sides with trailing newlines stripped (`printf '%s' "$(cat F)"`) and nothing else normalised, and `--check`'s output on that commit is recorded. Any other difference: VOID. |
 | **A confirmed candidate went unfiled without a recorded reason, or something unconfirmed was filed.** | Compare **titles**, not ids: an id is computed at filing from the date and a slug, so a filing across UTC midnight or a slug collision changes or refuses it. Confirmed titles against the `title:` lines of the filed task files, each sorted, with `comm -3`. Every line of output must be explained by a recorded refusal (the `kit-task.sh` exit code and message). An unexplained line: VOID. |
-| **The oracle leaked.** | Every `Read`, `Grep`, `Glob` and `WebFetch` call in the researcher's transcript is listed with its path or URL, and none reaches outside the copy or names the other tree's location or SHA. A path in the prompt does not isolate a subagent (protocol §3, first row), which is why the tool calls are read and not only the prompt. Any hit: VOID. |
+| **The oracle leaked.** | Every `Read`, `Grep`, `Glob`, `WebFetch` and `WebSearch` call in the researcher's transcript is listed with its **input** (path, pattern, URL or query), and none reaches outside the copy, other than paths the trial record allows by name. The check reads tool **inputs** and the final reply, not tool results: the subject's own files may name the other tree (highper-gateway's roadmap does), and reading them is not a leak; opening that tree is. A path in the prompt does not isolate a subagent (protocol §3, first row), which is why the tool calls are read and not only the prompt. Any hit: VOID. |
 | **Anything outside the copy was written.** | The subject of record is untouched (the copy has no remote). Each other tree shows the same `git status --porcelain`, `HEAD` and `git count-objects -v` as its before-state, and `find <tree>/.git -newer <marker>` prints nothing. Objects count: `git fetch --dry-run` writes objects and changes no ref. Any difference: VOID. |
 
-**Writes into the copy's tracked tree** — the candidates file, the questions file, filed tasks —
-are part of this unit, not a collision with §3's dirty-tree rule, **provided each is committed as
-a recorded trial commit before the next reindex.** Trial 3 set that precedent.
+**Writes into the copy's tracked tree** — the candidates file, the questions file, the
+confirmations file, filed tasks — are part of this unit, not a collision with §3's dirty-tree
+rule, **provided each is committed as a recorded trial commit before the next reindex.** Trial 3
+set that precedent. Two tracked paths change without the unit writing them, and are expected:
+`.project/events.ndjson`, which the Stop and SubagentStop hooks append to every turn, and
+`.project/plans/`, which `kit-plan.sh` writes and then reindexes before anyone can commit it.
+**Detection, before every reindex the trial triggers:**
+`git status --short -- . ':!.project/events.ndjson' ':!.project/plans/'` prints nothing. Both
+excluded paths are committed at the next trial commit.
+
+*Revised 2026-09-29, before first use, from a blind review of trial 4's prompts: as first
+written, a clean run fired the dirty-tree condition, the leak check fired on the subject's own
+roadmap (which names the maintainer's checkout), and the reply comparison was byte-exact.*
 
 ## 3. What is measured (n on every figure)
 
